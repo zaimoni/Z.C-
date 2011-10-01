@@ -1,0 +1,209 @@
+SUFFIXES h hpp
+OBJECTLIKE_MACRO STATIC_ASSERT _Static_assert static_assert
+// (C)2010 Kenneth Boyd, license: MIT.txt
+
+enum test {
+	neg_one = -1,
+	zero,
+	one,
+	two
+};
+
+STATIC_ASSERT(neg_one,"automatic success has failed");
+STATIC_ASSERT(one,"automatic success has failed");
+
+// check unary +
+STATIC_ASSERT(+neg_one,"automatic success has failed");
+STATIC_ASSERT(+one,"automatic success has failed");
+
+// check unary -
+STATIC_ASSERT(-neg_one,"automatic success has failed");
+STATIC_ASSERT(-one,"automatic success has failed");
+
+// check unary !
+STATIC_ASSERT(!zero,"automatic success has failed");
+
+// check %
+STATIC_ASSERT(one%two,"automatic success has failed");
+STATIC_ASSERT(!(zero%two),"automatic success has failed");
+STATIC_ASSERT(!(one%one),"automatic success has failed");
+STATIC_ASSERT(!(zero%one),"automatic success has failed");
+
+// check /
+STATIC_ASSERT(two/one,"automatic success has failed");
+STATIC_ASSERT(one/one,"automatic success has failed");
+STATIC_ASSERT(!(one/two),"automatic success has failed");
+
+// check *
+STATIC_ASSERT(!(zero*neg_one),"automatic success has failed");
+STATIC_ASSERT(!(zero*one),"automatic success has failed");
+STATIC_ASSERT(!(zero*two),"automatic success has failed");
+STATIC_ASSERT(!(neg_one*zero),"automatic success has failed");
+STATIC_ASSERT(!(one*zero),"automatic success has failed");
+STATIC_ASSERT(!(two*zero),"automatic success has failed");
+STATIC_ASSERT(neg_one*neg_one,"automatic success has failed");
+STATIC_ASSERT(neg_one*one,"automatic success has failed");
+STATIC_ASSERT(neg_one*two,"automatic success has failed");
+STATIC_ASSERT(one*neg_one,"automatic success has failed");
+STATIC_ASSERT(one*one,"automatic success has failed");
+STATIC_ASSERT(one*two,"automatic success has failed");
+STATIC_ASSERT(two*neg_one,"automatic success has failed");
+STATIC_ASSERT(two*one,"automatic success has failed");
+STATIC_ASSERT(two*two,"automatic success has failed");
+
+// check +
+STATIC_ASSERT(neg_one+neg_one,"automatic success has failed");
+STATIC_ASSERT(neg_one+zero,"automatic success has failed");
+STATIC_ASSERT(!(neg_one+one),"automatic success has failed");
+STATIC_ASSERT(zero+neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero+zero),"automatic success has failed");
+STATIC_ASSERT(zero+one,"automatic success has failed");
+STATIC_ASSERT(!(one+neg_one),"automatic success has failed");
+STATIC_ASSERT(one+zero,"automatic success has failed");
+STATIC_ASSERT(one+one,"automatic success has failed");
+
+// check -
+STATIC_ASSERT(!(neg_one-neg_one),"automatic success has failed");
+STATIC_ASSERT(neg_one-zero,"automatic success has failed");
+STATIC_ASSERT(neg_one-one,"automatic success has failed");
+STATIC_ASSERT(zero-neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero-zero),"automatic success has failed");
+STATIC_ASSERT(zero-one,"automatic success has failed");
+STATIC_ASSERT(one-neg_one,"automatic success has failed");
+STATIC_ASSERT(one-zero,"automatic success has failed");
+STATIC_ASSERT(!(one-one),"automatic success has failed");
+
+// check <<, >>
+STATIC_ASSERT(!(zero<<zero),"automatic success has failed");
+STATIC_ASSERT(!(zero<<one),"automatic success has failed");
+STATIC_ASSERT(one<<zero,"automatic success has failed");
+STATIC_ASSERT(one<<one,"automatic success has failed");
+
+// check <, <=, >=, >
+STATIC_ASSERT(!(neg_one<neg_one),"automatic success has failed");
+STATIC_ASSERT(neg_one<zero,"automatic success has failed");
+STATIC_ASSERT(neg_one<one,"automatic success has failed");
+STATIC_ASSERT(!(zero<neg_one),"automatic success has failed");
+STATIC_ASSERT(!(zero<zero),"automatic success has failed");
+STATIC_ASSERT(zero<one,"automatic success has failed");
+STATIC_ASSERT(!(one<neg_one),"automatic success has failed");
+STATIC_ASSERT(!(one<zero),"automatic success has failed");
+STATIC_ASSERT(!(one<one),"automatic success has failed");
+
+STATIC_ASSERT(neg_one<=neg_one,"automatic success has failed");
+STATIC_ASSERT(neg_one<=zero,"automatic success has failed");
+STATIC_ASSERT(neg_one<=one,"automatic success has failed");
+STATIC_ASSERT(!(zero<=neg_one),"automatic success has failed");
+STATIC_ASSERT(zero<=zero,"automatic success has failed");
+STATIC_ASSERT(zero<=one,"automatic success has failed");
+STATIC_ASSERT(!(one<=neg_one),"automatic success has failed");
+STATIC_ASSERT(!(one<=zero),"automatic success has failed");
+STATIC_ASSERT(one<=one,"automatic success has failed");
+
+STATIC_ASSERT(neg_one>=neg_one,"automatic success has failed");
+STATIC_ASSERT(!(neg_one>=zero),"automatic success has failed");
+STATIC_ASSERT(!(neg_one>=one),"automatic success has failed");
+STATIC_ASSERT(zero>=neg_one,"automatic success has failed");
+STATIC_ASSERT(zero>=zero,"automatic success has failed");
+STATIC_ASSERT(!(zero>=one),"automatic success has failed");
+STATIC_ASSERT(one>=neg_one,"automatic success has failed");
+STATIC_ASSERT(one>=zero,"automatic success has failed");
+STATIC_ASSERT(one>=one,"automatic success has failed");
+
+STATIC_ASSERT(!(neg_one>neg_one),"automatic success has failed");
+STATIC_ASSERT(!(neg_one>zero),"automatic success has failed");
+STATIC_ASSERT(!(neg_one>one),"automatic success has failed");
+STATIC_ASSERT(zero>neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero>zero),"automatic success has failed");
+STATIC_ASSERT(!(zero>one),"automatic success has failed");
+STATIC_ASSERT(one>neg_one,"automatic success has failed");
+STATIC_ASSERT(one>zero,"automatic success has failed");
+STATIC_ASSERT(!(one>one),"automatic success has failed");
+
+// check ==, !=
+STATIC_ASSERT(neg_one==neg_one,"automatic success has failed");
+STATIC_ASSERT(!(neg_one==zero),"automatic success has failed");
+STATIC_ASSERT(!(neg_one==one),"automatic success has failed");
+STATIC_ASSERT(!(zero==neg_one),"automatic success has failed");
+STATIC_ASSERT(zero==zero,"automatic success has failed");
+STATIC_ASSERT(!(zero==one),"automatic success has failed");
+STATIC_ASSERT(!(one==neg_one),"automatic success has failed");
+STATIC_ASSERT(!(one==zero),"automatic success has failed");
+STATIC_ASSERT(one==one,"automatic success has failed");
+
+STATIC_ASSERT(!(neg_one!=neg_one),"automatic success has failed");
+STATIC_ASSERT(neg_one!=zero,"automatic success has failed");
+STATIC_ASSERT(neg_one!=one,"automatic success has failed");
+STATIC_ASSERT(zero!=neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero!=zero),"automatic success has failed");
+STATIC_ASSERT(zero!=one,"automatic success has failed");
+STATIC_ASSERT(one!=neg_one,"automatic success has failed");
+STATIC_ASSERT(one!=zero,"automatic success has failed");
+STATIC_ASSERT(!(one!=one),"automatic success has failed");
+
+// check & ^ | 
+STATIC_ASSERT(!(zero&zero),"automatic success has failed");
+STATIC_ASSERT(!(zero&one),"automatic success has failed");
+STATIC_ASSERT(!(one&zero),"automatic success has failed");
+STATIC_ASSERT(one&one,"automatic success has failed");
+
+STATIC_ASSERT(!(zero^zero),"automatic success has failed");
+STATIC_ASSERT(zero^one,"automatic success has failed");
+STATIC_ASSERT(one^zero,"automatic success has failed");
+STATIC_ASSERT(!(one^one),"automatic success has failed");
+
+STATIC_ASSERT(!(zero|zero),"automatic success has failed");
+STATIC_ASSERT(zero|one,"automatic success has failed");
+STATIC_ASSERT(one|zero,"automatic success has failed");
+STATIC_ASSERT(one|one,"automatic success has failed");
+
+// check && ||
+STATIC_ASSERT(neg_one&&neg_one,"automatic success has failed");
+STATIC_ASSERT(!(neg_one&&zero),"automatic success has failed");
+STATIC_ASSERT(neg_one&&one,"automatic success has failed");
+STATIC_ASSERT(!(zero&&neg_one),"automatic success has failed");
+STATIC_ASSERT(!(zero&&zero),"automatic success has failed");
+STATIC_ASSERT(!(zero&&one),"automatic success has failed");
+STATIC_ASSERT(one&&neg_one,"automatic success has failed");
+STATIC_ASSERT(!(one&&zero),"automatic success has failed");
+STATIC_ASSERT(one&&one,"automatic success has failed");
+
+STATIC_ASSERT(neg_one||neg_one,"automatic success has failed");
+STATIC_ASSERT(neg_one||zero,"automatic success has failed");
+STATIC_ASSERT(neg_one||one,"automatic success has failed");
+STATIC_ASSERT(zero||neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero||zero),"automatic success has failed");
+STATIC_ASSERT(zero||one,"automatic success has failed");
+STATIC_ASSERT(one||neg_one,"automatic success has failed");
+STATIC_ASSERT(one||zero,"automatic success has failed");
+STATIC_ASSERT(one||one,"automatic success has failed");
+
+// check ? :
+STATIC_ASSERT(neg_one ? neg_one : neg_one,"automatic success has failed");
+STATIC_ASSERT(neg_one ? neg_one : zero,"automatic success has failed");
+STATIC_ASSERT(neg_one ? neg_one : one,"automatic success has failed");
+STATIC_ASSERT(!(neg_one ? zero : neg_one),"automatic success has failed");
+STATIC_ASSERT(!(neg_one ? zero : zero),"automatic success has failed");
+STATIC_ASSERT(!(neg_one ? zero : one),"automatic success has failed");
+STATIC_ASSERT(neg_one ? one : neg_one,"automatic success has failed");
+STATIC_ASSERT(neg_one ? one : zero,"automatic success has failed");
+STATIC_ASSERT(neg_one ? one : one,"automatic success has failed");
+STATIC_ASSERT(zero ? neg_one : neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero ? neg_one : zero),"automatic success has failed");
+STATIC_ASSERT(zero ? neg_one : one,"automatic success has failed");
+STATIC_ASSERT(zero ? zero : neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero ? zero : zero),"automatic success has failed");
+STATIC_ASSERT(zero ? zero : one,"automatic success has failed");
+STATIC_ASSERT(zero ? one : neg_one,"automatic success has failed");
+STATIC_ASSERT(!(zero ? one : zero),"automatic success has failed");
+STATIC_ASSERT(zero ? one : one,"automatic success has failed");
+STATIC_ASSERT(one ? neg_one : neg_one,"automatic success has failed");
+STATIC_ASSERT(one ? neg_one : zero,"automatic success has failed");
+STATIC_ASSERT(one ? neg_one : one,"automatic success has failed");
+STATIC_ASSERT(!(one ? zero : neg_one),"automatic success has failed");
+STATIC_ASSERT(!(one ? zero : zero),"automatic success has failed");
+STATIC_ASSERT(!(one ? zero : one),"automatic success has failed");
+STATIC_ASSERT(one ? one : neg_one,"automatic success has failed");
+STATIC_ASSERT(one ? one : zero,"automatic success has failed");
+STATIC_ASSERT(one ? one : one,"automatic success has failed");
+

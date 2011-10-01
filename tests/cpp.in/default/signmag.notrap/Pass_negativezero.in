@@ -1,0 +1,33 @@
+SUFFIXES h hpp
+// (C)2009 Kenneth Boyd, license: MIT.txt
+
+#include <limits.h>
+#include <stdint.h>
+
+// non-trapping machines accept bitwise -0
+// C99 6.2.6.2 defines the two bit patterns for 0 as comparing equal
+// | : impractical (have to start with bitwise -0)
+// ~ : use INT_MAX
+// ^ : ^ any positive integer with its negative (randdriver)
+// & : (randdriver)
+
+// promotion to intmax_t skews things
+FALSE_EXPRESSION ~INTMAX_MAX
+
+// spot-check ^
+// use preprocessor intmax_t promotion (C99 6.10.1p3)
+FALSE_EXPRESSION 1 ^ -1
+
+FALSE_EXPRESSION INT_MAX ^ INT_MIN
+FALSE_EXPRESSION LONG_MAX ^ LONG_MIN
+FALSE_EXPRESSION LLONG_MAX ^ LLONG_MIN
+FALSE_EXPRESSION INTMAX_MAX ^ INTMAX_MIN
+
+// spot-check &
+FALSE_EXPRESSION INT_MIN+1 & -1
+FALSE_EXPRESSION LONG_MIN+1 & -1
+FALSE_EXPRESSION LLONG_MIN+1 & -1
+FALSE_EXPRESSION INTMAX_MIN+1 & -1
+
+
+

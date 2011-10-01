@@ -1,0 +1,11 @@
+// ciso646
+// not-that-useful wrapper for iso646.h
+// (C)2009 Kenneth Boyd, license: MIT.txt
+
+#ifndef __CISO646__
+#define __CISO646__ 1
+#pragma ZCC lock __CISO646__
+
+#include <iso646.h>
+
+#endif

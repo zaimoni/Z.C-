@@ -1,0 +1,11 @@
+// cstdbool
+// wrapper for stdbool.h
+// (C)2009 Kenneth Boyd, license: MIT.txt
+
+#ifndef __CSTDBOOL__
+#define __CSTDBOOL__ 1
+#pragma ZCC lock __CSTDBOOL__
+
+#include <stdbool.h>
+
+#endif

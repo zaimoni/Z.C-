@@ -1,0 +1,59 @@
+SUFFIXES h hpp
+DESC runs regression tests for z_cpp.exe
+DESC (C)2009,2011 Kenneth Boyd, license: MIT.txt
+
+PROLOG
+VAR CPP ../../bin/z_cpp
+VAR CPP_ISO ../../bin/z_cpp --pedantic
+VAR CPP_SIGNMAG_NOTRAP ../../bin/z_cpp --int-sign-magnitude
+VAR CPP_SIGNMAG_TRAP ../../bin/z_cpp --int-sign-magnitude --int-traps
+VAR CPP_ONESCOMP_NOTRAP ../../bin/z_cpp --int-ones-complement
+VAR CPP_ONESCOMP_TRAP ../../bin/z_cpp --int-ones-complement --int-traps
+VAR CPP_TWOSCOMP_NOTRAP ../../bin/z_cpp --int-twos-complement
+VAR CPP_TWOSCOMP_TRAP ../../bin/z_cpp --int-twos-complement --int-traps
+
+ECHO Checking ISO error requirements
+ERROR CPP_ISO Error*
+ERROR CPP_ISO UNICODE.C99/Error*
+ERROR CPP_ISO define.C99/Error*
+ERROR CPP_ISO defined.C99/Error*
+ERROR CPP_ISO ifdef.C99/Error*
+ERROR CPP_ISO if.C99/Error*
+ERROR CPP_ISO line.C99/Error*
+ERROR CPP_ISO pragma.C99/Error*
+
+ECHO Checking ZCC warnings on ISO-accepted code
+WARN CPP_ISO Warn*
+
+ECHO Checking ISO acceptance requirements
+PASS CPP_ISO Pass*
+PASS CPP_ISO define.C99/Pass*
+PASS CPP_ISO if.C99/Pass*
+
+ECHO Checking ZCC implementation-defined errors and features
+ERROR CPP default/Error*
+ERROR CPP default/keywords/Error*
+ERROR CPP default/has_include/Error*
+PASS CPP default/has_include/Pass*
+PASS CPP default/Pass*
+PASS CPP_SIGNMAG_NOTRAP default/signmag.core/Pass*
+PASS CPP_SIGNMAG_NOTRAP default/signmag.notrap/Pass*
+PASS CPP_SIGNMAG_TRAP default/signmag.core/Pass*
+ERROR CPP_SIGNMAG_TRAP default/signmag.trap/Error*
+PASS CPP_ONESCOMP_NOTRAP default/onescomp.core/Pass*
+PASS CPP_ONESCOMP_NOTRAP default/onescomp.notrap/Pass*
+PASS CPP_ONESCOMP_TRAP default/onescomp.core/Pass*
+ERROR CPP_ONESCOMP_TRAP default/onescomp.trap/Error*
+PASS CPP_TWOSCOMP_NOTRAP default/twoscomp.notrap/Pass*
+PASS CPP_TWOSCOMP_TRAP default/twoscomp.trap/Pass*
+ERROR CPP_TWOSCOMP_TRAP default/twoscomp.trap/Error*
+
+ECHO Checking ZCC nonconforming errors
+ERROR CPP default.nonconforming/Error*
+
+ECHO Checking ZCC content transforms
+TEXTTRANSFORM CPP default/Preprocess*
+TEXTTRANSFORM CPP line.C99/Preprocess*
+
+EPILOG
+

@@ -1,0 +1,14 @@
+SUFFIXES h
+DESC runs only C99 regression tests for z_cpp.exe
+DESC (C)2009,2011 Kenneth Boyd, license: MIT.txt
+PROLOG
+VAR CPP ../../bin/zcc --pedantic
+
+ECHO Checking ISO error requirements
+ERROR CPP decl.C99/Error*
+
+ECHO Checking ISO acceptance requirements
+PASS CPP Pass*
+PASS CPP decl.C99/Pass*
+
+EPILOG
