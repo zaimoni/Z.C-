@@ -1,5 +1,5 @@
 // Trigraph.cpp
-// (C)2009,2010 Kenneth Boyd, license: MIT.txt
+// (C)2009-2011 Kenneth Boyd, license: MIT.txt
 
 #include "Trigraph.hpp"
 
@@ -49,161 +49,163 @@ are never part of a subsequent trigraph.  [Example: The sequence
 /* Aside: ??? is not supported in C99 or C++0x; example in 4 may be a doc. error for C++97.  Given table row was in HTML version but not PDF version. */
 /* C89 rationale suggest to omit ??? */
 
-static size_t EnforceTrigraphsAux(size_t& Offset, char* const Text)
+static size_t EnforceTrigraphsAux(size_t& Offset, char* const x)
 {	// FORMALLY CORRECT: Kenneth Boyd, 10/17/2004
 	// this returns how much to increment i by (not directly passed)
-	if ('?'!=Text[1]) return 2;	// total miss: increment by 2
-	if ('?'!=Text[0]) return 1;	// partial miss: increment by 1
+	if ('?'!=x[1]) return 2;	// total miss: increment by 2
+	if ('?'!=x[0]) return 1;	// partial miss: increment by 1
 
-	if ('='==Text[2])
+	if ('='==x[2])
 		{
-		Text[0]='#';
+		x[0]='#';
 		Offset+=2;
 		}
-	else if ('/'==Text[2])
+	else if ('/'==x[2])
 		{
-		Text[0]='\\';
+		x[0]='\\';
 		Offset+=2;
 		}
-	else if ('\''==Text[2])
+	else if ('\''==x[2])
 		{
-		Text[0]='^';
+		x[0]='^';
 		Offset+=2;
 		}
-	else if ('('==Text[2])
+	else if ('('==x[2])
 		{
-		Text[0]='[';
+		x[0]='[';
 		Offset+=2;
 		}
-	else if (')'==Text[2])
+	else if (')'==x[2])
 		{
-		Text[0]=']';
+		x[0]=']';
 		Offset+=2;
 		}
-	else if ('!'==Text[2])
+	else if ('!'==x[2])
 		{
-		Text[0]='|';
+		x[0]='|';
 		Offset+=2;
 		}
-	else if ('<'==Text[2])
+	else if ('<'==x[2])
 		{
-		Text[0]='{';
+		x[0]='{';
 		Offset+=2;
 		}
-	else if ('>'==Text[2])
+	else if ('>'==x[2])
 		{
-		Text[0]='}';
+		x[0]='}';
 		Offset+=2;
 		}
-	else if ('-'==Text[2])
+	else if ('-'==x[2])
 		{
-		Text[0]='~';
+		x[0]='~';
 		Offset+=2;
 		};
 	return 3;
 }
 
 static size_t
-EnforceTrigraphsAuxV2(size_t& Offset, char* const Text, char* const Target)
+EnforceTrigraphsAuxV2(size_t& Offset, char* const x, char* const Target)
 {	// FORMALLY CORRECT: Kenneth Boyd, 10/17/2004
 	// this returns how much to increment i by (not directly passed)
-	if ('?'!=Text[1])
+	if ('?'!=x[1])
 		{
-		Target[0] = Text[0];
-		Target[1] = Text[1];
+		Target[0] = x[0];
+		Target[1] = x[1];
 		return 2;	// total miss: increment by 2
 		};
-	if ('?'!=Text[0])
+	if ('?'!=x[0])
 		{
-		Target[0] = Text[0];
+		Target[0] = x[0];
 		return 1;	// partial miss: increment by 1
 		};
 
-	if ('='==Text[2])
+	if ('='==x[2])
 		{
 		Target[0]='#';
 		Offset+=2;
 		}
-	else if ('/'==Text[2])
+	else if ('/'==x[2])
 		{
 		Target[0]='\\';
 		Offset+=2;
 		}
-	else if ('\''==Text[2])
+	else if ('\''==x[2])
 		{
 		Target[0]='^';
 		Offset+=2;
 		}
-	else if ('('==Text[2])
+	else if ('('==x[2])
 		{
 		Target[0]='[';
 		Offset+=2;
 		}
-	else if (')'==Text[2])
+	else if (')'==x[2])
 		{
 		Target[0]=']';
 		Offset+=2;
 		}
-	else if ('!'==Text[2])
+	else if ('!'==x[2])
 		{
 		Target[0]='|';
 		Offset+=2;
 		}
-	else if ('<'==Text[2])
+	else if ('<'==x[2])
 		{
 		Target[0]='{';
 		Offset+=2;
 		}
-	else if ('>'==Text[2])
+	else if ('>'==x[2])
 		{
 		Target[0]='}';
 		Offset+=2;
 		}
-	else if ('-'==Text[2])
+	else if ('-'==x[2])
 		{
 		Target[0]='~';
 		Offset+=2;
 		}
 	else{
-		Target[0] = Text[0];
-		Target[1] = Text[1];
-		Target[2] = Text[2];
+		Target[0] = x[0];
+		Target[1] = x[1];
+		Target[2] = x[2];
 		}
 	return 3;
 }
 
-bool EnforceCTrigraphs(char*& Text, const char* filename)
+#ifndef ZAIMONI_FORCE_ISO
+bool EnforceCTrigraphs(char*& x, const char* filename)
+#else
+bool EnforceCTrigraphs(char*& x, size_t& x_len, const char* filename)
+#endif
 {	// FORMALLY CORRECT: Kenneth Boyd, 8/1/2002
 	// there are 10 C trigraphs of interest (?)
 	// We use a modified Boyer-Moore algorithm, and compact after 
 	// the left-to-right sweep.  This is a candidate for 
 	// a state-machine implementation.
 #ifndef ZAIMONI_FORCE_ISO
-	const size_t TextLength = SafeArraySize(Text);
+	const size_t TextLength = SafeArraySize(x);
 #else
-	size_t Text_len = strlen(Text);
-	const size_t TextLength = Text_len++;
+	const size_t TextLength = x_len-1;
 #endif
 	if (3<=TextLength)
 		{
 		size_t i = 0;
 		size_t Offset = 0;
-		do	i += EnforceTrigraphsAux(Offset,Text+i);
+		do	i += EnforceTrigraphsAux(Offset,x+i);
 		while(i+2<TextLength && 0==Offset);
 		if (0!=Offset)
 			{
 			while(i+2<TextLength)
-				i += EnforceTrigraphsAuxV2(Offset,Text+i,Text+(i-Offset));
-			while(i<TextLength)
+				i += EnforceTrigraphsAuxV2(Offset,x+i,x+(i-Offset));
+			while(i<ZAIMONI_LEN_WITH_NULL(TextLength))
 				{
-				Text[i-Offset] = Text[i];
+				x[i-Offset] = x[i];
 				++i;
 				};
 #ifndef ZAIMONI_FORCE_ISO
-			_shrink(Text,TextLength-Offset);
+			_shrink(x,x_len-Offset);
 #else
-			_shrink(Text,Text_len,TextLength-Offset+1);
-			Text[Text_len-1] = '\x00';
+			_shrink(x,x_len,x_len-Offset);
 #endif
 			};
 		};
