@@ -58,7 +58,7 @@ bool FlattenUNICODE(char*& x, size_t& x_len, const char* filename)
 			}
 		bloat_unicode += 6;
 		bloat_unicode = strstr(bloat_unicode,"\\U0000");
-		if (bloat_unicode && 10>x_len-(bloat_unicode-x)) bloat_unicode = NULL;
+		if (bloat_unicode && 10>target_len-(bloat_unicode-x)) bloat_unicode = NULL;
 		}
 	
 	bloat_unicode = strstr(x,"\\u00");
@@ -74,8 +74,8 @@ bool FlattenUNICODE(char*& x, size_t& x_len, const char* filename)
 			assert(160<=tmp);
 			bloat_unicode[0] = tmp;
 			target_len -= 5;
-			if (block_length<x_len)
-				memmove(bloat_unicode+1,bloat_unicode+6,(x_len-block_length));
+			if (block_length<target_len)
+				memmove(bloat_unicode+1,bloat_unicode+6,(target_len-block_length));
 			memset(x+target_len,0,5);
 			want_realloc = true;
 			++bloat_unicode;
@@ -84,7 +84,7 @@ bool FlattenUNICODE(char*& x, size_t& x_len, const char* filename)
 			bloat_unicode += 4;
 
 		bloat_unicode = strstr(bloat_unicode,"\\u00");
-		if (bloat_unicode && 6>x_len-(bloat_unicode-x)) bloat_unicode = NULL;
+		if (bloat_unicode && 6>target_len-(bloat_unicode-x)) bloat_unicode = NULL;
 		}
 #ifndef ZAIMONI_FORCE_ISO
 	if (want_realloc) _shrink(x,target_len);

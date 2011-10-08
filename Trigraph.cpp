@@ -203,7 +203,7 @@ bool EnforceCTrigraphs(char*& x, size_t& x_len, const char* filename)
 				++i;
 				};
 #ifndef ZAIMONI_FORCE_ISO
-			_shrink(x,x_len-Offset);
+			_shrink(x,TextLength-Offset);
 #else
 			_shrink(x,x_len,x_len-Offset);
 #endif
