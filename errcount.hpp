@@ -14,13 +14,14 @@ private:
 	T _ub;
 	T errors;
 	const char* const _fatalmsg;
-
+	
 	// yes, not copyable
 	error_counter(const error_counter& src);
 	void operator=(const error_counter& src);
 public:
 	error_counter(T ub,const char* fatalmsg)
-	:	_ub((assert(0<ub),ub)),errors(0),_fatalmsg((assert(NULL!=fatalmsg),fatalmsg)) {};
+	: _ub((assert(0<ub),ub)),errors(0),
+	  _fatalmsg((assert(fatalmsg && *fatalmsg),fatalmsg)) {};
 
 	void inc_error();
 	bool inc_error(T err_count);

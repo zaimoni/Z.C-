@@ -28,6 +28,67 @@ Boost libraries invoking std library
 Boost libraries invoking Windows, etc.
 * <boost/detail/interlocked.hpp>
 =====
+V0.0.2
+* builtins: __precondition(), __postcondition()
+* if we do structions, provide a builtin to handle the offsetof macro
+* #pragmas: something to implement parameter constraint for INT*_C and UINT*_C macros (unsuffixed octal/decimal/hex constants)
+** problem: UINTMAX_C of a constant that is illegal LL but legal ULL (consult USENET?)
+
+look at boost/Preprocessor; it should be working "now"
+
+builtins
+__precondition()
+__postcondition()
+
+linker format ideas (*.zo files)
+* functions need
+** signature
+** type
+** canonical token hash, token count, char count (triggers recompilation)
+** "provable preconditions from within"
+** "provable postconditions from within"
+** calculated list of throwable exceptions/__precondition sets, if available (C++)
+** whether const is "real" or not
+** whether function is pure
+
+* variables need
+** type
+** uninitialized status
+** canonical token hash, token count, char count of type (triggers recompilation)
+
+classes need
+** canonical token hash, token count, char count (triggers recompilation)
+** member function suite
+
+binary aspect involves
+* hash of section contents
+* target-CPU
+* target-OS
+* function: calling convention
+* canonical token hash, token count, char count (triggers recompilation; it is not necessary to recompile all platforms at once)
+* linker section
+* relocation information
+* machine-code
+
+From textbooks
+* could embed linker commands in object file format (a function could signal that if compiled as C or C++, that the C standard library should be searched)
+* object file contains
+** header information (e.g.: source filename, source file size, creation date, etc....)
+** object code
+** relocation: list of locations that have to be fixed up on relocation
+** symbols
+*** global symbols defined here
+*** global symbols imported from other areas (other modules, or linker-defined)
+*** "debugging information"
+** where the binary data goes: code vs. data, read-only vs. read-write, whether executable or not; also, zero-initialized data gets its own section
+*** might be worth studying whether ELF/OMF are extensible enough for the job
+*** C++ specifically needs COMDAT/linkonce functionality: templates, extern inline, default constructor/destructor/assignment operator, vtable implementation of virtual functions, ...
+*** FORTRAN needs COMMON functionality (note that the largest array is the one that actually exists...)
+*** C, C++, and other languages need initializer/finalizer functionality
+*** link-time type checking: parameters, return value?
+*** microsoft executable formats: COM, EXE, PE, ...
+
+=====
 Re: [LLVMdev] Dependence Analysis [was: Flow-Sensitive AA]
 From: Eli Friedman <eli.friedman@gmail.com>
 
@@ -187,3 +248,29 @@ and translation of phase 7.)
 ** so: on machines where a null pointer can be physically bitwise all zeros, we require sizeof(void*)==sizeof(NULL) 
 to protect varargs functions by letting reinterpret_casting work.
 ** on machines where a null pointer cannot be physically bitwise all zeros, we use C NULL in C++ (except in pedantic mode?)
+====
+c...@mailvault.com  	
+View profile
+ More options Feb 14, 8:23 pm
+On Feb 14, 6:07 pm, Kai-Uwe Bux <jkherci...@gmx.net> wrote: 
+> c...@mailvault.com wrote: 
+> > Open code generation is better for a number of reasons. 
+> What is open code generation? 
+
+
+Code generation where the results can be reviewed by a person. 
+Some C++ compilers have an option that lets you inspect the 
+results of preprocessing.  In that sense I would call them 
+open code generators.  The same is not true with templates. 
+I've heard suggestions for making it easier to trace the 
+steps a compiler takes when it instantiates something, but I 
+don't know of any compilers that have that either. 
+Besides making it easier for people to understand what the 
+compiler has done, I think fully instantiated source code is 
+important for on line code generation.  It would be the 
+portable output of an on line code generator rather than 
+attempting to generate object code for a long list of 
+hardware and operating systems. 
+Brian Wood 
+Ebenezer Enterprises 
+www.webEbenezer.net 
