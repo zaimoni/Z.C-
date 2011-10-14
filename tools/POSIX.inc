@@ -112,4 +112,10 @@ tests/zcc/decl.C99/Pass_class_def_decl.hpp: tests/zcc/decl.C99/Pass_struct_def_d
 tests/zcc/decl.C99/Pass_class_def2.hpp: tests/zcc/decl.C99/Pass_struct_def2.hpp
 	$(SED) -e s/struct/class/ tests/zcc/decl.C99/Pass_struct_def2.hpp > tests/zcc/decl.C99/Pass_class_def2.hpp.alt 
 	if cmp -s tests/zcc/decl.C99/Pass_class_def2.hpp tests/zcc/decl.C99/Pass_class_def2.hpp.alt; then rm tests/zcc/decl.C99/Pass_class_def2.hpp.alt ; else mv tests/zcc/decl.C99/Pass_class_def2.hpp.alt tests/zcc/decl.C99/Pass_class_def2.hpp; fi
-	
+
+# unit testing
+unit_tests: z_float.exe
+
+z_float.exe: make_Zaimoni_STL z_float.cpp z_float.hpp
+	$(CXX) -oz_float.exe $(LINK_FLAGS) -DTEST_APP z_float.cpp -lz_log_adapter -lz_stdio_log -lz_format_util
+	z_float.exe
