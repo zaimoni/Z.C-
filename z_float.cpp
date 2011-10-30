@@ -234,18 +234,92 @@ z_float& z_float::operator*=(const z_float& rhs)
 	// if that traps, _exponent(*this)+_exponent(rhs) dies
 	// so don't do that
 	intmax_t raw_exponent = (1+_exponent(*this))+_exponent(rhs);
-	
+	// note: we have a total loss of precision denormalization if 
+	// raw_exponent <= -(intmax_t)(UINTMAX_MAX/4)-64	
+	if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
+		{	// denormalize to zero-ish immediately
+		// if we have an underflow trap, trap now
+		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2)),Z_FLOAT_CODE_MULT,NULL))
+			return *this;
+		switch(4*is_negative+_rounding_mode())
+		{
+		default: assert(0 && "z_float *= signbit+rounding mode out of range");
+		case Z_FLOAT_TO_ZERO:
+		case 4+Z_FLOAT_TO_ZERO:
+		case 4+Z_FLOAT_TO_INF:
+		case Z_FLOAT_TO_NEG_INF:
+		case Z_FLOAT_TO_NEAREST:
+		case 4+Z_FLOAT_TO_NEAREST:
+			// to nearest
+			mantissa = 0;
+			exponent = 0;
+			return *this;
+		case Z_FLOAT_TO_INF:
+		case 4+Z_FLOAT_TO_NEG_INF:
+			mantissa = 1;
+			exponent = 0;
+			return *this;
+		}
+		}
+
+	uintmax_t lhs_mantissa = this->mantissa;
+	uintmax_t rhs_mantissa = rhs.mantissa;
+	// adjust format to as-if-normalized
+	if (0==this->exponent)
+		{
+		assert(0!=lhs_mantissa);
+		while(UINTMAX_MAX/2>=lhs_mantissa)
+			{
+			lhs_mantissa<<=1;
+			--raw_exponent;
+			}
+		lhs_mantissa<<=1;
+		};
+	if (0==rhs.exponent)
+		{
+		assert(0!=rhs_mantissa);
+		while(UINTMAX_MAX/2>=rhs_mantissa)
+			{
+			rhs_mantissa<<=1;
+			--raw_exponent;
+			}
+		lhs_mantissa<<=1;
+		};
+	if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
+		{	// denormalize to zero-ish immediately
+		// if we have an underflow trap, trap now
+		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2)),Z_FLOAT_CODE_MULT,NULL))
+			return *this;
+		switch(4*is_negative+_rounding_mode())
+		{
+		default: assert(0 && "z_float *= signbit+rounding mode out of range");
+		case Z_FLOAT_TO_ZERO:
+		case 4+Z_FLOAT_TO_ZERO:
+		case 4+Z_FLOAT_TO_INF:
+		case Z_FLOAT_TO_NEG_INF:
+		case Z_FLOAT_TO_NEAREST:
+		case 4+Z_FLOAT_TO_NEAREST:
+			// to nearest
+			mantissa = 0;
+			exponent = 0;
+			return *this;
+		case Z_FLOAT_TO_INF:
+		case 4+Z_FLOAT_TO_NEG_INF:
+			mantissa = 1;
+			exponent = 0;
+			return *this;
+		}
+		}
+
 	HALFWIDTH_UINT tmp[4];
 	uintmax_t extended_mantissa[4];
-	_multiply_intermediate(extended_mantissa,tmp,this->mantissa,rhs.mantissa);	
-	// denormals do not have a suppressed leading 1
+	_multiply_intermediate(extended_mantissa,tmp,lhs_mantissa,rhs_mantissa);	
+
 	// try to put that partial sum in dest[3]
-	if (!isdenormal_or_zero(*this)) extended_mantissa[3] = rhs.mantissa;
-	if (!isdenormal_or_zero(rhs))
-		{	// example, 64-bit uintmax_t
-		extended_mantissa[2] = (UINTMAX_MAX-extended_mantissa[3]<mantissa);	// 2^0
-		extended_mantissa[3] += mantissa;	// 2^-64
-		}
+	extended_mantissa[3] = rhs_mantissa;
+	// example, 64-bit uintmax_t
+	extended_mantissa[2] = (UINTMAX_MAX-extended_mantissa[3]<lhs_mantissa);	// 2^0
+	extended_mantissa[3] += lhs_mantissa;	// 2^-64
 	extended_mantissa[2] += (UINTMAX_MAX-extended_mantissa[0]<extended_mantissa[3]);
 	extended_mantissa[0] += extended_mantissa[3];	// extended_mantissa[3] now expired
 	extended_mantissa[3] = 0;
@@ -269,54 +343,78 @@ z_float& z_float::operator*=(const z_float& rhs)
 		++raw_exponent;
 		};
 
-	if (!isdenormal_or_zero(*this) && !isdenormal_or_zero(rhs))
-		{	// check for new denormalization here
-		if (-((intmax_t)(UINTMAX_MAX/4U)+1)>=raw_exponent)
-			{	// can't suppress the leading 1 any longer
-			extended_mantissa[2] >>= 1;
-			extended_mantissa[2] += (extended_mantissa[1] & 1)<<(HALFWIDTH_BITS-1);
-			extended_mantissa[1] >>= 1;
-			extended_mantissa[1] += (extended_mantissa[0] & 1)<<(HALFWIDTH_BITS-1);
-			extended_mantissa[0] >>= 1;
-			extended_mantissa[0] += (UINTMAX_MAX/2U)+1U;
-			}
-		}
-	else{ 	// check for no longer denormalized here
-		while(-((intmax_t)(UINTMAX_MAX/4U)+1)<raw_exponent && UINTMAX_MAX/2U>=extended_mantissa[0])
-			{	// don't have a 1 to suppress yet
-			extended_mantissa[0] <<= 1;
-			extended_mantissa[0] += extended_mantissa[1]>UINTMAX_MAX/2U;
-			extended_mantissa[1] <<= 1;
-			extended_mantissa[1] += extended_mantissa[2]>UINTMAX_MAX/2U;
-			extended_mantissa[2] <<= 1;
-			--raw_exponent;
-			}
-		if (-((intmax_t)(UINTMAX_MAX/4U)+1)<raw_exponent)
-			{	// suppress the 1
-			extended_mantissa[0] <<= 1;
-			extended_mantissa[0] += extended_mantissa[1]>UINTMAX_MAX/2U;
-			extended_mantissa[1] <<= 1;
-			extended_mantissa[1] += extended_mantissa[2]>UINTMAX_MAX/2U;
-			extended_mantissa[2] <<= 1;
-			}
-		}
+	if (-((intmax_t)(UINTMAX_MAX/4U)+1)>=raw_exponent)
+		{	// final result is denormalized
+		extended_mantissa[2] >>= 1;
+		extended_mantissa[2] += (extended_mantissa[1] & 1)<<(HALFWIDTH_BITS-1);
+		extended_mantissa[1] >>= 1;
+		extended_mantissa[1] += (extended_mantissa[0] & 1)<<(HALFWIDTH_BITS-1);
+		extended_mantissa[0] >>= 1;
+		extended_mantissa[0] += (UINTMAX_MAX/2U)+1U;
 
-	// if we have an underflow trap, trap now
-	if (-((intmax_t)(UINTMAX_MAX/4U)+1)>=raw_exponent && traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2)),Z_FLOAT_CODE_MULT,NULL))
-		return *this;
-		
+		// if we have an underflow trap, trap now
+		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2)),Z_FLOAT_CODE_MULT,NULL))
+			return *this;
+		if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
+			{	// denormalize to zero-ish immediately
+			switch(4*is_negative+_rounding_mode())
+			{
+			default: assert(0 && "z_float *= signbit+rounding mode out of range");
+			case Z_FLOAT_TO_ZERO:
+			case 4+Z_FLOAT_TO_ZERO:
+			case 4+Z_FLOAT_TO_INF:
+			case Z_FLOAT_TO_NEG_INF:
+			case Z_FLOAT_TO_NEAREST:
+			case 4+Z_FLOAT_TO_NEAREST:
+				// to nearest
+				mantissa = 0;
+				exponent = 0;
+				return *this;
+			case Z_FLOAT_TO_INF:
+			case 4+Z_FLOAT_TO_NEG_INF:
+				mantissa = 1;
+				exponent = 0;
+				return *this;
+			}
+			}
+		}
+	
 	// if we have catastrophically underflowed
 	if (intmax_t critical_underflow = -((intmax_t)(UINTMAX_MAX/4U)+1)>raw_exponent ? -((intmax_t)(UINTMAX_MAX/4U)+1)-raw_exponent : 0)
 		{
-		const int scale_by = INT_LOG2(UINTMAX_MAX)-1>critical_underflow ? critical_underflow : INT_LOG2(UINTMAX_MAX)-1;
+		const int scale_by = INT_LOG2(UINTMAX_MAX)>critical_underflow ? critical_underflow : INT_LOG2(UINTMAX_MAX);
+		const int dual_scale_by = (INT_LOG2(UINTMAX_MAX)+1)-scale_by;
 		extended_mantissa[2] >>= scale_by;
-		extended_mantissa[2] += (extended_mantissa[1] & 1)<<(HALFWIDTH_BITS-1);
+		extended_mantissa[2] += (extended_mantissa[1] & (UINTMAX_MAX>>dual_scale_by))<<dual_scale_by;
 		extended_mantissa[1] >>= scale_by;
-		extended_mantissa[1] += (extended_mantissa[0] & 1)<<(HALFWIDTH_BITS-1);
+		extended_mantissa[1] += (extended_mantissa[0] & (UINTMAX_MAX>>dual_scale_by))<<dual_scale_by;
 		extended_mantissa[0] >>= scale_by;
 		raw_exponent += scale_by;
 		};
 
+	if (-(intmax_t)(UINTMAX_MAX/4)-1 >= raw_exponent)
+		{	// denormalize to zero-ish immediately
+		switch(4*is_negative+_rounding_mode())
+		{
+		default: assert(0 && "z_float *= signbit+rounding mode out of range");
+		case Z_FLOAT_TO_ZERO:
+		case 4+Z_FLOAT_TO_ZERO:
+		case 4+Z_FLOAT_TO_INF:
+		case Z_FLOAT_TO_NEG_INF:
+		case Z_FLOAT_TO_NEAREST:
+		case 4+Z_FLOAT_TO_NEAREST:
+			// to nearest
+			mantissa = 0;
+			exponent = 0;
+			return *this;
+		case Z_FLOAT_TO_INF:
+		case 4+Z_FLOAT_TO_NEG_INF:
+			mantissa = 1;
+			exponent = 0;
+			return *this;
+		}
+		}
+		
 	bool inexact = extended_mantissa[1] || extended_mantissa[2];
 	if (inexact)
 		{
@@ -340,22 +438,6 @@ z_float& z_float::operator*=(const z_float& rhs)
 					return *this;
 					}
 				}
-			if (-((intmax_t)(UINTMAX_MAX/4U)+1)>raw_exponent && !(extended_mantissa[0] & 1))
-				{
-				extended_mantissa[2] >>= 1;
-				extended_mantissa[2] += (extended_mantissa[1] & 1)<<(HALFWIDTH_BITS-1);
-				extended_mantissa[1] >>= 1;
-				extended_mantissa[1] += (extended_mantissa[0] & 1)<<(HALFWIDTH_BITS-1);
-				extended_mantissa[0] >>= 1;
-				raw_exponent += 1;
-				};
-			// stlll underflowed? zero
-			if (-((intmax_t)(UINTMAX_MAX/4U)+1)>raw_exponent)
-				{
-				mantissa = 0;
-				exponent = 0;
-				return *this;
-				}
 			break;
 		case Z_FLOAT_TO_INF:
 		case 4+Z_FLOAT_TO_NEG_INF:
@@ -367,22 +449,6 @@ z_float& z_float::operator*=(const z_float& rhs)
 					mult_overflow(rhs,extended_mantissa);
 					return *this;
 					}
-				}
-			if (-((intmax_t)(UINTMAX_MAX/4U)+1)>raw_exponent && !(extended_mantissa[0] & 1))
-				{
-				extended_mantissa[2] >>= 1;
-				extended_mantissa[2] += (extended_mantissa[1] & 1)<<(HALFWIDTH_BITS-1);
-				extended_mantissa[1] >>= 1;
-				extended_mantissa[1] += (extended_mantissa[0] & 1)<<(HALFWIDTH_BITS-1);
-				extended_mantissa[0] >>= 1;
-				raw_exponent += 1;
-				};
-			// stlll underflowed? smallest magnitude non-zero denormal
-			if (-((intmax_t)(UINTMAX_MAX/4U)+1)>raw_exponent)
-				{
-				mantissa = 1;
-				exponent = 0;
-				return *this;
 				}
 			break;
 		case Z_FLOAT_TO_ZERO:
