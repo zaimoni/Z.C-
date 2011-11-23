@@ -25,7 +25,7 @@ CXX_MACROS = -D__STDC_LIMIT_MACROS
 # maintainer-mode build rules for derived files
 # PYTHON variable does require configuration when moved to another machine
 # remember to use 'make all' when these rules are in effect 
-PYTHON = c:\Python26\python
+PYTHON = c:\Python27\python
 SED = sed
 SELECTIVE_CUT = tools\selective_cut.py
 SUPPRESS_CUT = tools\suppress_cut.py
