@@ -113,10 +113,10 @@ so we need 4 64-bit integers: 2^-64, 2^-96, 2^-96, 2^-128
 
 void z_float::mult_overflow(const z_float& rhs, uintmax_t extended_mantissa[4])
 {
-	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2)),Z_FLOAT_CODE_MULT,extended_mantissa))
+	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
 		return;
 	// if we didn't overflow-trap, try to inexact-trap
-	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2)),Z_FLOAT_CODE_MULT,extended_mantissa))
+	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
 		return;
 	// record both overflow and inexact
 	_modes &= (1<<(Z_FLOAT_OVERFLOW+2))+(1<<(Z_FLOAT_INEXACT+2));
@@ -174,13 +174,13 @@ z_float& z_float::operator*=(const z_float& rhs)
 {
 	if (issnan(rhs))
 		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
-		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2)),Z_FLOAT_CODE_MULT,NULL));
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL));
 			return *this;
 		_modes &= 1<<(Z_FLOAT_INVALID+2);
 		}
 	else if (issnan(*this))
 		{
-		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2)),Z_FLOAT_CODE_MULT,NULL));
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL));
 			return *this;
 		_modes &= 1<<(Z_FLOAT_INVALID+2);
 		};
@@ -206,7 +206,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 	if (   (is_zero(*this) && isinf(rhs))
 		|| (is_zero(rhs) && isinf(*this)))
 		{	
-		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2)),Z_FLOAT_CODE_MULT,NULL))
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
 		_modes &= 1<<(Z_FLOAT_INVALID+2);
 		exponent = UINTMAX_MAX/2U;
@@ -239,7 +239,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 	if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
 		{	// denormalize to zero-ish immediately
 		// if we have an underflow trap, trap now
-		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2)),Z_FLOAT_CODE_MULT,NULL))
+		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
 		switch(4*is_negative+_rounding_mode())
 		{
@@ -288,7 +288,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 	if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
 		{	// denormalize to zero-ish immediately
 		// if we have an underflow trap, trap now
-		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2)),Z_FLOAT_CODE_MULT,NULL))
+		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
 		switch(4*is_negative+_rounding_mode())
 		{
@@ -353,7 +353,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 		extended_mantissa[0] += (UINTMAX_MAX/2U)+1U;
 
 		// if we have an underflow trap, trap now
-		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2)),Z_FLOAT_CODE_MULT,NULL))
+		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
 		if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
 			{	// denormalize to zero-ish immediately
@@ -418,7 +418,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 	bool inexact = extended_mantissa[1] || extended_mantissa[2];
 	if (inexact)
 		{
-		if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2)),Z_FLOAT_CODE_MULT,NULL))
+		if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
 		// apply rounding now
 		switch(4*is_negative+_rounding_mode())
