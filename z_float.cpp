@@ -466,6 +466,16 @@ z_float& z_float::operator*=(const z_float& rhs)
 	return *this;
 }
 
+#if 0
+z_float& operator/=(const z_float& rhs)
+{
+}
+
+z_float& operator+=(const z_float& rhs)
+{
+}
+#endif
+
 #ifdef TEST_APP
 // example build line
 // g++ -oz_float.exe -I/Mingwin.aux/Headers.lib -DTEST_APP z_float.cpp -lz_log_adapter -lz_stdio_log -lz_format_util

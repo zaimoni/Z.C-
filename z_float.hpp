@@ -56,7 +56,15 @@ public:
 
 	// IEEE-754 operator*
 	z_float& operator*=(const z_float& rhs);
-	
+
+#if 0
+	// IEEE-754 operator/
+	z_float& operator/=(const z_float& rhs);
+
+	// IEEE-754 operator+
+	z_float& operator+=(const z_float& rhs);
+#endif	
+
 	// cmath/math.h emulation
 	// IEEE-754 allows this to be a non-arithmetic operation
 	friend z_float copysign(const z_float& x, const z_float& y);
@@ -88,5 +96,21 @@ inline z_float operator*(const z_float& lhs,const z_float& rhs)
 	tmp *= rhs;
 	return tmp;
 }
+
+#if 0
+inline z_float operator/(const z_float& lhs,const z_float& rhs)
+{
+	z_float tmp(lhs);
+	tmp /= rhs;
+	return tmp;
+}
+
+inline z_float operator+(const z_float& lhs,const z_float& rhs)
+{
+	z_float tmp(lhs);
+	tmp += rhs;
+	return tmp;
+}
+#endif
 
 #endif
