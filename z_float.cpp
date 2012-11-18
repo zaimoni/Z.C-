@@ -1,5 +1,5 @@
 // z_float.cpp
-// (C)2011 Kenneth Boyd, license: MIT.txt
+// (C)2011,2012 Kenneth Boyd, license: MIT.txt
 // long double emulation implementation
 
 #include "z_float.hpp"
@@ -28,9 +28,14 @@ z_float::trapfunc* z_float::traps[5] = {NULL, NULL, NULL, NULL, NULL};	// defaul
 
 // opcodes
 #define Z_FLOAT_CODE_MULT 1
+#define Z_FLOAT_CODE_DIV 2
+#define Z_FLOAT_CODE_ADD 2
 
 // NaN codes
 #define Z_FLOAT_NAN_ZEROINF_MULT (1ULL<<1)
+#define Z_FLOAT_NAN_INF_NEGINF_ADD (1ULL<<2)
+#define Z_FLOAT_NAN_ZERO_ZERO_DIV (1ULL<<3)
+#define Z_FLOAT_NAN_INF_INF_DIV (1ULL<<4)
 
 z_float::z_float(intmax_t src)
 :	mantissa(0),exponent(0),is_negative(0>src)
@@ -187,6 +192,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 
 	// handle sign now
 	if (rhs.is_negative) is_negative = !is_negative;
+
 	if (isnan(rhs))
 		{
 		if (isnan(*this))
@@ -466,15 +472,148 @@ z_float& z_float::operator*=(const z_float& rhs)
 	return *this;
 }
 
-#if 0
-z_float& operator/=(const z_float& rhs)
+z_float& z_float::operator/=(const z_float& rhs)
 {
+	if (issnan(rhs))
+		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
+			return *this;
+		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		}
+	else if (issnan(*this))
+		{
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
+			return *this;
+		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		};
+
+	// handle sign now
+	if (rhs.is_negative) is_negative = !is_negative;
+
+	if (isnan(rhs))
+		{
+		if (isnan(*this))
+			mantissa |= rhs.mantissa;
+		else
+			*this = rhs;
+		mantissa &= ~(1ULL);	// we no longer trap
+		return *this;
+		}
+	if (isnan(*this))
+		{
+		mantissa &= ~(1ULL);	// we no longer trap
+		return *this;
+		}
+
+	// 0/0 and infinity/infinity are invalid
+	// 0/x is a correctly signed zero
+	// x/infinity is a correctly signed zero
+	// x/0 is a DIV_BY_ZERO exception with a non-trap result of a correctly signed infinity
+	// infinity/x is a correctly signed infinity
+	if (isinf(*this))
+		{
+		if (isinf(rhs))
+			{	//	+-infinity/+-infinity
+			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+				return *this;
+			_modes &= 1<<(Z_FLOAT_INVALID+2);
+			exponent = UINTMAX_MAX/2U;
+			mantissa = Z_FLOAT_NAN_INF_INF_DIV;
+			return *this;
+			}
+		else if (is_zero(rhs))
+			{	// +-infinity/0
+			if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+				return *this;
+			_modes &= 1<<(Z_FLOAT_DIVZERO+2);
+			exponent = UINTMAX_MAX/2U;
+			mantissa = 0;
+			return *this;
+			};
+		// +-infinity/x
+		return *this;
+		}
+	else if (is_zero(*this))
+		{
+		if (is_zero(rhs))
+			{	//	0/0
+			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+				return *this;
+			_modes &= 1<<(Z_FLOAT_INVALID+2);
+			exponent = UINTMAX_MAX/2U;
+			mantissa = Z_FLOAT_NAN_ZERO_ZERO_DIV;
+			return *this;
+			}
+		// 0/x or 0/infinity
+		return *this;
+		}
+	else if (is_zero(rhs))
+		{	// x/0
+		if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+			return *this;
+		_modes &= 1<<(Z_FLOAT_DIVZERO+2);
+		exponent = UINTMAX_MAX/2U;
+		mantissa = 0;
+		return *this;
+		}
+	_fatal_code("z_float::operator/= not fully implemented yet",3);
 }
 
-z_float& operator+=(const z_float& rhs)
+z_float& z_float::operator+=(const z_float& rhs)
 {
+	if (issnan(rhs))
+		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL));
+			return *this;
+		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		}
+	else if (issnan(*this))
+		{
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL));
+			return *this;
+		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		};
+
+	if (isnan(rhs))
+		{
+		if (isnan(*this))
+			mantissa |= rhs.mantissa;
+		else
+			*this = rhs;
+		mantissa &= ~(1ULL);	// we no longer trap
+		return *this;
+		}
+	if (isnan(*this))
+		{
+		mantissa &= ~(1ULL);	// we no longer trap
+		return *this;
+		}
+
+	// infinity+(-infinity) and (-infinity)+infinity are invalid
+	// infinity+x is infinity
+	// (-infinity)+x is -infinity
+	if (isinf(*this))
+		{
+		if (isinf(rhs))
+			{	// +-infinity+(+-infinity)
+			if (is_negative==rhs.is_negative) return *this;
+			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL))
+				return *this;
+			_modes &= 1<<(Z_FLOAT_INVALID+2);
+			exponent = UINTMAX_MAX/2U;
+			mantissa = Z_FLOAT_NAN_INF_NEGINF_ADD;
+			return *this;
+			}
+		// +-infinity+x
+		return *this;
+		}
+	else if (isinf(rhs))
+		{	// x+(+/-infinity)
+		*this = rhs;
+		return *this;
+		}
+	_fatal_code("z_float::operator+= not fully implemented yet",3);
 }
-#endif
 
 #ifdef TEST_APP
 // example build line

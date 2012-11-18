@@ -57,13 +57,11 @@ public:
 	// IEEE-754 operator*
 	z_float& operator*=(const z_float& rhs);
 
-#if 0
 	// IEEE-754 operator/
 	z_float& operator/=(const z_float& rhs);
 
 	// IEEE-754 operator+
 	z_float& operator+=(const z_float& rhs);
-#endif	
 
 	// cmath/math.h emulation
 	// IEEE-754 allows this to be a non-arithmetic operation
