@@ -89,6 +89,53 @@ bool operator==(const z_float& lhs, const z_float& rhs)
 	return lhs.mantissa==rhs.mantissa && lhs.exponent==rhs.exponent && lhs.is_negative==rhs.is_negative;
 }
 
+// Cf IEEE-754 7.3
+void z_float::IEEE_notrap_overflow()
+{
+	// record both overflow and inexact
+	_modes &= (1<<(Z_FLOAT_OVERFLOW+2))+(1<<(Z_FLOAT_INEXACT+2));
+	switch(4*is_negative+_rounding_mode())
+	{
+	default: assert(0 && "z_float *= signbit+rounding mode out of range");
+	case Z_FLOAT_TO_NEAREST:
+	case 4+Z_FLOAT_TO_NEAREST:
+	case Z_FLOAT_TO_INF:
+	case 4+Z_FLOAT_TO_NEG_INF:
+		// infinity
+		mantissa = 0;
+		exponent = UINTMAX_MAX/2;
+		return;			
+	case 4+Z_FLOAT_TO_INF:
+	case Z_FLOAT_TO_NEG_INF:
+	case Z_FLOAT_TO_ZERO:
+	case 4+Z_FLOAT_TO_ZERO:
+		// most extreme finite
+		mantissa = UINTMAX_MAX;
+		exponent = UINTMAX_MAX/2-1;
+		return;
+	}
+}
+
+void z_float::mult_overflow(const z_float& rhs, uintmax_t extended_mantissa[4])
+{
+	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
+		return;
+	// if we didn't overflow-trap, try to inexact-trap
+	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
+		return;
+	IEEE_notrap_overflow();
+}
+
+void z_float::div_overflow(const z_float& rhs)
+{
+	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+		return;
+	// if we didn't overflow-trap, try to inexact-trap
+	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+		return;
+	IEEE_notrap_overflow();
+}
+
 /*
 map of significant digits for multiplication of two finite, not-denormal numerals
                1 32 bits:2^-32 32 bits:2^-64
@@ -115,37 +162,6 @@ so we need 4 64-bit integers: 2^-64, 2^-96, 2^-96, 2^-128
 #else
 #define HALFWIDTH_UINT uintmax_t
 #endif
-
-void z_float::mult_overflow(const z_float& rhs, uintmax_t extended_mantissa[4])
-{
-	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
-		return;
-	// if we didn't overflow-trap, try to inexact-trap
-	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
-		return;
-	// record both overflow and inexact
-	_modes &= (1<<(Z_FLOAT_OVERFLOW+2))+(1<<(Z_FLOAT_INEXACT+2));
-	switch(4*is_negative+_rounding_mode())
-	{
-	default: assert(0 && "z_float *= signbit+rounding mode out of range");
-	case Z_FLOAT_TO_NEAREST:
-	case 4+Z_FLOAT_TO_NEAREST:
-	case Z_FLOAT_TO_INF:
-	case 4+Z_FLOAT_TO_NEG_INF:
-		// infinity
-		mantissa = 0;
-		exponent = UINTMAX_MAX/2;
-		return;			
-	case 4+Z_FLOAT_TO_INF:
-	case Z_FLOAT_TO_NEG_INF:
-	case Z_FLOAT_TO_ZERO:
-	case 4+Z_FLOAT_TO_ZERO:
-		// most extreme finite
-		mantissa = UINTMAX_MAX;
-		exponent = UINTMAX_MAX/2-1;
-		return;
-	}
-}
 
 static void _multiply_intermediate(uintmax_t dest[4], HALFWIDTH_UINT sections[4], uintmax_t lhs, uintmax_t rhs)
 {
@@ -556,6 +572,31 @@ z_float& z_float::operator/=(const z_float& rhs)
 		mantissa = 0;
 		return *this;
 		}
+
+	// overflow check
+	const intmax_t tmp = _exponent(rhs)-(mantissa<rhs.mantissa);
+	if (0>tmp && -tmp<(intmax_t)(UINTMAX_MAX/2U)-(intmax_t)exponent)
+		{	// we went unbounded
+		div_overflow(rhs);
+		return *this;
+		}
+
+	// division by exact power of two
+	if (0==rhs.mantissa)
+		{
+		if (0==tmp) return *this;	// division by 1 is exact
+		if (0>tmp)
+			{
+			exponent += -tmp;
+			return *this;
+			};
+		if (tmp<(intmax_t)exponent)
+			{
+			exponent -= tmp;
+			return *this;
+			}
+		// we denormalized
+		};
 	_fatal_code("z_float::operator/= not fully implemented yet",3);
 }
 

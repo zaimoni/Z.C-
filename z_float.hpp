@@ -83,7 +83,9 @@ public:
 	friend bool issnan(const z_float& x) {return isnan(x) && (1 & x.mantissa);};
 private:
 	void init_from_uintmax_t(uintmax_t src);
+	void IEEE_notrap_overflow();
 	void mult_overflow(const z_float& rhs, uintmax_t extended_mantissa[4]);
+	void div_overflow(const z_float& rhs);
 };
 
 inline bool operator!=(const z_float& lhs, const z_float& rhs) {return !(lhs==rhs);};
