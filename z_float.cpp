@@ -191,6 +191,31 @@ static void _multiply_intermediate(uintmax_t dest[4], HALFWIDTH_UINT sections[4]
 	dest[2] = 0;
 }
 
+// \pre *this is already the correct sign
+z_float& z_float::IEEE_underflow_to_zero(unsigned round_mode)
+{
+	assert(3>=round_mode);
+	switch(4*is_negative+round_mode)
+	{
+	default: _fatal_code("z_float::IEEE_underflow_to_zero: signbit+rounding mode out of range",3);
+	case Z_FLOAT_TO_ZERO:
+	case 4+Z_FLOAT_TO_ZERO:
+	case 4+Z_FLOAT_TO_INF:
+	case Z_FLOAT_TO_NEG_INF:
+	case Z_FLOAT_TO_NEAREST:
+	case 4+Z_FLOAT_TO_NEAREST:
+		// to nearest
+		mantissa = 0;
+		break;
+	case Z_FLOAT_TO_INF:
+	case 4+Z_FLOAT_TO_NEG_INF:
+		mantissa = 1;
+//		break;
+	}
+	exponent = 0;
+	return *this;
+}
+
 z_float& z_float::operator*=(const z_float& rhs)
 {
 	if (issnan(rhs))
@@ -263,25 +288,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 		// if we have an underflow trap, trap now
 		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
-		switch(4*is_negative+_rounding_mode())
-		{
-		default: assert(0 && "z_float *= signbit+rounding mode out of range");
-		case Z_FLOAT_TO_ZERO:
-		case 4+Z_FLOAT_TO_ZERO:
-		case 4+Z_FLOAT_TO_INF:
-		case Z_FLOAT_TO_NEG_INF:
-		case Z_FLOAT_TO_NEAREST:
-		case 4+Z_FLOAT_TO_NEAREST:
-			// to nearest
-			mantissa = 0;
-			exponent = 0;
-			return *this;
-		case Z_FLOAT_TO_INF:
-		case 4+Z_FLOAT_TO_NEG_INF:
-			mantissa = 1;
-			exponent = 0;
-			return *this;
-		}
+		return IEEE_underflow_to_zero(_rounding_mode());
 		}
 
 	uintmax_t lhs_mantissa = this->mantissa;
@@ -312,25 +319,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 		// if we have an underflow trap, trap now
 		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
-		switch(4*is_negative+_rounding_mode())
-		{
-		default: assert(0 && "z_float *= signbit+rounding mode out of range");
-		case Z_FLOAT_TO_ZERO:
-		case 4+Z_FLOAT_TO_ZERO:
-		case 4+Z_FLOAT_TO_INF:
-		case Z_FLOAT_TO_NEG_INF:
-		case Z_FLOAT_TO_NEAREST:
-		case 4+Z_FLOAT_TO_NEAREST:
-			// to nearest
-			mantissa = 0;
-			exponent = 0;
-			return *this;
-		case Z_FLOAT_TO_INF:
-		case 4+Z_FLOAT_TO_NEG_INF:
-			mantissa = 1;
-			exponent = 0;
-			return *this;
-		}
+		return IEEE_underflow_to_zero(_rounding_mode());
 		}
 
 	HALFWIDTH_UINT tmp[4];
@@ -378,27 +367,8 @@ z_float& z_float::operator*=(const z_float& rhs)
 		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
 		if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
-			{	// denormalize to zero-ish immediately
-			switch(4*is_negative+_rounding_mode())
-			{
-			default: assert(0 && "z_float *= signbit+rounding mode out of range");
-			case Z_FLOAT_TO_ZERO:
-			case 4+Z_FLOAT_TO_ZERO:
-			case 4+Z_FLOAT_TO_INF:
-			case Z_FLOAT_TO_NEG_INF:
-			case Z_FLOAT_TO_NEAREST:
-			case 4+Z_FLOAT_TO_NEAREST:
-				// to nearest
-				mantissa = 0;
-				exponent = 0;
-				return *this;
-			case Z_FLOAT_TO_INF:
-			case 4+Z_FLOAT_TO_NEG_INF:
-				mantissa = 1;
-				exponent = 0;
-				return *this;
-			}
-			}
+			// denormalize to zero-ish immediately
+			return IEEE_underflow_to_zero(_rounding_mode());
 		}
 	
 	// if we have catastrophically underflowed
@@ -415,27 +385,8 @@ z_float& z_float::operator*=(const z_float& rhs)
 		};
 
 	if (-(intmax_t)(UINTMAX_MAX/4)-1 >= raw_exponent)
-		{	// denormalize to zero-ish immediately
-		switch(4*is_negative+_rounding_mode())
-		{
-		default: assert(0 && "z_float *= signbit+rounding mode out of range");
-		case Z_FLOAT_TO_ZERO:
-		case 4+Z_FLOAT_TO_ZERO:
-		case 4+Z_FLOAT_TO_INF:
-		case Z_FLOAT_TO_NEG_INF:
-		case Z_FLOAT_TO_NEAREST:
-		case 4+Z_FLOAT_TO_NEAREST:
-			// to nearest
-			mantissa = 0;
-			exponent = 0;
-			return *this;
-		case Z_FLOAT_TO_INF:
-		case 4+Z_FLOAT_TO_NEG_INF:
-			mantissa = 1;
-			exponent = 0;
-			return *this;
-		}
-		}
+		// denormalize to zero-ish immediately
+		return IEEE_underflow_to_zero(_rounding_mode());
 		
 	bool inexact = extended_mantissa[1] || extended_mantissa[2];
 	if (inexact)

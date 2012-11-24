@@ -84,6 +84,7 @@ public:
 private:
 	void init_from_uintmax_t(uintmax_t src);
 	void IEEE_notrap_overflow();
+	z_float& IEEE_underflow_to_zero(unsigned round_mode);
 	void mult_overflow(const z_float& rhs, uintmax_t extended_mantissa[4]);
 	void div_overflow(const z_float& rhs);
 };
