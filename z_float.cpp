@@ -532,6 +532,15 @@ z_float& z_float::operator/=(const z_float& rhs)
 		return *this;
 		}
 
+	// catastrophic underflow check
+	const intmax_t denormal_severity = (0<tmp && tmp>=(intmax_t)exponent) ? tmp-(intmax_t)exponent : -1;
+	if (64<=denormal_severity)
+		{
+		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+			return *this;
+		return IEEE_underflow_to_zero(_rounding_mode());
+		}
+
 	// division by exact power of two
 	if (0==rhs.mantissa)
 		{
