@@ -90,13 +90,21 @@ bool operator==(const z_float& lhs, const z_float& rhs)
 }
 
 // Cf IEEE-754 7.3
-void z_float::IEEE_notrap_overflow()
+// \pre *this is already the correct sign
+z_float& z_float::IEEE_overflow(const unsigned round_mode,const z_float& lhs, const z_float& rhs,const int opcode)
 {
+	assert(3>=round_mode);
+	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(lhs,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+round_mode,opcode,NULL))
+		return *this;
+	// if we didn't overflow-trap, try to inexact-trap
+	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(lhs,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+round_mode,opcode,NULL))
+		return *this;
+
 	// record both overflow and inexact
-	_modes &= (1<<(Z_FLOAT_OVERFLOW+2))+(1<<(Z_FLOAT_INEXACT+2));
-	switch(4*is_negative+_rounding_mode())
+	_modes |= (1<<(Z_FLOAT_OVERFLOW+2))+(1<<(Z_FLOAT_INEXACT+2));
+	switch(4*is_negative+round_mode)
 	{
-	default: assert(0 && "z_float *= signbit+rounding mode out of range");
+	default: _fatal_code("z_float::IEEE_overflow: signbit+rounding mode out of range",3);
 	case Z_FLOAT_TO_NEAREST:
 	case 4+Z_FLOAT_TO_NEAREST:
 	case Z_FLOAT_TO_INF:
@@ -104,7 +112,7 @@ void z_float::IEEE_notrap_overflow()
 		// infinity
 		mantissa = 0;
 		exponent = UINTMAX_MAX/2;
-		return;			
+		return *this;			
 	case 4+Z_FLOAT_TO_INF:
 	case Z_FLOAT_TO_NEG_INF:
 	case Z_FLOAT_TO_ZERO:
@@ -112,28 +120,8 @@ void z_float::IEEE_notrap_overflow()
 		// most extreme finite
 		mantissa = UINTMAX_MAX;
 		exponent = UINTMAX_MAX/2-1;
-		return;
+		return *this;
 	}
-}
-
-void z_float::mult_overflow(const z_float& rhs, uintmax_t extended_mantissa[4])
-{
-	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
-		return;
-	// if we didn't overflow-trap, try to inexact-trap
-	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,extended_mantissa))
-		return;
-	IEEE_notrap_overflow();
-}
-
-void z_float::div_overflow(const z_float& rhs)
-{
-	if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
-		return;
-	// if we didn't overflow-trap, try to inexact-trap
-	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(*this,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
-		return;
-	IEEE_notrap_overflow();
 }
 
 /*
@@ -216,6 +204,7 @@ z_float& z_float::IEEE_underflow_to_zero(unsigned round_mode)
 	return *this;
 }
 
+// Cf IEEE-754 4.1, 4.2
 // \pre *this is already the correct sign
 z_float& z_float::IEEE_round(const unsigned round_mode,const z_float& lhs, const z_float& rhs,const int opcode,const int cmp_half_epsilon)
 {
@@ -236,15 +225,8 @@ z_float& z_float::IEEE_round(const unsigned round_mode,const z_float& lhs, const
 		if (!++mantissa)
 			{	// mantissa was UINTMAX_MAX beforehand
 			if ((intmax_t)(UINTMAX_MAX/2U)<= ++exponent)
-				{	// overflow
-				if (traps[Z_FLOAT_OVERFLOW] && (traps[Z_FLOAT_OVERFLOW])(lhs,rhs,*this,(1<<(Z_FLOAT_OVERFLOW+2))+round_mode,opcode,NULL))
-					return *this;
-				// if we didn't overflow-trap, try to inexact-trap
-				if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(lhs,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+round_mode,opcode,NULL))
-					return *this;
-				IEEE_notrap_overflow();
-				return *this;
-				}
+				// overflow
+				return IEEE_overflow(round_mode,lhs,rhs,opcode);
 			}
 		break;
 	case Z_FLOAT_TO_ZERO:
@@ -256,6 +238,8 @@ z_float& z_float::IEEE_round(const unsigned round_mode,const z_float& lhs, const
 	}
 	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(lhs,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+round_mode,opcode,NULL))
 		return *this;
+	// record inexact
+	_modes |= (1<<(Z_FLOAT_INEXACT+2));
 	return *this;
 }
 
@@ -265,13 +249,13 @@ z_float& z_float::operator*=(const z_float& rhs)
 		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL));
 			return *this;
-		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		}
 	else if (issnan(*this))
 		{
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL));
 			return *this;
-		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		};
 
 	// handle sign now
@@ -298,7 +282,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 		{	
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
-		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		exponent = UINTMAX_MAX/2U;
 		mantissa = Z_FLOAT_NAN_ZEROINF_MULT;
 		return *this;
@@ -383,10 +367,8 @@ z_float& z_float::operator*=(const z_float& rhs)
 
 	// check for overflow at this point, as adding 1 to INTMAX_MAX is undefined
 	if ((intmax_t)(UINTMAX_MAX/4U)-(intmax_t)(extended_mantissa[2])<=raw_exponent)
-		{	// we overflowed
-		mult_overflow(rhs,extended_mantissa);
-		return *this;
-		}
+		// we overflowed
+		return IEEE_overflow(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_MULT);
 
 	if (1<=extended_mantissa[2])
 		{	// we wrapped.  store lost bit in extended_mantissa[2]
@@ -449,13 +431,13 @@ z_float& z_float::operator/=(const z_float& rhs)
 		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
 			return *this;
-		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		}
 	else if (issnan(*this))
 		{
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
 			return *this;
-		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		};
 
 	// handle sign now
@@ -487,7 +469,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 			{	//	+-infinity/+-infinity
 			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
 				return *this;
-			_modes &= 1<<(Z_FLOAT_INVALID+2);
+			_modes |= 1<<(Z_FLOAT_INVALID+2);
 			exponent = UINTMAX_MAX/2U;
 			mantissa = Z_FLOAT_NAN_INF_INF_DIV;
 			return *this;
@@ -496,7 +478,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 			{	// +-infinity/0
 			if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
 				return *this;
-			_modes &= 1<<(Z_FLOAT_DIVZERO+2);
+			_modes |= 1<<(Z_FLOAT_DIVZERO+2);
 			exponent = UINTMAX_MAX/2U;
 			mantissa = 0;
 			return *this;
@@ -510,7 +492,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 			{	//	0/0
 			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
 				return *this;
-			_modes &= 1<<(Z_FLOAT_INVALID+2);
+			_modes |= 1<<(Z_FLOAT_INVALID+2);
 			exponent = UINTMAX_MAX/2U;
 			mantissa = Z_FLOAT_NAN_ZERO_ZERO_DIV;
 			return *this;
@@ -522,7 +504,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 		{	// x/0
 		if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
 			return *this;
-		_modes &= 1<<(Z_FLOAT_DIVZERO+2);
+		_modes |= 1<<(Z_FLOAT_DIVZERO+2);
 		exponent = UINTMAX_MAX/2U;
 		mantissa = 0;
 		return *this;
@@ -531,10 +513,8 @@ z_float& z_float::operator/=(const z_float& rhs)
 	// overflow check
 	const intmax_t tmp = _exponent(rhs)-(mantissa<rhs.mantissa);
 	if (0>tmp && -tmp<(intmax_t)(UINTMAX_MAX/2U)-(intmax_t)exponent)
-		{	// we went unbounded
-		div_overflow(rhs);
-		return *this;
-		}
+		// we went unbounded
+		return IEEE_overflow(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
 
 	// catastrophic underflow check
 	const intmax_t denormal_severity = (0<tmp && tmp>=(intmax_t)exponent) ? tmp-(intmax_t)exponent : -1;
@@ -570,13 +550,13 @@ z_float& z_float::operator+=(const z_float& rhs)
 		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL));
 			return *this;
-		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		}
 	else if (issnan(*this))
 		{
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL));
 			return *this;
-		_modes &= 1<<(Z_FLOAT_INVALID+2);
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		};
 
 	if (isnan(rhs))
@@ -604,7 +584,7 @@ z_float& z_float::operator+=(const z_float& rhs)
 			if (is_negative==rhs.is_negative) return *this;
 			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL))
 				return *this;
-			_modes &= 1<<(Z_FLOAT_INVALID+2);
+			_modes |= 1<<(Z_FLOAT_INVALID+2);
 			exponent = UINTMAX_MAX/2U;
 			mantissa = Z_FLOAT_NAN_INF_NEGINF_ADD;
 			return *this;
