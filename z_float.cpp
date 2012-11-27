@@ -535,6 +535,12 @@ z_float& z_float::operator/=(const z_float& rhs)
 			return *this;
 			}
 		// we denormalized
+		assert(64>denormal_severity && 0<=denormal_severity);
+		exponent = 0;
+		mantissa >>= 1;
+		mantissa |= UINTMAX_MAX/2+1;
+		mantissa >>= denormal_severity;
+		return *this;
 		};
 	_fatal_code("z_float::operator/= not fully implemented yet",3);
 }
