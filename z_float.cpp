@@ -180,9 +180,15 @@ static void _multiply_intermediate(uintmax_t dest[4], HALFWIDTH_UINT sections[4]
 }
 
 // \pre *this is already the correct sign
-z_float& z_float::IEEE_underflow_to_zero(unsigned round_mode)
+z_float& z_float::IEEE_underflow_to_zero(const unsigned round_mode,const z_float& lhs, const z_float& rhs,const int opcode)
 {
 	assert(3>=round_mode);
+	if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(lhs,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+round_mode,opcode,NULL))
+		return *this;
+	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(lhs,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+round_mode,opcode,NULL))
+		return *this;
+	// record both overflow and inexact
+	_modes |= (1<<(Z_FLOAT_UNDERFLOW+2))+(1<<(Z_FLOAT_INEXACT+2));
 	switch(4*is_negative+round_mode)
 	{
 	default: _fatal_code("z_float::IEEE_underflow_to_zero: signbit+rounding mode out of range",3);
@@ -311,12 +317,8 @@ z_float& z_float::operator*=(const z_float& rhs)
 	// note: we have a total loss of precision denormalization if 
 	// raw_exponent <= -(intmax_t)(UINTMAX_MAX/4)-64	
 	if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
-		{	// denormalize to zero-ish immediately
-		// if we have an underflow trap, trap now
-		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
-			return *this;
-		return IEEE_underflow_to_zero(_rounding_mode());
-		}
+		// denormalize to zero-ish immediately
+		return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_MULT);
 
 	uintmax_t lhs_mantissa = this->mantissa;
 	uintmax_t rhs_mantissa = rhs.mantissa;
@@ -339,15 +341,11 @@ z_float& z_float::operator*=(const z_float& rhs)
 			rhs_mantissa<<=1;
 			--raw_exponent;
 			}
-		lhs_mantissa<<=1;
+		rhs_mantissa<<=1;
 		};
 	if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
-		{	// denormalize to zero-ish immediately
-		// if we have an underflow trap, trap now
-		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
-			return *this;
-		return IEEE_underflow_to_zero(_rounding_mode());
-		}
+		// denormalize to zero-ish immediately
+		return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_MULT);
 
 	HALFWIDTH_UINT tmp[4];
 	uintmax_t extended_mantissa[4];
@@ -388,12 +386,13 @@ z_float& z_float::operator*=(const z_float& rhs)
 		extended_mantissa[0] >>= 1;
 		extended_mantissa[0] += (UINTMAX_MAX/2U)+1U;
 
+		if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
+			// denormalize to zero-ish immediately
+			return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_MULT);
+
 		// if we have an underflow trap, trap now
 		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL))
 			return *this;
-		if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
-			// denormalize to zero-ish immediately
-			return IEEE_underflow_to_zero(_rounding_mode());
 		}
 	
 	// if we have catastrophically underflowed
@@ -411,7 +410,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 
 	if (-(intmax_t)(UINTMAX_MAX/4)-1 >= raw_exponent)
 		// denormalize to zero-ish immediately
-		return IEEE_underflow_to_zero(_rounding_mode());
+		return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_MULT);
 		
 	if (extended_mantissa[1] || extended_mantissa[2])
 		{
@@ -519,11 +518,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 	// catastrophic underflow check
 	const intmax_t denormal_severity = (0<tmp && tmp>=(intmax_t)exponent) ? tmp-(intmax_t)exponent : -1;
 	if (64<=denormal_severity)
-		{
-		if (traps[Z_FLOAT_UNDERFLOW] && (traps[Z_FLOAT_UNDERFLOW])(*this,rhs,*this,(1<<(Z_FLOAT_UNDERFLOW+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
-			return *this;
-		return IEEE_underflow_to_zero(_rounding_mode());
-		}
+		return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
 
 	// division by exact power of two
 	if (0==rhs.mantissa)
