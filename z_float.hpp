@@ -61,7 +61,7 @@ public:
 	z_float& operator/=(const z_float& rhs);
 
 	// IEEE-754 operator+
-	z_float& operator+=(const z_float& rhs);
+	z_float& operator+=(z_float rhs);
 
 	// cmath/math.h emulation
 	// IEEE-754 allows this to be a non-arithmetic operation

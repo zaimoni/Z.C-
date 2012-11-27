@@ -545,7 +545,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 	_fatal_code("z_float::operator/= not fully implemented yet",3);
 }
 
-z_float& z_float::operator+=(const z_float& rhs)
+z_float& z_float::operator+=(z_float rhs)
 {
 	if (issnan(rhs))
 		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
@@ -594,10 +594,18 @@ z_float& z_float::operator+=(const z_float& rhs)
 		return *this;
 		}
 	else if (isinf(rhs))
-		{	// x+(+/-infinity)
-		*this = rhs;
-		return *this;
-		}
+		// x+(+/-infinity)
+		return *this = rhs;
+
+	// Cf. IEEE-754 6.3
+	// 0+-0 is 0
+	// -0+-0 is -0
+	// x+-0 is x
+	if (is_zero(rhs)) return *this;
+	// +-0+x is x
+	if (is_zero(*this))
+		return *this = rhs;
+
 	_fatal_code("z_float::operator+= not fully implemented yet",3);
 }
 
