@@ -6,6 +6,8 @@
 #include "Zaimoni.STL/Logging.h"
 #include "Zaimoni.STL/Pure.C/auto_int.h"
 
+#include <utility>
+
 // NOTE: don't need z_float(float|double|long double) constuctors for Z.C++,
 // but would for scientific computation.  It is worth stuffing host
 // format detection into auto_int.h?
@@ -545,6 +547,146 @@ z_float& z_float::operator/=(const z_float& rhs)
 	_fatal_code("z_float::operator/= not fully implemented yet",3);
 }
 
+void z_float::subtract_implicit_leading_bit()
+{
+	assert(!isinf_or_nan(*this));
+	assert(!isdenormal_or_zero(*this));
+	if (0==mantissa)
+		{	// now zero
+		exponent = 0;
+		return;
+		}
+	// \todo use compiler intrinsics here if available
+	if (1==exponent)
+		{	// denormalized
+		exponent = 0;
+		return;
+		}
+	while(UINTMAX_MAX/2>=mantissa)
+		{
+		mantissa <<= 1;
+		if (1== --exponent)
+			{	// denormalized
+			exponent = 0;
+			return;
+			};
+		}
+	// normal form
+	mantissa <<= 1;
+	--exponent;
+}
+
+// this does handle denormals
+void z_float::_rearrange_sum(z_float& rhs)
+{
+	assert(!isinf_or_nan(*this));
+	assert(!isinf_or_nan(rhs));
+	assert(!is_zero(*this));
+	assert(!is_zero(rhs));
+	// lhs should have larger absolute value
+	if (exponent<rhs.exponent || (exponent==rhs.exponent && mantissa<rhs.mantissa))
+		std::swap(*this,rhs);
+
+	uintmax_t delta = exponent-rhs.exponent;
+	if (is_negative!=rhs.is_negative)
+		{	// cancellation
+		while(65U>=delta)
+			{
+			if (0==rhs.exponent)
+				{	// rhs is denormalized
+				if (65==delta) return;
+				switch(delta)
+				{
+				case 65: return;
+				case 0:
+					mantissa -= rhs.mantissa;
+					rhs.mantissa = 0;
+					return;
+				case 1:
+					// denormals don't have an implicit leading 1, but do have an effective exponent one higher
+					if (rhs.mantissa<=mantissa)
+						{
+						mantissa -= rhs.mantissa;
+						rhs.mantissa = 0;
+						return;			
+						}
+					// lhs itself denormalizes
+					exponent = 0;
+					mantissa -= rhs.mantissa;
+					rhs.mantissa = 0;
+					return;								
+				default:;
+					{	// denormals don't have an implicit leading 1
+					uintmax_t tmp = 0;
+					if (uintmax_t masked_rhs = 64>delta ? rhs.mantissa & (UINTMAX_MAX<<delta) : 0)
+						{
+						uintmax_t masked_lhs = masked_rhs>>delta;
+						if (1<masked_lhs)
+							{
+							const bool trailing_bit = 1 & masked_lhs;
+							masked_lhs >>= 1;
+							masked_rhs = masked_lhs<<(delta+1);
+							tmp += masked_lhs;
+							rhs.mantissa -= masked_rhs;
+							if (mantissa>=tmp)
+								mantissa -= tmp;
+							else{
+								mantissa -= tmp;
+								subtract_implicit_leading_bit();
+								}
+							masked_lhs = trailing_bit;
+							}
+						if (1==masked_lhs)
+							{	// off-edge bit
+							if (0<mantissa) return;
+							--exponent;
+							mantissa = UINTMAX_MAX;
+							if (!(rhs.mantissa -= masked_rhs)) rhs.exponent = 0;
+							return;
+							}
+						};
+					return;
+					}
+				}
+				return;
+				}
+			switch(delta)
+			{
+			case 0:
+				// implicit leading bit cancels
+				subtract_implicit_leading_bit();
+				break;
+			case 65:
+				// implicit leading 1 is just off the edge
+				if (0<mantissa) return;
+				--exponent;
+				mantissa = UINTMAX_MAX;
+				break;
+			default: // implicit leading 1 is affecting somewhere in the middle of the explicit lhs mantissa
+				{
+				uintmax_t tmp = 1ULL<<(64-delta);
+				if (const uintmax_t masked_rhs = 64>delta ? rhs.mantissa & (UINTMAX_MAX<<delta) : 0)
+					{
+					tmp += masked_rhs>>delta;
+					rhs.mantissa -= masked_rhs; 
+					}
+				if (mantissa>=tmp)
+					mantissa -= tmp;
+				else{
+					mantissa -= tmp;
+					subtract_implicit_leading_bit();
+					}
+				}
+				break;
+			}
+			rhs.subtract_implicit_leading_bit();
+			delta = exponent-rhs.exponent;
+			}
+		return;
+		}
+	// is_negative==rhs.is_negative here
+}
+
 z_float& z_float::operator+=(z_float rhs)
 {
 	if (issnan(rhs))
@@ -605,6 +747,10 @@ z_float& z_float::operator+=(z_float rhs)
 	// +-0+x is x
 	if (is_zero(*this))
 		return *this = rhs;
+
+	// exact arithmetic check
+	_rearrange_sum(rhs);
+	if (is_zero(rhs)) return *this;
 
 	_fatal_code("z_float::operator+= not fully implemented yet",3);
 }
