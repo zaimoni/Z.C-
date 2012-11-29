@@ -89,6 +89,9 @@ private:
 	z_float& IEEE_overflow(unsigned round_mode,const z_float& lhs, const z_float& rhs,int opcode);
 	z_float& IEEE_round(unsigned round_mode,const z_float& lhs, const z_float& rhs,int opcode,int cmp_half_epsilon);
 	// high precision support
+	bool scaled_cancel(z_float& rhs,unsigned delta);
+	bool add_bit(unsigned n);
+	bool subtract_bit(unsigned n);
 	void _rearrange_sum(z_float& rhs);
 };
 
