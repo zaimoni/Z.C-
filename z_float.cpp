@@ -909,6 +909,25 @@ void z_float::_rearrange_sum(z_float& rhs)
 		};
 }
 
+int z_float::cmp_half_epsilon_of(const z_float& rhs) const
+{
+	assert(!isinf_or_nan(*this));
+	assert(!isinf_or_nan(rhs));
+	assert(!is_zero(*this));
+	assert(!is_zero(rhs));
+	if (rhs.exponent<=exponent) return 1;
+	const uintmax_t delta = rhs.exponent-exponent;
+	if (ZAIMONI_SIZEOF_LLONG*CHAR_BIT+1<delta) return -1;
+	if (!isdenormal_or_zero(rhs))
+		{
+		if (ZAIMONI_SIZEOF_LLONG*CHAR_BIT+1==delta && 0==mantissa) return 0;
+		return 1;
+		}
+	if (ZAIMONI_SIZEOF_LLONG*CHAR_BIT<delta) return -1;
+	if (ZAIMONI_SIZEOF_LLONG*CHAR_BIT==delta && 0==mantissa) return 0;
+	return zaimoni::cmp(mantissa,1ULL<<(ZAIMONI_SIZEOF_LLONG*CHAR_BIT-1-delta));
+}
+
 z_float& z_float::operator+=(z_float rhs)
 {
 	if (issnan(rhs))
@@ -973,6 +992,10 @@ z_float& z_float::operator+=(z_float rhs)
 	// exact arithmetic check
 	_rearrange_sum(rhs);
 	if (is_zero(rhs)) return *this;
+
+	if (is_negative==rhs.is_negative)
+		// same sign
+		return IEEE_round(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_ADD,rhs.cmp_half_epsilon_of(*this));
 
 	_fatal_code("z_float::operator+= not fully implemented yet",3);
 }

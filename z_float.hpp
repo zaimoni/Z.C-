@@ -92,6 +92,7 @@ private:
 	bool scaled_cancel(z_float& rhs,unsigned delta);
 	bool add_bit(unsigned n);
 	bool subtract_bit(unsigned n);
+	int cmp_half_epsilon_of(const z_float& rhs) const;
 	void _rearrange_sum(z_float& rhs);
 };
 
