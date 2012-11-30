@@ -733,11 +733,15 @@ void z_float::_rearrange_sum(z_float& rhs)
 			}
 			}
 		else{	// is_negative==rhs.is_negative
+			if (ZAIMONI_SIZEOF_LLONG*CHAR_BIT+1==delta) return;
 			if (0==rhs.exponent)
 				// rhs is denormal
 				switch(delta)
 				{
-				case ZAIMONI_SIZEOF_LLONG*CHAR_BIT: return;
+				case ZAIMONI_SIZEOF_LLONG*CHAR_BIT:
+					if (rhs.subtract_bit(ZAIMONI_SIZEOF_LLONG*CHAR_BIT-1))
+						add_bit(0);
+					return;
 				case 0:
 					if (UINTMAX_MAX-mantissa<rhs.mantissa) exponent = 1;
 					mantissa += rhs.mantissa;
@@ -755,25 +759,32 @@ void z_float::_rearrange_sum(z_float& rhs)
 					rhs.mantissa -= tmp+1;
 					}
 					++exponent;
-					mantissa = 0;
-					break;
+					mantissa = rhs.mantissa/2;
+					rhs.mantissa &= 1;
+					return;
 				default:
 					{
-					uintmax_t rhs_mask = rhs.mantissa & (UINTMAX_MAX<<delta);
-					uintmax_t rhs_mask_as_lhs = rhs_mask>>delta;
+					uintmax_t rhs_mask = rhs.mantissa & (UINTMAX_MAX<<(delta-1));
+					uintmax_t rhs_mask_as_lhs = rhs_mask>>(delta-1);
 					uintmax_t tmp = UINTMAX_MAX-mantissa;
 
-					// max out mantissa
-					if (tmp<=rhs_mask_as_lhs)
+					if (tmp>=rhs_mask_as_lhs)
 						{
-						mantissa = UINTMAX_MAX;
-						rhs.mantissa -= (tmp<<delta);
-						return;	// defer overflow
+						mantissa += rhs_mask_as_lhs;
+						rhs.mantissa -= rhs_mask;
+						if (rhs.subtract_bit(delta-1))
+							add_bit(0);
+						return;
 						}
-					mantissa += rhs_mask_as_lhs;
-					rhs.mantissa -= rhs_mask;
+					rhs.mantissa -= ((tmp+1)<<(delta-1));
+					++exponent;
+					// ZAIMONI_SIZEOF_LLONG*CHAR_BIT>delta 
+					mantissa = (rhs.mantissa>>delta);
+					rhs.mantissa &= (UINTMAX_MAX>>(ZAIMONI_SIZEOF_LLONG*CHAR_BIT-delta));
+					if (rhs.subtract_bit(delta))
+						add_bit(0);
+					return;
 					}
-					return;	// don't infinite-loop
 				}
 			else
 				switch(delta)
@@ -813,42 +824,29 @@ void z_float::_rearrange_sum(z_float& rhs)
 						rhs.exponent = 0;
 						return;
 						}
+					// UINTMAX_MAX/2-1==exponent here
 					{	// saturate LHS mantissa
 					const uintmax_t tmp = UINTMAX_MAX-mantissa;
-					if (tmp==rhs.mantissa)
+					if (tmp<=rhs.mantissa)
 						{
 						mantissa = UINTMAX_MAX;
-						rhs.mantissa = 0;
-						if (UINTMAX_MAX/2-1==exponent) return;	// defer overflow
-						++exponent;
-						mantissa = 0;
-						--rhs.exponent;
-						rhs.mantissa = UINTMAX_MAX-1;
-						break;
-						}
-					else if (tmp>rhs.mantissa)
-						{
-						mantissa += rhs.mantissa;
-						rhs.mantissa = 0;
-						++mantissa;
-						--rhs.exponent;
-						rhs.mantissa = UINTMAX_MAX-1;
-						break;
-						}
-					// tmp<rhs.mantissa
-					mantissa = UINTMAX_MAX;
-					rhs.mantissa -= tmp;
-					}
-					if (UINTMAX_MAX/2-1==exponent) return;	// defer overflow
-					++exponent;
-					mantissa = 0;
-					--rhs.mantissa;
+						rhs.mantissa -= tmp;
+						return;	// defer overflow
+						};
+					// tmp>rhs.mantissa here
+					mantissa += rhs.mantissa;
+					rhs.mantissa = 0;
+					++mantissa;
+					--rhs.exponent;
+					rhs.mantissa = UINTMAX_MAX-1;
 					break;
+					}
 				case ZAIMONI_SIZEOF_LLONG*CHAR_BIT:
 					// implicit leading 1 is just off the edge
 					if (UINTMAX_MAX/2-1==exponent && UINTMAX_MAX==mantissa) return;	// defer overflow
 					if (0== ++mantissa) ++exponent;
 					rhs.subtract_implicit_leading_bit();
+					if (is_zero(rhs)) return;
 					break;
 				default:
 					{
