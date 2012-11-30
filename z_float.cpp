@@ -606,16 +606,19 @@ bool z_float::subtract_bit(const unsigned n)
 	assert(ZAIMONI_SIZEOF_LLONG*CHAR_BIT>n);
 	assert(!isinf_or_nan(*this));
 	assert(!is_zero(*this));
-	uintmax_t tmp = (1ULL<<n);
+	const uintmax_t tmp = (1ULL<<n);
 	if (tmp<=mantissa)
-		{
+		{	// it fits
 		mantissa -= tmp;
 		return true;
 		}
-	if (0==exponent) return false;
-	mantissa -= tmp;
-	subtract_implicit_leading_bit();
-	return true;;
+	if (0<exponent)
+		{	// use the implicit leading bit to make it work
+		mantissa -= tmp;
+		subtract_implicit_leading_bit();
+		return true;;
+		}
+	return false;
 }
 
 // \ret true if and only if action was taken
@@ -627,54 +630,47 @@ bool z_float::scaled_cancel(z_float& rhs,const unsigned delta)
 	assert(!is_zero(*this));
 	assert(!is_zero(rhs));
 	assert(1<=exponent);
+	if (0==mantissa)
+		{
+		if (rhs.subtract_bit(delta-1))
+			{
+			--exponent;
+			mantissa = UINTMAX_MAX;
+			return true;
+			}
+		return false;
+		};
+	bool changed = false;
 	if (uintmax_t masked_rhs = ZAIMONI_SIZEOF_LLONG*CHAR_BIT>delta ? rhs.mantissa & (UINTMAX_MAX<<delta) : 0)
 		{
 		uintmax_t masked_lhs = masked_rhs>>delta;
+		changed = true;
 		if (mantissa>=masked_lhs)
 			{
 			mantissa -= masked_lhs;
 			rhs.mantissa -= masked_rhs;
-			if (0<mantissa) return true;	// can't proceed further, did act
-			if ((1ULL<<(delta-1))<=rhs.mantissa)
-				{
-				--exponent;
-				mantissa = UINTMAX_MAX;
-				rhs.mantissa -= (1ULL<<(delta-1));
-				return true;
-				}
-			if (0==rhs.exponent) return true;
-			--exponent;
-			mantissa = UINTMAX_MAX;
-			rhs.mantissa -= (1ULL<<(delta-1));
-			rhs.subtract_implicit_leading_bit();
-			return true;
 			}
 		else{
-			// rhs.mantissa wasn't even able to clear out masked_rhs
 			rhs.mantissa -= (mantissa<<delta);
-			--exponent;
-			mantissa = UINTMAX_MAX;
-			rhs.mantissa -= (1ULL<<(delta-1));
-			return true;
+			mantissa = 0;
 			}
-		};
-	if (0==mantissa)
+		}
+	if (0<mantissa)
 		{
-		if ((1ULL<<(delta-1))<=rhs.mantissa)
+		if (rhs.subtract_bit(delta))
 			{
-			--exponent;
-			mantissa = UINTMAX_MAX;
-			rhs.mantissa -= (1ULL<<(delta-1));
+			--mantissa;
 			return true;
 			}
-		if (0==rhs.exponent) return false;
+		return changed;
+		};
+	if (rhs.subtract_bit(delta-1))
+		{
 		--exponent;
 		mantissa = UINTMAX_MAX;
-		rhs.mantissa -= (1ULL<<(delta-1));
-		rhs.subtract_implicit_leading_bit();
 		return true;
-		};
-	return false;
+		}
+	return changed;
 }
 
 // this does handle denormals
@@ -719,20 +715,22 @@ void z_float::_rearrange_sum(z_float& rhs)
 			case 0:
 				// implicit leading bit cancels
 				subtract_implicit_leading_bit();
+				rhs.subtract_implicit_leading_bit();
+				if (is_zero(rhs)) return;
 				break;
 			case ZAIMONI_SIZEOF_LLONG*CHAR_BIT+1:
 				// implicit leading 1 is just off the edge
 				if (0<mantissa) return;
 				--exponent;
 				mantissa = UINTMAX_MAX;
+				rhs.subtract_implicit_leading_bit();
+				if (is_zero(rhs)) return;
 				break;
 			default: // implicit leading 1 is affecting somewhere in the middle of the explicit lhs mantissa
 				scaled_cancel(rhs,delta);
-				subtract_bit(ZAIMONI_SIZEOF_LLONG*CHAR_BIT-delta);
+				if (is_zero(rhs)) return;
 				break;
 			}
-			rhs.subtract_implicit_leading_bit();
-			if (is_zero(rhs)) return;
 			delta = exponent-rhs.exponent;
 			}
 		return;
