@@ -87,7 +87,8 @@ private:
 	// IEEE simulation
 	z_float& IEEE_underflow_to_zero(unsigned round_mode,const z_float& lhs, const z_float& rhs,int opcode);
 	z_float& IEEE_overflow(unsigned round_mode,const z_float& lhs, const z_float& rhs,int opcode);
-	z_float& IEEE_round(unsigned round_mode,const z_float& lhs, const z_float& rhs,int opcode,int cmp_half_epsilon);
+	z_float& IEEE_round_from_infinity(unsigned round_mode,const z_float& lhs, const z_float& rhs,int opcode,int cmp_half_epsilon);
+	z_float& IEEE_round_from_zero(unsigned round_mode,const z_float& lhs, const z_float& rhs,int opcode,int cmp_half_epsilon);
 	// high precision support
 	bool scaled_cancel(z_float& rhs,unsigned delta);
 	bool add_bit(unsigned n);
@@ -112,6 +113,7 @@ inline z_float operator/(const z_float& lhs,const z_float& rhs)
 	tmp /= rhs;
 	return tmp;
 }
+#endif
 
 inline z_float operator+(const z_float& lhs,const z_float& rhs)
 {
@@ -119,6 +121,5 @@ inline z_float operator+(const z_float& lhs,const z_float& rhs)
 	tmp += rhs;
 	return tmp;
 }
-#endif
 
 #endif

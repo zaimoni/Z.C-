@@ -214,13 +214,14 @@ z_float& z_float::IEEE_underflow_to_zero(const unsigned round_mode,const z_float
 
 // Cf IEEE-754 4.1, 4.2
 // \pre *this is already the correct sign
-z_float& z_float::IEEE_round(const unsigned round_mode,const z_float& lhs, const z_float& rhs,const int opcode,const int cmp_half_epsilon)
+// \pre the remainder being rounded away is the same sign
+z_float& z_float::IEEE_round_from_infinity(const unsigned round_mode,const z_float& lhs, const z_float& rhs,const int opcode,const int cmp_half_epsilon)
 {
 	assert(3>=round_mode);
 	assert((intmax_t)(UINTMAX_MAX/2U)>exponent);
 	switch(4*is_negative+round_mode)
 	{
-	default: _fatal_code("z_float::IEEE_round: signbit+rounding mode out of range",3);
+	default: _fatal_code("z_float::IEEE_round_from_infinity: signbit+rounding mode out of range",3);
 	case Z_FLOAT_TO_NEAREST:
 	case 4+Z_FLOAT_TO_NEAREST:
 		// to nearest
@@ -230,15 +231,46 @@ z_float& z_float::IEEE_round(const unsigned round_mode,const z_float& lhs, const
 	case Z_FLOAT_TO_INF:
 	case 4+Z_FLOAT_TO_NEG_INF:
 		// larger absolute magnitude
-		if (!++mantissa)
-			{	// mantissa was UINTMAX_MAX beforehand
-			if ((intmax_t)(UINTMAX_MAX/2U)<= ++exponent)
-				// overflow
-				return IEEE_overflow(round_mode,lhs,rhs,opcode);
-			}
+		if (!add_bit(0))
+			return IEEE_overflow(round_mode,lhs,rhs,opcode);
 		break;
 	case Z_FLOAT_TO_ZERO:
 	case 4+Z_FLOAT_TO_ZERO:
+	case 4+Z_FLOAT_TO_INF:
+	case Z_FLOAT_TO_NEG_INF:
+		// smaller absolute magnitude
+		break;				
+	}
+	if (traps[Z_FLOAT_INEXACT] && (traps[Z_FLOAT_INEXACT])(lhs,rhs,*this,(1<<(Z_FLOAT_INEXACT+2))+round_mode,opcode,NULL))
+		return *this;
+	// record inexact
+	_modes |= (1<<(Z_FLOAT_INEXACT+2));
+	return *this;
+}
+
+// Cf IEEE-754 4.1, 4.2
+// \pre *this is already the correct sign
+// \pre the remainder being rounded away is the opposite sign
+z_float& z_float::IEEE_round_from_zero(const unsigned round_mode,const z_float& lhs, const z_float& rhs,const int opcode,const int cmp_half_epsilon)
+{
+	assert(3>=round_mode);
+	assert((intmax_t)(UINTMAX_MAX/2U)>exponent);
+	switch(4*is_negative+round_mode)
+	{
+	default: _fatal_code("z_float::IEEE_round_from_infinity: signbit+rounding mode out of range",3);
+	case Z_FLOAT_TO_NEAREST:
+	case 4+Z_FLOAT_TO_NEAREST:
+		// to nearest
+		if (0>cmp_half_epsilon) break;
+		if (0==cmp_half_epsilon && !(mantissa & 1)) break;
+		// intentional fallthrough
+	case Z_FLOAT_TO_ZERO:
+	case 4+Z_FLOAT_TO_ZERO:
+		// larger absolute magnitude
+		subtract_bit(0);
+		break;
+	case Z_FLOAT_TO_INF:
+	case 4+Z_FLOAT_TO_NEG_INF:
 	case 4+Z_FLOAT_TO_INF:
 	case Z_FLOAT_TO_NEG_INF:
 		// smaller absolute magnitude
@@ -417,7 +449,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 	if (extended_mantissa[1] || extended_mantissa[2])
 		{
 		z_float tmp(this->is_negative,raw_exponent+(intmax_t)(UINTMAX_MAX/4U),extended_mantissa[0]);
-		return *this = tmp.IEEE_round(_rounding_mode(),*this,rhs,Z_FLOAT_CODE_MULT,zaimoni::cmp(extended_mantissa[1],UINTMAX_MAX/2U+1));
+		return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),*this,rhs,Z_FLOAT_CODE_MULT,zaimoni::cmp(extended_mantissa[1],UINTMAX_MAX/2U+1));
 		}
 	
 	// point estimate now
@@ -987,9 +1019,8 @@ z_float& z_float::operator+=(z_float rhs)
 
 	if (is_negative==rhs.is_negative)
 		// same sign
-		return IEEE_round(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_ADD,rhs.cmp_half_epsilon_of(*this));
-
-	_fatal_code("z_float::operator+= not fully implemented yet",3);
+		return IEEE_round_from_infinity(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_ADD,rhs.cmp_half_epsilon_of(*this));
+	return IEEE_round_from_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_ADD,rhs.cmp_half_epsilon_of(*this));
 }
 
 #ifdef TEST_APP
