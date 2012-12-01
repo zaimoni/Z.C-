@@ -290,12 +290,14 @@ z_float& z_float::operator*=(const z_float& rhs)
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL));
 			return *this;
 		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
 		}
 	else if (issnan(*this))
 		{
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_MULT,NULL));
 			return *this;
 		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
 		};
 
 	// handle sign now
@@ -307,14 +309,9 @@ z_float& z_float::operator*=(const z_float& rhs)
 			mantissa |= rhs.mantissa;
 		else
 			*this = rhs;
-		mantissa &= ~(1ULL);	// we no longer trap
 		return *this;
 		}
-	if (isnan(*this))
-		{
-		mantissa &= ~(1ULL);	// we no longer trap
-		return *this;
-		}
+	if (isnan(*this)) return *this;
 
 	// zero*infinity and infinity*zero are invalid
 	if (   (is_zero(*this) && isinf(rhs))
@@ -465,12 +462,14 @@ z_float& z_float::operator/=(const z_float& rhs)
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
 			return *this;
 		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
 		}
 	else if (issnan(*this))
 		{
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
 			return *this;
 		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
 		};
 
 	// handle sign now
@@ -482,14 +481,9 @@ z_float& z_float::operator/=(const z_float& rhs)
 			mantissa |= rhs.mantissa;
 		else
 			*this = rhs;
-		mantissa &= ~(1ULL);	// we no longer trap
 		return *this;
 		}
-	if (isnan(*this))
-		{
-		mantissa &= ~(1ULL);	// we no longer trap
-		return *this;
-		}
+	if (isnan(*this)) return *this;
 
 	// 0/0 and infinity/infinity are invalid
 	// 0/x is a correctly signed zero
@@ -959,12 +953,14 @@ z_float& z_float::operator+=(z_float rhs)
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL));
 			return *this;
 		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
 		}
 	else if (issnan(*this))
 		{
 		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_ADD,NULL));
 			return *this;
 		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
 		};
 
 	if (isnan(rhs))
@@ -973,14 +969,9 @@ z_float& z_float::operator+=(z_float rhs)
 			mantissa |= rhs.mantissa;
 		else
 			*this = rhs;
-		mantissa &= ~(1ULL);	// we no longer trap
 		return *this;
 		}
-	if (isnan(*this))
-		{
-		mantissa &= ~(1ULL);	// we no longer trap
-		return *this;
-		}
+	if (isnan(*this)) return *this;
 
 	// infinity+(-infinity) and (-infinity)+infinity are invalid
 	// infinity+x is infinity
