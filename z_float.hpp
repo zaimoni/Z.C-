@@ -81,6 +81,13 @@ public:
 	friend intmax_t _exponent(const z_float& x) {return (intmax_t)(x.exponent)-(intmax_t)(UINTMAX_MAX/4U);};	
 	static unsigned _rounding_mode() {return 0x3 & _modes;};
 	friend bool issnan(const z_float& x) {return isnan(x) && (1 & x.mantissa);};
+	// high precision support
+
+	// no-round version of operator+ .
+	// \post rhs has strictly smaller absolute value than lhs, if this is meaningful
+	// sNANs do not signal here.
+	void rearrange_sum(z_float& rhs);
+
 private:
 	void init_from_uintmax_t(uintmax_t src);
 	void subtract_implicit_leading_bit();

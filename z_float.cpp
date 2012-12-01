@@ -321,7 +321,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 			return *this;
 		_modes |= 1<<(Z_FLOAT_INVALID+2);
 		exponent = UINTMAX_MAX/2U;
-		mantissa = Z_FLOAT_NAN_ZEROINF_MULT;
+		mantissa = Z_FLOAT_NAN_ZEROINF_MULT | 1;
 		return *this;
 		}
 
@@ -498,7 +498,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 				return *this;
 			_modes |= 1<<(Z_FLOAT_INVALID+2);
 			exponent = UINTMAX_MAX/2U;
-			mantissa = Z_FLOAT_NAN_INF_INF_DIV;
+			mantissa = Z_FLOAT_NAN_INF_INF_DIV | 1;
 			return *this;
 			}
 		else if (is_zero(rhs))
@@ -521,7 +521,7 @@ z_float& z_float::operator/=(const z_float& rhs)
 				return *this;
 			_modes |= 1<<(Z_FLOAT_INVALID+2);
 			exponent = UINTMAX_MAX/2U;
-			mantissa = Z_FLOAT_NAN_ZERO_ZERO_DIV;
+			mantissa = Z_FLOAT_NAN_ZERO_ZERO_DIV | 1;
 			return *this;
 			}
 		// 0/x or 0/infinity
@@ -985,7 +985,7 @@ z_float& z_float::operator+=(z_float rhs)
 				return *this;
 			_modes |= 1<<(Z_FLOAT_INVALID+2);
 			exponent = UINTMAX_MAX/2U;
-			mantissa = Z_FLOAT_NAN_INF_NEGINF_ADD;
+			mantissa = Z_FLOAT_NAN_INF_NEGINF_ADD | 1;
 			return *this;
 			}
 		// +-infinity+x
@@ -1014,6 +1014,25 @@ z_float& z_float::operator+=(z_float rhs)
 	return IEEE_round_from_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_ADD,rhs.cmp_half_epsilon_of(*this));
 }
 
+void z_float::rearrange_sum(z_float& rhs)
+{
+	if (isnan(*this)) return;
+	if (isnan(rhs)) return;
+	if (isinf(*this)) return;
+	if (isinf(rhs))
+		{
+		std::swap(*this,rhs);
+		return;
+		}
+	if (is_zero(rhs)) return;
+	if (is_zero(*this))
+		{
+		std::swap(*this,rhs);
+		return;
+		}
+	_rearrange_sum(rhs);
+}
+
 #ifdef TEST_APP
 // example build line
 // g++ -oz_float.exe -I/Mingwin.aux/Headers.lib -DTEST_APP z_float.cpp -lz_log_adapter -lz_stdio_log -lz_format_util
@@ -1028,7 +1047,7 @@ z_float& z_float::operator+=(z_float rhs)
 #define C_STRING_TO_STDOUT(A) fwrite(A,strlen(A),1,stdout)
 #define STL_PTR_STRING_TO_STDOUT(A) fwrite((A)->data(),(A)->size(),1,stdout)
 
-#define EXAMINE(A) INFORM((A)._mantissa());INFORM((A)._exponent());INFORM(signbit(A))
+#define EXAMINE(A) INFORM(_mantissa(A));INFORM(_exponent(A));INFORM(signbit(A))
 
 int main(int argc, char* argv[])
 {	// parse options
@@ -1060,6 +1079,10 @@ int main(int argc, char* argv[])
 	assert(0==_mantissa(pos_inf));
 	assert((UINTMAX_MAX/2U-UINTMAX_MAX/4U)==_exponent(pos_inf));	
 	assert(pos_inf==pos_inf);
+
+	assert(pos_inf==pos_inf+pos_inf);
+	assert(pos_inf==pos_inf*pos_inf);
+
 	STRING_LITERAL_TO_STDOUT("pos_inf OK\n");
 
 	z_float neg_inf(true,UINTMAX_MAX/2,0);
@@ -1074,6 +1097,13 @@ int main(int argc, char* argv[])
 	assert(0==_mantissa(neg_inf));
 	assert((UINTMAX_MAX/2U-UINTMAX_MAX/4U)==_exponent(neg_inf));	
 	assert(neg_inf==neg_inf);
+
+	assert(issnan(pos_inf+neg_inf));
+	assert(neg_inf==neg_inf+neg_inf);
+	assert(pos_inf==neg_inf*neg_inf);
+	assert(neg_inf==pos_inf*neg_inf);
+	assert(neg_inf==neg_inf*pos_inf);
+
 	STRING_LITERAL_TO_STDOUT("neg_inf OK\n");
 
 	z_float zero(false,0,0);
@@ -1165,7 +1195,17 @@ int main(int argc, char* argv[])
 	assert(neg_zero==zero_3);
 	assert(zero_4==neg_zero);
 	assert(neg_zero==zero_4);
-	
+
+	assert(zero==zero+zero);
+	assert(pos_inf==pos_inf+zero);
+	assert(pos_inf==zero+pos_inf);
+	assert(neg_inf==neg_inf+zero);
+	assert(neg_inf==zero+neg_inf);
+	assert(issnan(pos_inf*zero));
+	assert(issnan(zero*pos_inf));
+	assert(issnan(neg_inf*zero));
+	assert(issnan(zero*neg_inf));
+
 	STRING_LITERAL_TO_STDOUT("zero OK\n");
 
 	z_float one(1LL);
@@ -1213,6 +1253,38 @@ int main(int argc, char* argv[])
 	assert(one == copysign(neg_one,one));
 	assert(neg_one == copysign(one,neg_one));
 	assert(neg_one == copysign(neg_one,neg_one));
+
+	// since infinity is special-cased, testing one suffices to test all normal numerals
+	assert(pos_inf==pos_inf+one);
+	assert(pos_inf==one+pos_inf);
+	assert(pos_inf==pos_inf+neg_one);
+	assert(pos_inf==neg_one+pos_inf);
+	assert(neg_inf==neg_inf+one);
+	assert(neg_inf==one+neg_inf);
+	assert(neg_inf==neg_inf+neg_one);
+	assert(neg_inf==neg_one+neg_inf);
+	assert(pos_inf==pos_inf*one);
+	assert(pos_inf==one*pos_inf);
+	assert(neg_inf==pos_inf*neg_one);
+	assert(neg_inf==neg_one*pos_inf);
+	assert(neg_inf==neg_inf*one);
+	assert(neg_inf==one*neg_inf);
+	assert(pos_inf==neg_inf*neg_one);
+	assert(pos_inf==neg_one*neg_inf);
+
+	// finite arithmetic
+	// zero is special-cased
+	assert(one==one+zero);
+	assert(one==zero+one);
+	assert(one==one+neg_zero);
+	assert(one==neg_zero+one);
+	assert(neg_one==neg_one+zero);
+	assert(neg_one==zero+neg_one);
+	assert(neg_one==neg_one+neg_zero);
+	assert(neg_one==neg_zero+neg_one);
+
+	assert(zero==one+neg_one);
+	assert(zero==neg_one+one);
 
 	STRING_LITERAL_TO_STDOUT("one OK\n");
 	
