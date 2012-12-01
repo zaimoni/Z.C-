@@ -457,6 +457,37 @@ z_float& z_float::operator*=(const z_float& rhs)
 	return *this;
 }
 
+//! \todo convert to lightweight template function
+static uintmax_t gcf(uintmax_t lhs, uintmax_t rhs)
+{
+	if (1>=lhs) return rhs;
+	if (1>=rhs) return lhs;
+	while(lhs!=rhs)
+		{
+		if (lhs>rhs)
+			{
+			if (1>=(lhs %= rhs)) return rhs;
+			}
+		else{
+			if (1>=(rhs %= lhs)) return lhs;
+			}
+		}
+	return lhs;
+}
+
+static uintmax_t int_proxy_from_mantissa(uintmax_t x)
+{
+	uintmax_t tmp = (1ULL<<(sizeof(uintmax_t)*CHAR_BIT-1))+(x>>1);
+	while(!(1 & tmp)) tmp >>= 1;
+	return tmp;
+}
+
+static uintmax_t mantissa_from_int_proxy(uintmax_t x)
+{
+	while(UINTMAX_MAX/2>=x) x <<= 1;
+	return (x<<1);
+}
+
 z_float& z_float::operator/=(z_float rhs)
 {
 	if (issnan(rhs))
@@ -540,31 +571,54 @@ z_float& z_float::operator/=(z_float rhs)
 		}
 
 	// overflow check
-	const intmax_t tmp = _exponent(rhs)-(mantissa<rhs.mantissa);
-	if (0>tmp && -tmp<(intmax_t)(UINTMAX_MAX/2U)-(intmax_t)exponent)
+	const intmax_t apparent_exponent = _exponent(*this)-_exponent(rhs)-(mantissa<rhs.mantissa);
+	if ((intmax_t)(UINTMAX_MAX/4)<=apparent_exponent)
 		// we went unbounded
 		return IEEE_overflow(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
 
 	// catastrophic underflow check
-	const intmax_t denormal_severity = (0<tmp && tmp>=(intmax_t)exponent) ? tmp-(intmax_t)exponent : -1;
-	if (64<=denormal_severity)
+	const intmax_t denormal_severity = ((intmax_t)(UINTMAX_MAX/4)<= -apparent_exponent) ? -apparent_exponent-(intmax_t)(UINTMAX_MAX/4)-(intmax_t)exponent : -1;
+	if (sizeof(uintmax_t)*CHAR_BIT<=denormal_severity)
 		return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
+
+	// rearrange_division checks
+	if (0==exponent && 0==rhs.exponent)
+		{	// plain 64-bit division
+		// this also handles mantissa==rhs.mantissa
+		if (0==mantissa%rhs.mantissa)
+			{
+			z_float tmp(mantissa/rhs.mantissa);
+			mantissa = tmp.mantissa;
+			exponent = tmp.exponent;
+			return *this;
+			}
+		}
+	if (1<=exponent && 1<=exponent)
+		{	// both normal
+		if (mantissa==rhs.mantissa)
+			{
+			mantissa = 0;
+			exponent = apparent_exponent;
+			return *this;
+			}
+		}
 
 	// division by exact power of two
 	if (0==rhs.mantissa)
 		{
-		if (0==tmp) return *this;	// division by 1 is exact
-		if (0>tmp)
+		if (0==apparent_exponent) return *this;	// division by 1 is exact
+		if (0>apparent_exponent)
 			{
-			exponent += -tmp;
+			exponent += -apparent_exponent;
 			return *this;
 			};
-		if (tmp<(intmax_t)exponent)
+		if (apparent_exponent<(intmax_t)exponent)
 			{
-			exponent -= tmp;
+			exponent -= apparent_exponent;
 			return *this;
 			}
 		// we denormalized
+		// \todo: handle rounding
 		assert(64>denormal_severity && 0<=denormal_severity);
 		exponent = 0;
 		mantissa >>= 1;
@@ -572,6 +626,147 @@ z_float& z_float::operator/=(z_float rhs)
 		mantissa >>= denormal_severity;
 		return *this;
 		};
+
+	// greatest common factor elimination
+	if (0==exponent)
+		{
+		if (0==rhs.exponent)
+			{
+			uintmax_t tmp = gcf(mantissa,rhs.mantissa);
+			if (1<tmp)
+				{
+				mantissa /= tmp;
+				rhs.mantissa /= tmp;
+				}
+			}
+		else if (!(1 & rhs.mantissa))
+			{
+			uintmax_t rhs_tmp = int_proxy_from_mantissa(rhs.mantissa);
+			uintmax_t tmp = gcf(mantissa,rhs_tmp);
+			if (1<tmp)
+				{
+				mantissa /= tmp;
+				rhs.mantissa = mantissa_from_int_proxy(rhs_tmp/tmp);
+				}
+			}
+#if 0
+		else{
+			}
+#endif
+		}
+#if 0
+	else if (!(1 & mantissa))
+		{
+		if (0==rhs.exponent)
+			{
+			}
+		else if (!(1 & rhs.mantissa))
+			{
+			}
+		else{
+			}
+		}
+	else if (0==rhs.exponent)
+		{
+		}
+	else if (!(1 & rhs.mantissa))
+		{
+		}
+	else{
+		}
+#endif
+
+	// handle division of denormal by denormal
+	if (0==exponent && 0==rhs.exponent)
+		{	// plain 64-bit division
+		{
+		uintmax_t tmp = gcf(mantissa,rhs.mantissa);
+		if (1<tmp)
+			{
+			mantissa /= tmp;
+			rhs.mantissa /= tmp;
+			}
+		}
+		const z_float lhs_exception(*this);
+		const z_float rhs_exception(rhs);
+			
+		// it might be reasonable to factor out the greatest common factor here
+		int new_exponent = 0;
+		// since we divided out the greatest common factor, only one of mantissa or rhs.mantissa is divisible by 2
+		if (!(mantissa & 1))
+			{
+			while(mantissa>rhs.mantissa && mantissa-rhs.mantissa>=rhs.mantissa)
+				{
+				++new_exponent;
+				if ((mantissa >>= 1) & 1) break;
+				}
+			while(mantissa>rhs.mantissa && mantissa-rhs.mantissa>=rhs.mantissa)
+				{
+				++new_exponent;
+				rhs.mantissa <<= 1;
+				}
+			}
+		else if (!(rhs.mantissa & 1))
+			{
+			while(mantissa<rhs.mantissa)
+				{
+				--new_exponent;
+				if ((rhs.mantissa >>= 1) & 1) break;
+				}
+			while(UINTMAX_MAX/2>=mantissa && mantissa<rhs.mantissa)
+				{
+				--new_exponent;
+				mantissa <<= 1;
+				}
+			}
+
+		// bootstrap the leading bit
+		int next_bit_to_set = 63;
+		z_float tmp(is_negative,UINTMAX_MAX/2+new_exponent-(mantissa<rhs.mantissa),0);
+		if (mantissa>rhs.mantissa)
+			{
+			mantissa -= rhs.mantissa;
+			mantissa <<= 1;
+			}
+		else{
+			mantissa -= rhs.mantissa>>1;
+			mantissa <<= 1;
+			--mantissa;
+			}
+		while(UINTMAX_MAX/2>=mantissa && mantissa<rhs.mantissa)
+			{
+			mantissa<<=1;
+			--next_bit_to_set;
+			}
+		do	{
+			if (mantissa>rhs.mantissa)
+				{
+				tmp.add_bit(next_bit_to_set);
+				mantissa -= rhs.mantissa;
+				mantissa <<= 1;
+				}
+			else{
+				if (0> --next_bit_to_set)
+					return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),lhs_exception,rhs_exception,Z_FLOAT_CODE_DIV,1);
+				
+				tmp.add_bit(next_bit_to_set);
+				mantissa -= rhs.mantissa>>1;
+				mantissa <<= 1;
+				--mantissa;
+				}
+			if (0> --next_bit_to_set)
+				return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),lhs_exception,rhs_exception,Z_FLOAT_CODE_DIV,mantissa>rhs.mantissa ? 1 : -1);
+
+			while(UINTMAX_MAX/2>=mantissa && mantissa<rhs.mantissa)
+				{
+				mantissa<<=1;
+				if (0> --next_bit_to_set)
+					return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),lhs_exception,rhs_exception,Z_FLOAT_CODE_DIV,mantissa>rhs.mantissa ? 1 : -1);
+				}
+			}
+		while(1);
+		}
+
 	_fatal_code("z_float::operator/= not fully implemented yet",3);
 }
 
