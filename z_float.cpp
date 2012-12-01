@@ -344,7 +344,9 @@ z_float& z_float::operator*=(const z_float& rhs)
 	// INT63_MIN+INT63_MIN==INT64_MIN on two's complement machines;
 	// if that traps, _exponent(*this)+_exponent(rhs) dies
 	// so don't do that
-	intmax_t raw_exponent = (1+_exponent(*this))+_exponent(rhs);
+	intmax_t raw_exponent = _exponent(*this)+_exponent(rhs);
+	if (0==exponent) ++raw_exponent;	// denormals are really 1 higher than reported
+	if (0==rhs.exponent) ++raw_exponent;
 	// note: we have a total loss of precision denormalization if 
 	// raw_exponent <= -(intmax_t)(UINTMAX_MAX/4)-64	
 	if (-(intmax_t)(UINTMAX_MAX/4)-(INT_LOG2(UINTMAX_MAX)+1) >= raw_exponent)
@@ -455,7 +457,7 @@ z_float& z_float::operator*=(const z_float& rhs)
 	return *this;
 }
 
-z_float& z_float::operator/=(const z_float& rhs)
+z_float& z_float::operator/=(z_float rhs)
 {
 	if (issnan(rhs))
 		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
@@ -1285,6 +1287,10 @@ int main(int argc, char* argv[])
 
 	assert(zero==one+neg_one);
 	assert(zero==neg_one+one);
+	assert(one==one*one);
+	assert(neg_one==one*neg_one);
+	assert(neg_one==neg_one*one);
+	assert(one==neg_one*neg_one);
 
 	STRING_LITERAL_TO_STDOUT("one OK\n");
 	
@@ -1328,6 +1334,17 @@ int main(int argc, char* argv[])
 
 	assert(two == -neg_two);
 	assert(neg_two == -two);
+
+	assert(zero==two+neg_two);
+	assert(zero==neg_two+two);
+	assert(two==one*two);
+	assert(two==two*one);
+	assert(neg_two==one*neg_two);
+	assert(neg_two==neg_two*one);
+	assert(neg_two==neg_one*two);
+	assert(neg_two==two*neg_one);
+	assert(two==neg_one*neg_two);
+	assert(two==neg_two*neg_one);
 	
 	STRING_LITERAL_TO_STDOUT("two OK\n");
 

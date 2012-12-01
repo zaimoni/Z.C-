@@ -58,10 +58,16 @@ public:
 	z_float& operator*=(const z_float& rhs);
 
 	// IEEE-754 operator/
-	z_float& operator/=(const z_float& rhs);
+	z_float& operator/=(z_float rhs);
 
 	// IEEE-754 operator+
 	z_float& operator+=(z_float rhs);
+
+	// IEEE-754 operator-
+	z_float& operator-=(z_float rhs) {
+		rhs.is_negative = !rhs.is_negative;
+		return *this+=rhs;
+	};
 
 	// cmath/math.h emulation
 	// IEEE-754 allows this to be a non-arithmetic operation
@@ -126,6 +132,13 @@ inline z_float operator+(const z_float& lhs,const z_float& rhs)
 {
 	z_float tmp(lhs);
 	tmp += rhs;
+	return tmp;
+}
+
+inline z_float operator-(const z_float& lhs,const z_float& rhs)
+{
+	z_float tmp(lhs);
+	tmp -= rhs;
 	return tmp;
 }
 
