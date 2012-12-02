@@ -613,6 +613,32 @@ z_float& z_float::operator/=(z_float rhs)
 			return *this;
 			}
 		}
+	// normalize exponents
+	while(0==exponent && 1<=rhs.exponent && UINTMAX_MAX/2-1>rhs.exponent)
+		{
+		if (UINTMAX_MAX/2<mantissa) ++exponent;
+		mantissa <<= 1;
+		++rhs.exponent;
+		}
+	while(0==rhs.exponent && 1<=exponent && UINTMAX_MAX/2-1>exponent)
+		{
+		if (UINTMAX_MAX/2<rhs.mantissa) ++rhs.exponent;
+		rhs.mantissa <<= 1;
+		++exponent;
+		}
+	if (exponent>=rhs.exponent)
+		{
+		if (UINTMAX_MAX/4U<rhs.exponent)
+			{
+			exponent -= rhs.exponent-UINTMAX_MAX/4U;
+			rhs.exponent = UINTMAX_MAX/4U;
+			}
+		}
+	else{
+		rhs.exponent -= exponent-UINTMAX_MAX/4U;
+		exponent = UINTMAX_MAX/4U;
+		}
+	
 	if (1<=exponent && 1<=rhs.exponent)
 		{	// both normal
 		if (mantissa==rhs.mantissa)
@@ -745,89 +771,6 @@ z_float& z_float::operator/=(z_float rhs)
 		mantissa >>= denormal_severity;
 		return *this;
 		};
-
-	// handle division of denormal by denormal
-	if (0==exponent && 0==rhs.exponent)
-		{	// plain 64-bit division
-		const z_float lhs_exception(*this);
-		const z_float rhs_exception(rhs);
-			
-		// it might be reasonable to factor out the greatest common factor here
-		int new_exponent = 0;
-		// since we divided out the greatest common factor, only one of mantissa or rhs.mantissa is divisible by 2
-		if (!(mantissa & 1))
-			{
-			while(mantissa>rhs.mantissa && mantissa-rhs.mantissa>=rhs.mantissa)
-				{
-				++new_exponent;
-				if ((mantissa >>= 1) & 1) break;
-				}
-			while(mantissa>rhs.mantissa && mantissa-rhs.mantissa>=rhs.mantissa)
-				{
-				++new_exponent;
-				rhs.mantissa <<= 1;
-				}
-			}
-		else if (!(rhs.mantissa & 1))
-			{
-			while(mantissa<rhs.mantissa)
-				{
-				--new_exponent;
-				if ((rhs.mantissa >>= 1) & 1) break;
-				}
-			while(UINTMAX_MAX/2>=mantissa && mantissa<rhs.mantissa)
-				{
-				--new_exponent;
-				mantissa <<= 1;
-				}
-			}
-
-		// bootstrap the leading bit
-		int next_bit_to_set = 63;
-		z_float tmp(is_negative,UINTMAX_MAX/2+new_exponent-(mantissa<rhs.mantissa),0);
-		if (mantissa>rhs.mantissa)
-			{
-			mantissa -= rhs.mantissa;
-			mantissa <<= 1;
-			}
-		else{
-			mantissa -= rhs.mantissa>>1;
-			mantissa <<= 1;
-			--mantissa;
-			}
-		while(UINTMAX_MAX/2>=mantissa && mantissa<rhs.mantissa)
-			{
-			mantissa<<=1;
-			--next_bit_to_set;
-			}
-		do	{
-			if (mantissa>rhs.mantissa)
-				{
-				tmp.add_bit(next_bit_to_set);
-				mantissa -= rhs.mantissa;
-				mantissa <<= 1;
-				}
-			else{
-				if (0> --next_bit_to_set)
-					return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),lhs_exception,rhs_exception,Z_FLOAT_CODE_DIV,1);
-				
-				tmp.add_bit(next_bit_to_set);
-				mantissa -= rhs.mantissa>>1;
-				mantissa <<= 1;
-				--mantissa;
-				}
-			if (0> --next_bit_to_set)
-				return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),lhs_exception,rhs_exception,Z_FLOAT_CODE_DIV,mantissa>rhs.mantissa ? 1 : -1);
-
-			while(UINTMAX_MAX/2>=mantissa && mantissa<rhs.mantissa)
-				{
-				mantissa<<=1;
-				if (0> --next_bit_to_set)
-					return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),lhs_exception,rhs_exception,Z_FLOAT_CODE_DIV,mantissa>rhs.mantissa ? 1 : -1);
-				}
-			}
-		while(1);
-		}
 
 	_fatal_code("z_float::operator/= not fully implemented yet",3);
 }
