@@ -488,6 +488,26 @@ static uintmax_t mantissa_from_int_proxy(uintmax_t x)
 	return (x<<1);
 }
 
+static uintmax_t bootstrap_gcf_65_bit_64_bit(uintmax_t lhs,uintmax_t rhs)
+{
+	assert(1 & lhs);
+	assert(1<rhs);
+
+	lhs %= rhs;
+	return (lhs-rhs);
+}
+
+static uintmax_t bootstrap_div_65_bit_64_bit(uintmax_t lhs,uintmax_t rhs)
+{
+	assert(1 & lhs);
+	assert(1<rhs);
+
+	lhs %= rhs;
+	lhs -= rhs;
+	assert(0==lhs%rhs);
+	return lhs/rhs;
+}
+
 z_float& z_float::operator/=(z_float rhs)
 {
 	if (issnan(rhs))
@@ -593,13 +613,112 @@ z_float& z_float::operator/=(z_float rhs)
 			return *this;
 			}
 		}
-	if (1<=exponent && 1<=exponent)
+	if (1<=exponent && 1<=rhs.exponent)
 		{	// both normal
 		if (mantissa==rhs.mantissa)
 			{
 			mantissa = 0;
 			exponent = apparent_exponent;
 			return *this;
+			}
+		}
+
+	// greatest common factor elimination in the mantissa
+	if (   0<mantissa		// exclude: zero, exact powers of two (zero should already be handled)
+		&& 0<rhs.mantissa
+		&& (1<mantissa || 0<exponent)	// exclude: denormals with a mantissa of 1
+		&& (1<rhs.mantissa || 0<rhs.exponent))
+		{
+		if (0==exponent)
+			{	// lhs denormal
+			if (0==rhs.exponent)
+				{	// rhs denormal
+				uintmax_t tmp = gcf(mantissa,rhs.mantissa);
+				if (1<tmp)
+					{
+					mantissa /= tmp;
+					rhs.mantissa /= tmp;
+					}
+				}
+			else if (!(1 & rhs.mantissa))
+				{	// lhs normal but only using at most 64 significant bits
+				uintmax_t rhs_tmp = int_proxy_from_mantissa(rhs.mantissa);
+				uintmax_t tmp = gcf(mantissa,rhs_tmp);
+				if (1<tmp)
+					{
+					mantissa /= tmp;
+					rhs.mantissa = mantissa_from_int_proxy(rhs_tmp/tmp);
+					}
+				}
+			else{	// rhs using 65 significant bits
+				uintmax_t tmp = gcf(mantissa,bootstrap_gcf_65_bit_64_bit(rhs.mantissa,mantissa));
+				if (1<tmp)
+					{
+					mantissa /= tmp;
+					rhs.mantissa = bootstrap_div_65_bit_64_bit(rhs.mantissa,tmp);
+					}
+				}
+			}
+		else if (!(1 & mantissa))
+			{	// lhs normal but only using at most 64 significant bits
+			uintmax_t lhs_tmp = int_proxy_from_mantissa(mantissa);
+			if (0==rhs.exponent)
+				{	// rhs denormal
+				uintmax_t tmp = gcf(lhs_tmp,rhs.mantissa);
+				if (1<tmp)
+					{
+					mantissa = mantissa_from_int_proxy(lhs_tmp/tmp);
+					rhs.mantissa /= tmp;
+					}
+				}
+			else if (!(1 & rhs.mantissa))
+				{	// rhs normal but only using at most 64 significant bits
+				uintmax_t rhs_tmp = int_proxy_from_mantissa(rhs.mantissa);
+				uintmax_t tmp = gcf(lhs_tmp,rhs_tmp);
+				if (1<tmp)
+					{
+					mantissa = mantissa_from_int_proxy(lhs_tmp/tmp);
+					rhs.mantissa = mantissa_from_int_proxy(rhs_tmp/tmp);
+					}
+				}
+			else{
+				uintmax_t tmp = gcf(lhs_tmp,bootstrap_gcf_65_bit_64_bit(rhs.mantissa,lhs_tmp));
+				if (1<tmp)
+					{
+					mantissa = mantissa_from_int_proxy(lhs_tmp/tmp);
+					rhs.mantissa = bootstrap_div_65_bit_64_bit(rhs.mantissa,tmp);
+					}
+				}
+			}
+		// lhs using 65 significant bits
+		else if (0==rhs.exponent)
+			{	// rhs denormal
+			uintmax_t tmp = gcf(rhs.mantissa,bootstrap_gcf_65_bit_64_bit(mantissa,rhs.mantissa));
+			if (1<tmp)
+				{
+				rhs.mantissa /= tmp;
+				mantissa = bootstrap_div_65_bit_64_bit(mantissa,tmp);
+				}
+			}
+		else if (!(1 & rhs.mantissa))
+			{	// rhs normal but only using at most 64 significant bits
+			uintmax_t rhs_tmp = int_proxy_from_mantissa(rhs.mantissa);
+			uintmax_t tmp = gcf(rhs.mantissa,bootstrap_gcf_65_bit_64_bit(mantissa,rhs_tmp));
+			if (1<tmp)
+				{
+				rhs.mantissa = mantissa_from_int_proxy(rhs_tmp/tmp);
+				mantissa = bootstrap_div_65_bit_64_bit(mantissa,tmp);
+				}
+			}
+		// rhs using 65 significant bits
+		else{
+			uintmax_t first_stage = mantissa>rhs.mantissa ? mantissa-rhs.mantissa : rhs.mantissa-mantissa;
+			uintmax_t tmp = gcf(first_stage,bootstrap_gcf_65_bit_64_bit(mantissa,first_stage));
+			if (1<tmp)
+				{
+				mantissa = bootstrap_div_65_bit_64_bit(mantissa,tmp);
+				rhs.mantissa = bootstrap_div_65_bit_64_bit(rhs.mantissa,tmp);
+				}
 			}
 		}
 
@@ -627,66 +746,9 @@ z_float& z_float::operator/=(z_float rhs)
 		return *this;
 		};
 
-	// greatest common factor elimination
-	if (0==exponent)
-		{
-		if (0==rhs.exponent)
-			{
-			uintmax_t tmp = gcf(mantissa,rhs.mantissa);
-			if (1<tmp)
-				{
-				mantissa /= tmp;
-				rhs.mantissa /= tmp;
-				}
-			}
-		else if (!(1 & rhs.mantissa))
-			{
-			uintmax_t rhs_tmp = int_proxy_from_mantissa(rhs.mantissa);
-			uintmax_t tmp = gcf(mantissa,rhs_tmp);
-			if (1<tmp)
-				{
-				mantissa /= tmp;
-				rhs.mantissa = mantissa_from_int_proxy(rhs_tmp/tmp);
-				}
-			}
-#if 0
-		else{
-			}
-#endif
-		}
-#if 0
-	else if (!(1 & mantissa))
-		{
-		if (0==rhs.exponent)
-			{
-			}
-		else if (!(1 & rhs.mantissa))
-			{
-			}
-		else{
-			}
-		}
-	else if (0==rhs.exponent)
-		{
-		}
-	else if (!(1 & rhs.mantissa))
-		{
-		}
-	else{
-		}
-#endif
-
 	// handle division of denormal by denormal
 	if (0==exponent && 0==rhs.exponent)
 		{	// plain 64-bit division
-		{
-		uintmax_t tmp = gcf(mantissa,rhs.mantissa);
-		if (1<tmp)
-			{
-			mantissa /= tmp;
-			rhs.mantissa /= tmp;
-			}
-		}
 		const z_float lhs_exception(*this);
 		const z_float rhs_exception(rhs);
 			
