@@ -508,98 +508,14 @@ static uintmax_t bootstrap_div_65_bit_64_bit(uintmax_t lhs,uintmax_t rhs)
 	return lhs/rhs;
 }
 
-z_float& z_float::operator/=(z_float rhs)
+//! \post rearrangement complete if and only if rhs==1
+//! \post at least one of *this, rhs is not denormal
+void z_float::_rearrange_quotient(z_float& rhs)
 {
-	if (issnan(rhs))
-		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
-		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
-			return *this;
-		_modes |= 1<<(Z_FLOAT_INVALID+2);
-		mantissa &= ~(1ULL);	// we no longer trap
-		}
-	else if (issnan(*this))
-		{
-		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
-			return *this;
-		_modes |= 1<<(Z_FLOAT_INVALID+2);
-		mantissa &= ~(1ULL);	// we no longer trap
-		};
-
-	// handle sign now
-	if (rhs.is_negative) is_negative = !is_negative;
-
-	if (isnan(rhs))
-		{
-		if (isnan(*this))
-			mantissa |= rhs.mantissa;
-		else
-			*this = rhs;
-		return *this;
-		}
-	if (isnan(*this)) return *this;
-
-	// 0/0 and infinity/infinity are invalid
-	// 0/x is a correctly signed zero
-	// x/infinity is a correctly signed zero
-	// x/0 is a DIV_BY_ZERO exception with a non-trap result of a correctly signed infinity
-	// infinity/x is a correctly signed infinity
-	if (isinf(*this))
-		{
-		if (isinf(rhs))
-			{	//	+-infinity/+-infinity
-			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
-				return *this;
-			_modes |= 1<<(Z_FLOAT_INVALID+2);
-			exponent = UINTMAX_MAX/2U;
-			mantissa = Z_FLOAT_NAN_INF_INF_DIV | 1;
-			return *this;
-			}
-		else if (is_zero(rhs))
-			{	// +-infinity/0
-			if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
-				return *this;
-			_modes |= 1<<(Z_FLOAT_DIVZERO+2);
-			exponent = UINTMAX_MAX/2U;
-			mantissa = 0;
-			return *this;
-			};
-		// +-infinity/x
-		return *this;
-		}
-	else if (is_zero(*this))
-		{
-		if (is_zero(rhs))
-			{	//	0/0
-			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
-				return *this;
-			_modes |= 1<<(Z_FLOAT_INVALID+2);
-			exponent = UINTMAX_MAX/2U;
-			mantissa = Z_FLOAT_NAN_ZERO_ZERO_DIV | 1;
-			return *this;
-			}
-		// 0/x or 0/infinity
-		return *this;
-		}
-	else if (is_zero(rhs))
-		{	// x/0
-		if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
-			return *this;
-		_modes |= 1<<(Z_FLOAT_DIVZERO+2);
-		exponent = UINTMAX_MAX/2U;
-		mantissa = 0;
-		return *this;
-		}
-
-	// overflow check
-	const intmax_t apparent_exponent = _exponent(*this)-_exponent(rhs)-(mantissa<rhs.mantissa);
-	if ((intmax_t)(UINTMAX_MAX/4)<=apparent_exponent)
-		// we went unbounded
-		return IEEE_overflow(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
-
-	// catastrophic underflow check
-	const intmax_t denormal_severity = ((intmax_t)(UINTMAX_MAX/4)<= -apparent_exponent) ? -apparent_exponent-(intmax_t)(UINTMAX_MAX/4)-(intmax_t)exponent : -1;
-	if (sizeof(uintmax_t)*CHAR_BIT<=denormal_severity)
-		return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
+	assert(!isinf_or_nan(rhs));
+	assert(!isinf_or_nan(*this));
+	assert(!is_zero(*this));
+	assert(!is_zero(rhs));
 
 	// rearrange_division checks
 	if (0==exponent && 0==rhs.exponent)
@@ -610,13 +526,24 @@ z_float& z_float::operator/=(z_float rhs)
 			z_float tmp(mantissa/rhs.mantissa);
 			mantissa = tmp.mantissa;
 			exponent = tmp.exponent;
-			return *this;
+			rhs.mantissa = 0;
+			rhs.exponent = UINTMAX_MAX/4;
+			return;
 			}
 		}
 	// normalize exponents
-	while(0==exponent && 1<=rhs.exponent && UINTMAX_MAX/2-1>rhs.exponent)
+	// try to convert to normal form if it won't trigger an overflow
+	while(0==exponent && 0==rhs.exponent)
 		{
 		if (UINTMAX_MAX/2<mantissa) ++exponent;
+		if (UINTMAX_MAX/2<rhs.mantissa) ++rhs.exponent;
+		mantissa <<= 1;
+		rhs.mantissa <<= 1;
+		}
+	// these two affect apparent exponent and denormal severity
+	while(0==exponent && 1<=rhs.exponent && UINTMAX_MAX/2-1>rhs.exponent)
+		{
+		if (UINTMAX_MAX/2<rhs.mantissa) ++exponent;
 		mantissa <<= 1;
 		++rhs.exponent;
 		}
@@ -626,6 +553,7 @@ z_float& z_float::operator/=(z_float rhs)
 		rhs.mantissa <<= 1;
 		++exponent;
 		}
+	// assist series products
 	if (exponent>=rhs.exponent)
 		{
 		if (UINTMAX_MAX/4U<rhs.exponent)
@@ -633,21 +561,30 @@ z_float& z_float::operator/=(z_float rhs)
 			exponent -= rhs.exponent-UINTMAX_MAX/4U;
 			rhs.exponent = UINTMAX_MAX/4U;
 			}
-		}
-	else{
-		rhs.exponent -= exponent-UINTMAX_MAX/4U;
-		exponent = UINTMAX_MAX/4U;
-		}
-	
-	if (1<=exponent && 1<=rhs.exponent)
-		{	// both normal
-		if (mantissa==rhs.mantissa)
+		else if (1<=exponent && UINTMAX_MAX/4U>exponent)
 			{
-			mantissa = 0;
-			exponent = apparent_exponent;
-			return *this;
+			rhs.exponent += UINTMAX_MAX/4U-exponent;
+			exponent = UINTMAX_MAX/4U;
 			}
 		}
+	else{
+		if (UINTMAX_MAX/4U<exponent)
+			{
+			rhs.exponent -= exponent-UINTMAX_MAX/4U;
+			exponent = UINTMAX_MAX/4U;
+			}
+		else if (1<=rhs.exponent && UINTMAX_MAX/4U>rhs.exponent)
+			{
+			exponent += UINTMAX_MAX/4U-rhs.exponent;
+			rhs.exponent = UINTMAX_MAX/4U;
+			}
+		}
+	
+	if (1<=exponent && 1<=rhs.exponent && mantissa==rhs.mantissa)
+		{	// both normal, have same mantissa: result of division is power of two
+		mantissa = 0;
+		rhs.mantissa = 0;
+		};
 
 	// greatest common factor elimination in the mantissa
 	if (   0<mantissa		// exclude: zero, exact powers of two (zero should already be handled)
@@ -657,7 +594,7 @@ z_float& z_float::operator/=(z_float rhs)
 		{
 		if (0==exponent)
 			{	// lhs denormal
-			if (0==rhs.exponent)
+/*			if (0==rhs.exponent)
 				{	// rhs denormal
 				uintmax_t tmp = gcf(mantissa,rhs.mantissa);
 				if (1<tmp)
@@ -666,7 +603,7 @@ z_float& z_float::operator/=(z_float rhs)
 					rhs.mantissa /= tmp;
 					}
 				}
-			else if (!(1 & rhs.mantissa))
+			else */ if (!(1 & rhs.mantissa))
 				{	// lhs normal but only using at most 64 significant bits
 				uintmax_t rhs_tmp = int_proxy_from_mantissa(rhs.mantissa);
 				uintmax_t tmp = gcf(mantissa,rhs_tmp);
@@ -751,28 +688,173 @@ z_float& z_float::operator/=(z_float rhs)
 	// division by exact power of two
 	if (0==rhs.mantissa)
 		{
-		if (0==apparent_exponent) return *this;	// division by 1 is exact
-		if (0>apparent_exponent)
+		if (UINTMAX_MAX/4==rhs.exponent) return;	// division by 1 is exact
+		if (UINTMAX_MAX/4>rhs.exponent)
 			{
-			exponent += -apparent_exponent;
-			return *this;
-			};
-		if (apparent_exponent<(intmax_t)exponent)
-			{
-			exponent -= apparent_exponent;
-			return *this;
+			if (UINTMAX_MAX/2-1<=exponent) return;
+			if (UINTMAX_MAX/4-rhs.exponent<=UINTMAX_MAX/2-1-exponent)
+				{
+				exponent += UINTMAX_MAX/4-rhs.exponent;
+				rhs.exponent = UINTMAX_MAX/4;
+				}
+			return;
 			}
-		// we denormalized
-		// \todo: handle rounding
-		assert(64>denormal_severity && 0<=denormal_severity);
+		if (rhs.exponent-UINTMAX_MAX/4<exponent)
+			{
+			exponent -= rhs.exponent-UINTMAX_MAX/4;
+			rhs.exponent = UINTMAX_MAX/4;
+			return;
+			}
+		rhs.exponent -= exponent-1;
+		exponent = 1;
+		if (1 & mantissa) return;
+		mantissa = (1ULL<<(sizeof(uintmax_t)*CHAR_BIT-1))+(mantissa>>1);
 		exponent = 0;
-		mantissa >>= 1;
-		mantissa |= UINTMAX_MAX/2+1;
-		mantissa >>= denormal_severity;
-		return *this;
+		if (UINTMAX_MAX/4 == --rhs.exponent) return;
+		while(!(1 & mantissa))
+			{
+			mantissa >>= 1;
+			if (UINTMAX_MAX/4 == --rhs.exponent) return;
+			}
+		};
+}
+
+z_float& z_float::operator/=(z_float rhs)
+{
+	if (issnan(rhs))
+		{	// invalid operation: trap if possible, otherwise downgrade to qNaN
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
+			return *this;
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
+		}
+	else if (issnan(*this))
+		{
+		if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL));
+			return *this;
+		_modes |= 1<<(Z_FLOAT_INVALID+2);
+		mantissa &= ~(1ULL);	// we no longer trap
 		};
 
+	if (isnan(rhs))
+		{
+		if (isnan(*this))
+			mantissa |= rhs.mantissa;
+		else
+			*this = rhs;
+		return *this;
+		}
+	if (isnan(*this)) return *this;
+
+	// handle sign now
+	if (rhs.is_negative) is_negative = !is_negative;
+
+	// 0/0 and infinity/infinity are invalid
+	// 0/x is a correctly signed zero
+	// x/infinity is a correctly signed zero
+	// x/0 is a DIV_BY_ZERO exception with a non-trap result of a correctly signed infinity
+	// infinity/x is a correctly signed infinity
+	if (isinf(*this))
+		{
+		if (isinf(rhs))
+			{	//	+-infinity/+-infinity
+			if (traps[Z_FLOAT_INVALID] && (traps[Z_FLOAT_INVALID])(*this,rhs,*this,(1<<(Z_FLOAT_INVALID+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+				return *this;
+			_modes |= 1<<(Z_FLOAT_INVALID+2);
+			exponent = UINTMAX_MAX/2U;
+			mantissa = Z_FLOAT_NAN_INF_INF_DIV | 1;
+			return *this;
+			}
+		else if (is_zero(rhs))
+			{	// +-infinity/0
+			if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+				return *this;
+			_modes |= 1<<(Z_FLOAT_DIVZERO+2);
+			exponent = UINTMAX_MAX/2U;
+			mantissa = 0;
+			return *this;
+			};
+		// +-infinity/x
+		return *this;
+		}
+	else if (is_zero(rhs))
+		{	// x/0
+		if (traps[Z_FLOAT_DIVZERO] && (traps[Z_FLOAT_DIVZERO])(*this,rhs,*this,(1<<(Z_FLOAT_DIVZERO+2))+_rounding_mode(),Z_FLOAT_CODE_DIV,NULL))
+			return *this;
+		_modes |= 1<<(Z_FLOAT_DIVZERO+2);
+		exponent = UINTMAX_MAX/2U;
+		mantissa = 0;
+		return *this;
+		}
+	else if (is_zero(*this)) return *this; // 0/x or 0/infinity
+	else if (isinf(rhs))
+		{	// x/infinity is a correctly signed zero
+		exponent = 0;
+		mantissa = 0;
+		return *this;
+		}
+
+	_rearrange_quotient(rhs);
+
+	// overflow check
+	intmax_t apparent_exponent = _exponent(*this)-_exponent(rhs)-(mantissa<rhs.mantissa);
+	if ((intmax_t)(UINTMAX_MAX/4)<=apparent_exponent)
+		// we went unbounded
+		return IEEE_overflow(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
+
+	// catastrophic underflow check
+	intmax_t denormal_severity = ((intmax_t)(UINTMAX_MAX/4)<= -apparent_exponent) ? -apparent_exponent-(intmax_t)(UINTMAX_MAX/4)-(intmax_t)exponent : -1;
+	if ((intmax_t)(sizeof(uintmax_t)*CHAR_BIT)<=denormal_severity)
+		return IEEE_underflow_to_zero(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV);
+
+	if (0==rhs.mantissa && UINTMAX_MAX/4==rhs.exponent) return *this;	// exact division
+
 	_fatal_code("z_float::operator/= not fully implemented yet",3);
+}
+
+void z_float::rearrange_quotient(z_float& rhs)
+{
+	if (isnan(*this)) return;
+	if (isnan(rhs)) return;
+
+	// handle sign now
+	if (rhs.is_negative)
+		{
+		is_negative = !is_negative;
+		rhs.is_negative = false;
+		}
+
+	// 0/0 and infinity/infinity are invalid
+	// 0/x is a correctly signed zero
+	// x/infinity is a correctly signed zero
+	// x/0 is a DIV_BY_ZERO exception with a non-trap result of a correctly signed infinity
+	// infinity/x is a correctly signed infinity
+	if (isinf(*this))
+		{
+		if (!isinf(rhs) && !is_zero(rhs))
+			{
+			rhs.exponent = UINTMAX_MAX/4;
+			rhs.mantissa = 0;
+			}
+		return;
+		}
+	else if (is_zero(rhs)) return;
+	else if (is_zero(*this))
+		{	// 0/x or 0/infinity
+		rhs.exponent = UINTMAX_MAX/4;
+		rhs.mantissa = 0;
+		return;
+		}
+	else if (isinf(rhs))
+		{	// x/infinity is a correctly signed zero
+		exponent = 0;
+		mantissa = 0;
+		rhs.exponent = UINTMAX_MAX/4;
+		rhs.mantissa = 0;
+		return;
+		}
+
+	_rearrange_quotient(rhs,apparent_exponent,denormal_severity);
 }
 
 void z_float::subtract_implicit_leading_bit()

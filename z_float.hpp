@@ -93,6 +93,9 @@ public:
 	// \post rhs has strictly smaller absolute value than lhs, if this is meaningful
 	// sNANs do not signal here.
 	void rearrange_sum(z_float& rhs);
+	// no-round version of operator/
+	// \post: rearrangement complete if and only if rhs equals 1
+	void rearrange_quotient(z_float& rhs);
 
 private:
 	void init_from_uintmax_t(uintmax_t src);
@@ -108,6 +111,7 @@ private:
 	bool subtract_bit(unsigned n);
 	int cmp_half_epsilon_of(const z_float& rhs) const;
 	void _rearrange_sum(z_float& rhs);
+	void _rearrange_quotient(z_float& rhs);
 };
 
 inline bool operator!=(const z_float& lhs, const z_float& rhs) {return !(lhs==rhs);};
