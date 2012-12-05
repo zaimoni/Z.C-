@@ -809,7 +809,50 @@ z_float& z_float::operator/=(z_float rhs)
 
 	if (0==rhs.mantissa && UINTMAX_MAX/4==rhs.exponent) return *this;	// exact division
 
-	_fatal_code("z_float::operator/= not fully implemented yet",3);
+	int next_bit = sizeof(uintmax_t)*CHAR_BIT-1-denormal_severity;
+	bool shifted = mantissa<rhs.mantissa;
+	z_float tmp(is_negative,0<=denormal_severity ? 0 : apparent_exponent+(intmax_t)(UINTMAX_MAX/4),0<=denormal_severity ? 1ULL<<(sizeof(uintmax_t)*CHAR_BIT-1-denormal_severity) : 0);	// not really...assumes result is normal
+	z_float vr_lhs(false,UINTMAX_MAX/4,mantissa);
+	z_float vr_rhs(false,UINTMAX_MAX/4-shifted,rhs.mantissa);
+	vr_lhs -= vr_rhs;
+	if (is_zero(vr_lhs)) return *this = tmp;
+	while(true)
+		{
+		if (mantissa<rhs.mantissa)
+			{
+			if (shifted)
+				{
+				next_bit += _exponent(vr_lhs);
+				vr_lhs.exponent = UINTMAX_MAX/4;
+				}
+			else{
+				next_bit += _exponent(vr_lhs)-1;
+				vr_lhs.exponent = UINTMAX_MAX/4;
+				vr_rhs.exponent = UINTMAX_MAX/4-1;
+				shifted = true;
+				}
+			}
+		else{
+			if (shifted)
+				{
+				next_bit += _exponent(vr_lhs)+1;
+				vr_lhs.exponent = UINTMAX_MAX/4;
+				vr_rhs.exponent = UINTMAX_MAX/4;
+				shifted = false;
+				}
+			else{
+				next_bit += _exponent(vr_lhs);
+				vr_lhs.exponent = UINTMAX_MAX/4;
+				}
+			}
+		if (0>next_bit)
+			{
+			return *this = tmp.IEEE_round_from_infinity(_rounding_mode(),z_float(*this),rhs,Z_FLOAT_CODE_DIV,-1==next_bit ? 1 : -1);
+			}
+		vr_lhs -= vr_rhs;
+		tmp.add_bit(next_bit);
+		if (is_zero(vr_rhs)) return *this = tmp;
+		}
 }
 
 void z_float::rearrange_quotient(z_float& rhs)
@@ -854,7 +897,7 @@ void z_float::rearrange_quotient(z_float& rhs)
 		return;
 		}
 
-	_rearrange_quotient(rhs,apparent_exponent,denormal_severity);
+	_rearrange_quotient(rhs);
 }
 
 void z_float::subtract_implicit_leading_bit()
