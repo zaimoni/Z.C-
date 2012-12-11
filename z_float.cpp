@@ -1567,8 +1567,8 @@ int main(int argc, char* argv[])
 
 	assert(one_2==one);	
 	assert(one==one_2);	
-	assert(one_2==one_3);	
-	assert(one_3==one_2);	
+	assert(one_2==one_3);
+	assert(one_3==one_2);
 
 	assert(neg_one_2==neg_one);	
 	assert(neg_one==neg_one_2);	
@@ -1616,6 +1616,11 @@ int main(int argc, char* argv[])
 	assert(neg_one==one*neg_one);
 	assert(neg_one==neg_one*one);
 	assert(one==neg_one*neg_one);
+
+	assert(one==one/one);
+	assert(one==neg_one/neg_one);
+	assert(neg_one==neg_one/one);
+	assert(neg_one==one/neg_one);
 
 	STRING_LITERAL_TO_STDOUT("one OK\n");
 	
@@ -1670,6 +1675,15 @@ int main(int argc, char* argv[])
 	assert(neg_two==two*neg_one);
 	assert(two==neg_one*neg_two);
 	assert(two==neg_two*neg_one);
+
+	assert(one==two/two);
+	assert(one==neg_two/neg_two);
+	assert(neg_one==neg_two/two);
+	assert(neg_one==two/neg_two);
+	assert(two==two/one);
+	assert(two==neg_two/neg_one);
+	assert(neg_two==neg_two/one);
+	assert(neg_two==two/neg_one);
 	
 	STRING_LITERAL_TO_STDOUT("two OK\n");
 

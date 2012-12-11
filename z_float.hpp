@@ -123,14 +123,12 @@ inline z_float operator*(const z_float& lhs,const z_float& rhs)
 	return tmp;
 }
 
-#if 0
 inline z_float operator/(const z_float& lhs,const z_float& rhs)
 {
 	z_float tmp(lhs);
 	tmp /= rhs;
 	return tmp;
 }
-#endif
 
 inline z_float operator+(const z_float& lhs,const z_float& rhs)
 {
