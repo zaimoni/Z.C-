@@ -716,6 +716,17 @@ bool CPreprocessor::preprocess(autovalarray_ptr<Token<char>* >& TokenList)
 	// need whitespace tokens here to force pretty-printing
 	debug_to_stderr(TokenList,macros_object,macros_object_expansion,macros_function,macros_function_arglist,macros_function_expansion,locked_macros);
 	die_on_pp_errors();
+
+	// invoke GC on include_file_cache
+	size_t i = include_file_cache.size();
+	while(0<i)
+		{
+		delete include_file_cache[--i].second;
+		include_file_cache[i].second = NULL;	// for style reasons
+		};
+	include_file_cache.reset();	// remove
+	include_file_index.reset();	// remove
+
 	if (TokenList.empty())
 		{	//! \todo make this more efficient by providing a global flush-all
 		while(string_from_index(0)) deregister_index(0);
@@ -735,16 +746,6 @@ bool CPreprocessor::preprocess(autovalarray_ptr<Token<char>* >& TokenList)
 			}
 		while(++iter!=iter_end);
 	}
-
-	// invoke GC on include_file_cache
-	size_t i = include_file_cache.size();
-	while(0<i)
-		{
-		delete include_file_cache[--i].second;
-		include_file_cache[i].second = NULL;	// for style reasons
-		};
-	include_file_cache.reset();	// remove
-	include_file_index.reset();	// remove
 
 	// check for unused atomic strings
 	{
