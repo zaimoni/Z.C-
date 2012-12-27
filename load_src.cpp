@@ -73,10 +73,12 @@ load_sourcefile(autovalarray_ptr<Token<char>* >& TokenList, const char* const fi
 #endif
 
 	try {
+		zaimoni::autovalarray_ptr_throws<char> tmp(strlen(filename));
+		memmove(tmp.c_array(),filename,strlen(filename));
 #ifndef ZAIMONI_FORCE_ISO
-		tmpTokenList[0] = new Token<char>(Buffer,filename);
+		tmpTokenList[0] = new Token<char>(Buffer,tmp.release());
 #else
-		tmpTokenList[0] = new Token<char>(Buffer,Buffer_size,filename);
+		tmpTokenList[0] = new Token<char>(Buffer,Buffer_size,tmp.release());
 //		Buffer_size = 0;	// dead code
 #endif
 		}

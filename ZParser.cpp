@@ -47,7 +47,7 @@ static bool init_parse_tree_from_token(parse_tree& dest, const Token<char>& tmp_
 	dest.index_tokens[0].logical_line.first = tmp_front.original_line.first;
 	dest.index_tokens[0].logical_line.second = tmp_front.original_line.second;
 	dest.index_tokens[0].flags = src2.third;
-	dest.index_tokens[0].src_filename = tmp_front.src_filename;
+	dest.index_tokens[0].src_filename = tmp_front.src_filename.data();
 	const char* const tmp = C_TESTFLAG_IDENTIFIER==src2.third ? lang.pp_support->EchoReservedKeyword(tmp_front.data(),src2.second) 
 						: C_TESTFLAG_PP_OP_PUNC & src2.third ? lang.pp_support->EchoReservedSymbol(tmp_front.data(),src2.second) : NULL;
 	if (tmp)
@@ -111,11 +111,11 @@ bool ZParser::parse(autovalarray_ptr<Token<char>*>& TokenList,autovalarray_ptr<p
 			while(iter_begin!=iter)
 				{
 				--iter;
-				lang.pp_support->AddPostLexFlags(tmp_front.data()+iter->first, iter->second, iter->third, tmp_front.src_filename, tmp_front.original_line.first);
+				lang.pp_support->AddPostLexFlags(tmp_front.data()+iter->first, iter->second, iter->third, tmp_front.src_filename.data(), tmp_front.original_line.first);
 				if (	(C_TESTFLAG_PP_OP_PUNC & iter->third)
 					&& 	(C_DISALLOW_POSTPROCESSED_SOURCE & lang.pp_support->GetPPOpPuncFlags(C_PP_DECODE(iter->third))))
 					{
-					INC_INFORM(tmp_front.src_filename);
+					INC_INFORM(tmp_front.src_filename.data());
 					INC_INFORM(':');
 					INC_INFORM(tmp_front.original_line.first);
 					INC_INFORM(": ");

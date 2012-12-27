@@ -381,7 +381,7 @@ static void _init_weak_token(weak_token& dest, const Token<char>& x,const POD_tr
 	dest.flags = pretoken.third;
 	dest.logical_line.first = x.original_line.first;
 	dest.logical_line.second = x.original_line.second+pretoken.first;
-	dest.src_filename = x.src_filename;
+	dest.src_filename = x.src_filename.data();
 }
 
 static void _weak_tokenize_aux(const Token<char>& x,const autovalarray_ptr<POD_triple<size_t,size_t,lex_flags> >& pretokenized, autovalarray_ptr<weak_token>& weaktoken_list)
@@ -545,14 +545,14 @@ static errr find_directive(const char* const Text, const LangConf& lang)
 
 static void message_header(const Token<char>& src)
 {
-	assert(src.src_filename && *src.src_filename);
-	message_header(src.src_filename,src.logical_line.first);
+	assert(!src.src_filename.empty() && *src.src_filename);
+	message_header(src.src_filename.data(),src.logical_line.first);
 }
 
 static void message_header2(const Token<char>& src,size_t where)
 {
-	assert(NULL!=src.src_filename);
-	INC_INFORM(src.src_filename);
+	assert(!src.src_filename.empty());
+	INC_INFORM(src.src_filename.data());
 	INC_INFORM(':');
 	INC_INFORM(src.logical_line.first);
 	INC_INFORM('.');
@@ -763,25 +763,6 @@ bool CPreprocessor::preprocess(autovalarray_ptr<Token<char>* >& TokenList)
 		while(++iter!=iter_end);
 	}
 
-	// check for unused atomic strings
-	{
-	size_t x = 0;
-	while(const char* atom_string = string_from_index(x))
-		{
-		bool string_used = false;
-		i = TokenList.size();
-		do	if (atom_string==TokenList[--i]->src_filename)
-				{
-				string_used = true;
-				break;
-				}
-		while(0<i);
-		if (string_used)
-			++x;
-		else
-			deregister_index(x);
-		};
-	}
 	return true;
 }
 
@@ -1906,11 +1887,11 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 #define CPP_INCLUDE_NOT_FOUND 1U
 
 		autovalarray_ptr<Token<char>* > IncludeTokenList;
-		const char* const look_for = register_substring(TokenList[include_where]->data()+sizeof("#include <")-1,filename_len);
-		assert(filename_len==strlen(look_for));
+		zaimoni::flyweight<const char> look_for(C_string_to_flyweight(TokenList[include_where]->data()+sizeof("#include <")-1,filename_len));
+		assert(filename_len==strlen(look_for.data()));
 		if (local_include)
 			{	// #include "..." prohibits interior "
-			if (strchr(look_for,'"'))
+			if (strchr(look_for.data(),'"'))
 				{	//! \test Error_include_multiterminated2.hpp
 				message_header(*TokenList[include_where]);
 				INC_INFORM(ERR_STR);
@@ -1922,7 +1903,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 				return;
 				}
 			}
-		else if (strchr(look_for,'>')) // #include <...> prohibits interior >
+		else if (strchr(look_for.data(),'>')) // #include <...> prohibits interior >
 			{	//! \test Error_include_multiterminated1.hpp
 			message_header(*TokenList[include_where]);
 			INC_INFORM(ERR_STR);
@@ -1934,7 +1915,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 			return;
 			};
 
-		errr have_file_index = binary_find(look_for, filename_len, include_file_index);
+		errr have_file_index = binary_find(look_for.data(), filename_len, include_file_index);
 		// system includes use their handle for information.
 		//! \todo rewrite this to support the #include_next extension?
 		if (0<=have_file_index)
@@ -1955,7 +1936,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 			char buf[FILENAME_MAX];
 			const char* main_index_name = NULL;
 			// note: local_include needs to know where to start...
-			bool found_file = local_include && find_local_include(look_for, buf, (TokenList[include_where]->parent_dir.empty() ? "." : TokenList[include_where]->parent_dir.data()));
+			bool found_file = local_include && find_local_include(look_for.data(), buf, (TokenList[include_where]->parent_dir.empty() ? "." : TokenList[include_where]->parent_dir.data()));
 			bool hardcoded_header = false;
 			if (found_file)
 				{	// filepath known; local includes use the calculated path for information
@@ -2004,10 +1985,10 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 				// We undefine the offending macros as well as erroring, mainly to prevent duplicate error messages
 				// C99 doesn't care about such defines *after* the header; C++98 does.
 				//! \test cpp/default/keywords/Error_*.h
-				if (Lang::C==lang_code && 0<lang.pp_support->LengthOfSystemHeader(look_for))
-					C99_reject_keyword_macros(TokenList,include_where,look_for,lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
+				if (Lang::C==lang_code && 0<lang.pp_support->LengthOfSystemHeader(look_for.data()))
+					C99_reject_keyword_macros(TokenList,include_where,look_for.data(),lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
 
-				const unsigned int hardcoded_header_idx = detect_hardcoded_system_header(look_for,lang_code);
+				const unsigned int hardcoded_header_idx = detect_hardcoded_system_header(look_for.data(),lang_code);
 				switch(hardcoded_header_idx)
 				{
 #ifndef NDEBUG
@@ -2015,26 +1996,26 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 #endif
 				case 3:	// stdint.h/cstdint
 					hardcoded_header = true;
-					C99_reject_keyword_macros(TokenList,include_where,look_for,lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
+					C99_reject_keyword_macros(TokenList,include_where,look_for.data(),lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
 					if (0>binary_find("__STDINT_H__",sizeof("__STDINT_H__")-1,macros_object))	
-						create_stdint_header(IncludeTokenList,look_for);	// not included yet
+						create_stdint_header(IncludeTokenList,look_for.data());	// not included yet
 					break;
 				case 2:	// stddef.h/cstddef
 					hardcoded_header = true;
-					C99_reject_keyword_macros(TokenList,include_where,look_for,lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
+					C99_reject_keyword_macros(TokenList,include_where,look_for.data(),lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
 					if (0>binary_find("__STDDEF_H__",sizeof("__STDDEF_H__")-1,macros_object))	
-						create_stddef_header(IncludeTokenList,look_for);	// not included yet
+						create_stddef_header(IncludeTokenList,look_for.data());	// not included yet
 					break;
 				case 1:	// limits.h/climits
 					hardcoded_header = true;
-					C99_reject_keyword_macros(TokenList,include_where,look_for,lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
+					C99_reject_keyword_macros(TokenList,include_where,look_for.data(),lang,macros_object,macros_object_expansion,macros_object_expansion_pre_eval,macros_function,macros_function_arglist,macros_function_expansion,macros_function_expansion_pre_eval);
 					if (0>binary_find("__LIMITS_H__",sizeof("__LIMITS_H__")-1,macros_object))	
-						create_limits_header(IncludeTokenList,look_for);	// not included yet
+						create_limits_header(IncludeTokenList,look_for.data());	// not included yet
 					break;
 				case 0:;
 				}
 
-				found_file = !hardcoded_header && find_system_include(look_for, buf);
+				found_file = !hardcoded_header && find_system_include(look_for.data(), buf);
 				if (found_file)
 					{	// filepath known; inhale and set up cache
 					if (!load_sourcefile(IncludeTokenList,buf,lang)) throw std::bad_alloc();
@@ -2054,7 +2035,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 						};
 					main_index_name = register_string(buf);
 					// set up include_file_index, include_file_cache
-					tmp = binary_find(look_for,filename_len,include_file_index);
+					tmp = binary_find(look_for.data(),filename_len,include_file_index);
 					const size_t include_file_index_target = BINARY_SEARCH_DECODE_INSERTION_POINT(tmp);
 					tmp = binary_find(main_index_name,strlen(main_index_name),include_file_cache);
 					const size_t include_file_cache_target = BINARY_SEARCH_DECODE_INSERTION_POINT(tmp);
@@ -2062,17 +2043,17 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 					include_file_cache.insertNSlotsAt(1,include_file_cache_target);
 					include_file_cache[include_file_cache_target].second = new autovalarray_ptr<Token<char>* >(IncludeTokenList);
 					include_file_cache[include_file_cache_target].first = main_index_name;
-					include_file_index[include_file_index_target].first = look_for;
+					include_file_index[include_file_index_target].first = look_for.data();
 					include_file_index[include_file_index_target].second = main_index_name;
 					include_file_index[include_file_index_target].third = 0;
 					}
 				else if (!hardcoded_header)
 					{	// not there at all...
 					// set up include_file_index
-					tmp = binary_find(look_for,filename_len,include_file_index);
+					tmp = binary_find(look_for.data(),filename_len,include_file_index);
 					const size_t include_file_index_target = BINARY_SEARCH_DECODE_INSERTION_POINT(tmp);
 					include_file_index.insertNSlotsAt(1,include_file_index_target);
-					include_file_index[include_file_index_target].first = look_for;
+					include_file_index[include_file_index_target].first = look_for.data();
 					include_file_index[include_file_index_target].second = NULL;
 					include_file_index[include_file_index_target].third = CPP_INCLUDE_NOT_FOUND;
 
@@ -3094,7 +3075,7 @@ CPreprocessor::if_elif_syntax_ok(Token<char>& x, const autovalarray_ptr<char*>& 
 	i = pretokenized.size();
 	do	{
 		--i;
-		lang.pp_support->AddPostLexFlags(x.data()+pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename, x.original_line.first);
+		lang.pp_support->AddPostLexFlags(x.data()+pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename.data(), x.original_line.first);
 		if (	(C_TESTFLAG_PP_OP_PUNC & pretokenized[i].third)
 			&& 	((C_DISALLOW_POSTPROCESSED_SOURCE | C_DISALLOW_CONSTANT_EXPR | C_DISALLOW_IF_ELIF_CONTROL) & lang.pp_support->GetPPOpPuncFlags(C_PP_DECODE(pretokenized[i].third))))
 			{
@@ -3210,7 +3191,7 @@ oneTokenExit:
 			return false;
 			}
 		//! \todo --do-what-i-mean doesn't call this to evoke an error
-		C99_literal_is_legal(x.data()+pretokenized.front().first,pretokenized.front().second,pretokenized.front().third,x.src_filename,x.logical_line.first,min_types);
+		C99_literal_is_legal(x.data()+pretokenized.front().first,pretokenized.front().second,pretokenized.front().third,x.src_filename.data(),x.logical_line.first,min_types);
 		x.replace_once(std::nothrow,critical_offset,x.size()-critical_offset,(is_zero) ? '0' : '1');
 		return true;
 		}
@@ -3308,7 +3289,7 @@ oneTokenExit:
 	i = pretokenized.size();
 	do	{
 		--i;
-		lang.pp_support->AddPostLexFlags(x.data()+pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename, x.original_line.first);
+		lang.pp_support->AddPostLexFlags(x.data()+pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename.data(), x.original_line.first);
 		}
 	while(0<i);
 	str_concat_wants_RAM = false;
@@ -3364,11 +3345,11 @@ CPreprocessor::predefined_macro_replace_once(Token<char>& x, size_t& critical_of
 		// special
 		else if (!strcmp(macro_identifier_default[macro_index].first,"__FILE__"))
 			{
-			assert(x.src_filename);
+			assert(!x.src_filename.empty());
 			file_buf[0] = '"';
-			strcpy(file_buf+1,x.src_filename);
-			file_buf[1+strlen(x.src_filename)] = '"';
-			file_buf[2+strlen(x.src_filename)] = '\0';
+			strcpy(file_buf+1,x.src_filename.data());
+			file_buf[1+strlen(x.src_filename.data())] = '"';
+			file_buf[2+strlen(x.src_filename.data())] = '\0';
 			macro_value = file_buf;
 			}
 		else if (!strcmp(macro_identifier_default[macro_index].first,"__LINE__"))
@@ -3956,10 +3937,10 @@ CPreprocessor::debug_to_stderr(const autovalarray_ptr<Token<char>* >& TokenList,
 	size_t i = 0;
 	while(i<list_size)
 		{
-		if (0<i && TokenList[i-1]->logical_line.first==TokenList[i]->logical_line.first && !strcmp(TokenList[i-1]->src_filename,TokenList[i]->src_filename) && lang.require_padding(TokenList[i-1]->back(),TokenList[i]->front()))
+		if (0<i && TokenList[i-1]->logical_line.first==TokenList[i]->logical_line.first && !strcmp(TokenList[i-1]->src_filename.data(),TokenList[i]->src_filename.data()) && lang.require_padding(TokenList[i-1]->back(),TokenList[i]->front()))
 			INC_INFORM(' ');
 
-		if (list_size<=i+1 || TokenList[i]->logical_line.first!=TokenList[i+1]->logical_line.first || strcmp(TokenList[i]->src_filename,TokenList[i+1]->src_filename))
+		if (list_size<=i+1 || TokenList[i]->logical_line.first!=TokenList[i+1]->logical_line.first || strcmp(TokenList[i]->src_filename.data(),TokenList[i+1]->src_filename.data()))
 			INFORM(TokenList[i]->data());
 		else
 			INC_INFORM(TokenList[i]->data());
@@ -4179,19 +4160,19 @@ CPreprocessor::use_line_directive_and_discard(autovalarray_ptr<Token<char>* >& T
 		{	//! \test cpp/line.C99/Preprocess_42.h, cpp/line.C99/Preprocess_42.hpp
 		//! \todo loops should stop at first (valid) #line directive with a filename
 		// unescape the string, if needed
-		const char* new_FILE = NULL;
+		zaimoni::flyweight<const char> new_FILE;
 		const size_t escape_length = lang.UnescapeStringLength(TokenList[i]->data()+critical_offset+1,second_token_len-2);
 		if (escape_length>=second_token_len-2)
-			new_FILE = register_substring(TokenList[i]->data()+critical_offset+1,second_token_len-2);
+			new_FILE = C_string_to_flyweight(TokenList[i]->data()+critical_offset+1,second_token_len-2);
 		else if (0<escape_length)
 			{
 			autovalarray_ptr_throws<char> tmp(escape_length);
 			lang.UnescapeString(tmp.c_array(),TokenList[i]->data()+critical_offset+1,second_token_len-2);
-			new_FILE = consume_string(tmp.release());
+			new_FILE = zaimoni::flyweight<const char>(tmp.release());
 			}
 
 		size_t j = i+1;
-		if (new_FILE!=TokenList[j]->src_filename)
+		if (strcmp(new_FILE.data(),TokenList[j]->src_filename.data()))
 			while(j<TokenList.size())
 				TokenList[j++]->src_filename = new_FILE;
 		}

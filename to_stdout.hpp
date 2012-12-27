@@ -1,3 +1,5 @@
+// (C)2012 Kenneth Boyd, license: MIT.txt
+
 #ifndef TO_STDOUT_HPP
 #define TO_STDOUT_HPP 1
 

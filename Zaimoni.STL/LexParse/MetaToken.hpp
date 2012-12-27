@@ -27,10 +27,10 @@ public:
 	// pairs are: line number, origin (column number)
 	std::pair<size_t,size_t> logical_line;		// where the token actually is
 	std::pair<size_t,size_t> original_line;		// where the token originally was from (C macro substitution, etc.)
-	const char* src_filename;	// *NOT* owned; default NULL
+	zaimoni::flyweight<const char> src_filename;
 	zaimoni::flyweight<const char> parent_dir;
 
-	MetaToken() : logical_line(0,0),original_line(0,0),src_filename(NULL) {};
+	MetaToken() : logical_line(0,0),original_line(0,0) {};
 	virtual ~MetaToken() {};
 	// do not want this copy-constructable from outside, should use CopyInto paradigm if needed
 protected:
@@ -142,8 +142,7 @@ template<class T>
 MetaToken<T>::MetaToken(const T* const src,size_t offset,size_t token_len)
 :	_token((token_len ? ZAIMONI_LEN_WITH_NULL(token_len) : 0)),
 	logical_line(0,offset),
-	original_line(0,offset),
-	src_filename(NULL)
+	original_line(0,offset)
 {
 	assert(NULL!=src);
 	assert(offset<strlen(src));
