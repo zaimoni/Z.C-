@@ -1,5 +1,5 @@
 // CPreproc_pp.cpp
-// (C)2009-2011 Kenneth Boyd, license: MIT.txt
+// (C)2009-2012 Kenneth Boyd, license: MIT.txt
 
 #include "CPreproc_pp.hpp"
 
@@ -754,8 +754,7 @@ bool CPreprocessor::preprocess(autovalarray_ptr<Token<char>* >& TokenList)
 		{
 		bool string_used = false;
 		i = TokenList.size();
-		do	if (	atom_string==TokenList[--i]->src_filename
-				|| 	atom_string==TokenList[i]->parent_dir)
+		do	if (atom_string==TokenList[--i]->src_filename)
 				{
 				string_used = true;
 				break;
@@ -1924,7 +1923,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 			char buf[FILENAME_MAX];
 			const char* main_index_name = NULL;
 			// note: local_include needs to know where to start...
-			bool found_file = local_include && find_local_include(look_for, buf, (TokenList[include_where]->parent_dir ? TokenList[include_where]->parent_dir : "."));
+			bool found_file = local_include && find_local_include(look_for, buf, (TokenList[include_where]->parent_dir.empty() ? "." : TokenList[include_where]->parent_dir.data()));
 			bool hardcoded_header = false;
 			if (found_file)
 				{	// filepath known; local includes use the calculated path for information
@@ -1944,7 +1943,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 						{
 						char parent_path[FILENAME_MAX];
 						z_dirname(parent_path,buf);
-						const char* const parent_dir = register_string(parent_path);
+						zaimoni::flyweight<const char> parent_dir(C_string_to_flyweight(parent_path,strlen(parent_path)));
 						size_t j = IncludeTokenList.size();
 						do	{
 							IncludeTokenList[--j]->src_filename = look_for;
@@ -2012,7 +2011,8 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 						{
 						char parent_path[FILENAME_MAX];
 						z_dirname(parent_path,buf);
-						const char* const parent_dir = (!strcmp(parent_path,origin_dir)) ? origin_dir : register_string(parent_path);
+						const char* tmp2 = strcmp(parent_path,origin_dir) ? parent_path : origin_dir;
+						zaimoni::flyweight<const char> parent_dir(C_string_to_flyweight(tmp2,strlen(tmp2)));
 						size_t j = IncludeTokenList.size();
 						do	{
 							IncludeTokenList[--j]->src_filename = look_for;
@@ -2976,7 +2976,7 @@ CPreprocessor::if_elif_syntax_ok(Token<char>& x, const autovalarray_ptr<char*>& 
 					i += 2;
 					continue;
 					};
-				const char subst_dest = (detect_hardcoded_system_header(look_for,lang_code) || find_local_include(look_for, buf, (x.parent_dir ? x.parent_dir : ".")) || find_system_include(look_for, buf)) ? '1' : '0';
+				const char subst_dest = (detect_hardcoded_system_header(look_for,lang_code) || find_local_include(look_for, buf, (x.parent_dir.empty() ? "." : x.parent_dir.data())) || find_system_include(look_for, buf)) ? '1' : '0';
 				free(look_for);
 				if (replace_char_into_directive(x,pretokenized,subst_dest,i,3)) return true;
 				lang.line_lex(x.data()+critical_offset,x.size()-critical_offset,pretokenized);

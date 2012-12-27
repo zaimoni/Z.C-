@@ -1,14 +1,22 @@
 // MetaToken.hpp
-// (C)2009 Kenneth Boyd, license: MIT.txt
+// (C)2009,2012 Kenneth Boyd, license: MIT.txt
 
 #ifndef ZAIMONI_STL_LEXPARSE_METATOKEN_HPP
 #define ZAIMONI_STL_LEXPARSE_METATOKEN_HPP 1
 
 #include "../AutoPtr.hpp"
+#include "../flyweight.hpp"
 
 #include <utility>
 
 namespace zaimoni {
+
+inline flyweight<const char> C_string_to_flyweight(const char* const x,size_t x_len)
+{
+	autovalarray_ptr_throws<char> tmp(x_len);
+	memmove(tmp.c_array(),x,x_len);
+	return zaimoni::flyweight<const char>(tmp.release());
+}
 
 template<class T>
 class MetaToken
@@ -20,9 +28,9 @@ public:
 	std::pair<size_t,size_t> logical_line;		// where the token actually is
 	std::pair<size_t,size_t> original_line;		// where the token originally was from (C macro substitution, etc.)
 	const char* src_filename;	// *NOT* owned; default NULL
-	const char* parent_dir;		// *NOT* owned; default NULL
+	zaimoni::flyweight<const char> parent_dir;
 
-	MetaToken() : logical_line(0,0),original_line(0,0),src_filename(NULL),parent_dir(NULL) {};
+	MetaToken() : logical_line(0,0),original_line(0,0),src_filename(NULL) {};
 	virtual ~MetaToken() {};
 	// do not want this copy-constructable from outside, should use CopyInto paradigm if needed
 protected:
@@ -41,8 +49,7 @@ protected:
 #endif
 			logical_line(1,0),
 			original_line(1,0),
-			src_filename(_src_filename),
-			parent_dir(NULL) {};
+			src_filename(_src_filename) {};
 	MetaToken(const MetaToken& src,size_t prefix);
 	MetaToken(const MetaToken& src,size_t offset,size_t token_len);
 	MetaToken(const T* const src,size_t offset,size_t token_len);
@@ -136,8 +143,7 @@ MetaToken<T>::MetaToken(const T* const src,size_t offset,size_t token_len)
 :	_token((token_len ? ZAIMONI_LEN_WITH_NULL(token_len) : 0)),
 	logical_line(0,offset),
 	original_line(0,offset),
-	src_filename(NULL),
-	parent_dir(NULL)
+	src_filename(NULL)
 {
 	assert(NULL!=src);
 	assert(offset<strlen(src));

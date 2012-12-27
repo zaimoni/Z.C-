@@ -1,5 +1,5 @@
 // load_src.cpp
-// (C)2009,2010 Kenneth Boyd, license: MIT.txt
+// (C)2009,2010,2012 Kenneth Boyd, license: MIT.txt
 
 #include "Zaimoni.STL/cstdio"
 #include "Zaimoni.STL/LexParse/Token.hpp"
@@ -133,8 +133,9 @@ load_sourcefile(autovalarray_ptr<Token<char>* >& TokenList, const char* const fi
 		{
 		char workspace[FILENAME_MAX];
 		z_realpath(workspace,filename);
+		zaimoni::flyweight<const char> tmp(C_string_to_flyweight(workspace,strlen(workspace)));
 		size_t j = tmpTokenList.size();
-		do	tmpTokenList[--j]->parent_dir = register_string(workspace);
+		do	tmpTokenList[--j]->parent_dir = tmp;
 		while(0<j);
 		};
 	swap(tmpTokenList,TokenList);
