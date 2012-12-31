@@ -1,13 +1,12 @@
 // z_cpp.cpp
 // main for Z++ C preprocessor (console-mode)
-// (C)2009 Kenneth Boyd, license: MIT.txt
+// (C)2009,2012 Kenneth Boyd, license: MIT.txt
 
 #include "Zaimoni.STL/LexParse/Token.hpp"
 #include "_CSupport2.hpp"
 
 #include "CPreproc_pp.hpp"
 #include "load_src.hpp"
-#include "AtomicString.h"
 #include "filesystem.h"
 #include "langroute.hpp"
 #include "errors.hpp"
@@ -247,7 +246,7 @@ int main(int argc, char* argv[])
 			}
 		else{
 			if (last_arg_used_in_option) FATAL("file not last argument provided");
-			if (!load_sourcefile(TokenList,register_string(argv[argc-1]),lexer_from_string(string_options[stringopt::lang]))) FATAL("target file not loaded");
+			if (!load_sourcefile(TokenList,argv[argc-1],lexer_from_string(string_options[stringopt::lang]))) FATAL("target file not loaded");
 			cpp.preprocess(TokenList);
 			}
 
