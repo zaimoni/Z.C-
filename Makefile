@@ -31,3 +31,5 @@ bin/z_cpp.exe : make_Zaimoni_STL $(OBJECTS_BIN/Z_CPP_LINK_PRIORITY)
 .cpp.o:
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(ARCH_FLAGS) $(OTHER_INCLUDEDIR) $(C_MACROS) $(CXX_MACROS) \
 	 -o $*.o -c -xc++ -pipe $<
+
+include POSIX2.inc

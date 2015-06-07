@@ -261,6 +261,9 @@ def MakeMakefile():
 		LineList.append('\n.c.o:\n')
 		LineList.append('\t$(CC) $(CFLAGS) $(ARCH_FLAGS) $(OTHER_INCLUDEDIR) $(C_MACROS) \\\n')
 		CoreCRules(LineList)
+
+	if isfile('POSIX2.inc'):
+		LineList.append("\ninclude POSIX2.inc\n")
 	
 	TargetFile = open('Makefile','w')	# POSIX
 	TargetFile.writelines(LineList)
