@@ -19,11 +19,11 @@ make_Zaimoni_STL:
 	cd Zaimoni.STL; make host_install
 
 bin/zcc.exe : make_Zaimoni_STL $(OBJECTS_BIN/ZCC_LINK_PRIORITY)
-	g++ $(LINK_FLAGS) -obin/zcc.exe $(OBJECTS_BIN/ZCC) -lz_langconf -lz_log_adapter -lz_stdio_log -lz_mutex -lz_format_util -lz_stdio_c -lz_memory
+	g++ -obin/zcc.exe $(LINK_FLAGS) $(ARCH_FLAGS) $(OBJECTS_BIN/ZCC) -lz_langconf -lz_log_adapter -lz_stdio_log -lz_mutex -lz_format_util -lz_stdio_c -lz_memory
 	strip --preserve-dates --strip-unneeded bin/zcc.exe
 
 bin/z_cpp.exe : make_Zaimoni_STL $(OBJECTS_BIN/Z_CPP_LINK_PRIORITY)
-	g++ $(LINK_FLAGS) -obin/z_cpp.exe $(OBJECTS_BIN/Z_CPP) -lz_langconf -lz_log_adapter -lz_stdio_log -lz_mutex -lz_format_util -lz_stdio_c -lz_memory
+	g++ -obin/z_cpp.exe $(LINK_FLAGS) $(ARCH_FLAGS) $(OBJECTS_BIN/Z_CPP) -lz_langconf -lz_log_adapter -lz_stdio_log -lz_mutex -lz_format_util -lz_stdio_c -lz_memory
 	strip --preserve-dates --strip-unneeded bin/z_cpp.exe
 
 # inference rules
