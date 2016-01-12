@@ -4484,6 +4484,30 @@ static bool CPP_looks_like_identifier(const parse_tree& x)
 	return C_TESTFLAG_IDENTIFIER & x.index_tokens[0].flags;
 }
 
+
+/*
+template parameter recognizer for template<...> is as follows
+* prefix: one token, template keyword
+* index 0: <
+* index 1: >
+* infix: all parameters between < and >
+*/
+static bool is_CPP_template_parameter_like(const parse_tree& src)
+{
+	if (	robust_token_is_char<'<'>(src.index_tokens[0].token)
+#ifndef NDEBUG
+			&&	src.index_tokens[0].src_filename
+#endif
+			&&	robust_token_is_char<'>'>(src.index_tokens[1].token)
+#ifndef NDEBUG
+			&&	src.index_tokens[1].src_filename
+#endif
+			&&	src.empty<2>()
+			&&	1==src.size<1>() && robust_token_is_string<8>(*src.data<1>(),"template"))
+		return true;
+	return false;
+}
+
 //! \throw std::bad_alloc()
 static void make_target_postfix_arg(parse_tree& src,size_t& offset,const size_t i,const size_t j)
 {
@@ -11223,6 +11247,94 @@ static void CPP_handle_pragma_relay(parse_tree& src)
 	while(src.size<0>()> ++i);
 }
 
+// this notices the template parameters.
+//! \throw std::bad_alloc
+static void CPP_notice_template(parse_tree& src)
+{
+	assert(!src.empty<0>());
+	size_t i = src.size<0>();
+	size_t offset = 0;
+	do	{
+		if (!robust_token_is_string<8>(src.data<0>()[--i],"template")) continue;
+		if (1>=src.size<0>()-(i+offset) || !robust_token_is_char<'<'>(src.data<0>()[i+1]))
+			{	//! \test decl.C99/Error_template.hpp
+			message_header(src.data<0>()[i].index_tokens[0]);
+			INC_INFORM(ERR_STR);
+			INFORM("template keyword must have < immediately afterwards (C++0x 14p1)");
+			zcc_errors.inc_error();
+			// remove from parse
+			src.DestroyNAtAndRotateTo<0>(1,i,src.size<0>()-offset);
+			offset += 1;
+			continue;
+			}
+		// need the first trailing > or >>
+		bool found_easy = false;
+		size_t found = 0;
+		{	// scope j, j_ub
+		size_t j = 1;
+		const size_t j_ub = src.size<0>()-(i+offset);
+		while(++j < j_ub)
+			{
+			if (robust_token_is_char<'>'>(src.data<0>()[i+j]))
+				{
+				found = j;
+				found_easy = true;
+				break;
+				}
+			else if (robust_token_is_string(src.data<0>()[i+j],">>"))
+				{
+				found = j;
+				break;
+				}
+			}
+		}	// end scope j, j_ub
+		if (!found)
+			{	//! \test decl.C99/Error_template2.hpp
+			message_header(src.data<0>()[i].index_tokens[0]);
+			INC_INFORM(ERR_STR);
+			INFORM("closing > for template< not found (C++0x 14p1)");
+			zcc_errors.inc_error();
+			// remove from parse
+			src.DestroyNAtAndRotateTo<0>(2,i,src.size<0>()-offset);
+			offset += 2;
+			continue;
+			}
+		const size_t span = found-i-2;
+		parse_tree tmp_template;
+		if (!tmp_template.resize<1>(1)) throw std::bad_alloc();
+		if (span && !tmp_template.resize<0>(span)) throw std::bad_alloc();
+		if (!found_easy)
+			{	// convert the >> to > before using
+			zaimoni::lex_flags tmp_flags = C_TESTFLAG_PP_OP_PUNC;
+			const signed int pp_code = CPPPurePreprocessingOperatorPunctuationCode(">",1);
+			assert(0<pp_code);
+			C_PP_ENCODE(tmp_flags,pp_code);
+			src.c_array<0>()[i+found].grab_index_token_from_str_literal<0>(">",tmp_flags);
+			}
+		// want the >
+		tmp_template.grab_index_token_from<1,0>(src.c_array<0>()[i+found]);
+		tmp_template.grab_index_token_location_from<1,0>(src.c_array<0>()[i+found]);
+		// want the <
+		tmp_template.grab_index_token_from<0,0>(src.c_array<0>()[i+1]);
+		tmp_template.grab_index_token_location_from<0,0>(src.c_array<0>()[i+1]);
+		// template keyword is prefixed
+		src.c_array<0>()[i].MoveInto(tmp_template.front<1>());
+		if (span)
+			{	// infix the tokens between < and >
+			size_t j = 0;
+			do	src.c_array<0>()[i+1+j].MoveInto(tmp_template.c_array<0>()[j]);
+			while(++j < span);
+			}
+		tmp_template.MoveInto(src.c_array<0>()[i]);
+		assert(is_CPP_template_parameter_like(src.data<0>()[i]));
+		src.DestroyNAtAndRotateTo<0>(span+1+found_easy,i+1,src.size<0>()-offset);
+		offset += span+1+found_easy;
+		}
+	while(0<i);;
+	if (0<offset) src.DeleteNSlotsAt<0>(offset,src.size<0>()-offset);
+}
+
+
 //! \todo check that the fact all literals are already legal-form is used
 //! \throw std::bad_alloc
 static void CPP_ContextFreeParse(parse_tree& src,const type_system& types)
@@ -11239,6 +11351,8 @@ static void CPP_ContextFreeParse(parse_tree& src,const type_system& types)
 	CPP_notice_scope_glue(src);
 	// class/struct/union/enum specifiers can occur in all sorts of strange places
 	CPP_notice_class_struct_union_enum(src);
+	// handle template < ... > here, after class/struct/union/enum has been triggered
+	CPP_notice_template(src);
 }
 #/*cut-cpp*/
 
