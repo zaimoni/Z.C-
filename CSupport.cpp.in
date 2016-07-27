@@ -11351,6 +11351,13 @@ static void CPP_ContextFreeParse(parse_tree& src,const type_system& types)
 	CPP_notice_scope_glue(src);
 	// class/struct/union/enum specifiers can occur in all sorts of strange places
 	CPP_notice_class_struct_union_enum(src);
+	// following test cases leave no tokens behind which permits early return
+	// ../../bin/zcc --pedantic decl.C99/Error_class_truncate1.hpp
+	// ../../bin/zcc --pedantic decl.C99/Error_enum_truncate1.hpp
+	// ../../bin/zcc --pedantic decl.C99/Error_struct_truncate1.hpp
+	// ../../bin/zcc --pedantic decl.C99/Error_union_truncate1.hpp
+	if (src.empty<0>()) return;
+
 	// handle template < ... > here, after class/struct/union/enum has been triggered
 	CPP_notice_template(src);
 }

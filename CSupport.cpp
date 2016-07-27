@@ -11117,7 +11117,7 @@ static void CPP_notice_template(parse_tree& src)
 	do	{
 		if (!robust_token_is_string<8>(src.data<0>()[--i],"template")) continue;
 		if (1>=src.size<0>()-(i+offset) || !robust_token_is_char<'<'>(src.data<0>()[i+1]))
-			{
+			{	//! \test decl.C99/Error_template.hpp
 			message_header(src.data<0>()[i].index_tokens[0]);
 			INC_INFORM(ERR_STR);
 			INFORM("template keyword must have < immediately afterwards (C++0x 14p1)");
@@ -11149,7 +11149,7 @@ static void CPP_notice_template(parse_tree& src)
 			}
 		}	// end scope j, j_ub
 		if (!found)
-			{
+			{	//! \test decl.C99/Error_template2.hpp
 			message_header(src.data<0>()[i].index_tokens[0]);
 			INC_INFORM(ERR_STR);
 			INFORM("closing > for template< not found (C++0x 14p1)");
@@ -11211,6 +11211,13 @@ static void CPP_ContextFreeParse(parse_tree& src,const type_system& types)
 	CPP_notice_scope_glue(src);
 	// class/struct/union/enum specifiers can occur in all sorts of strange places
 	CPP_notice_class_struct_union_enum(src);
+	// following test cases leave no tokens behind which permits early return
+	// ../../bin/zcc --pedantic decl.C99/Error_class_truncate1.hpp
+	// ../../bin/zcc --pedantic decl.C99/Error_enum_truncate1.hpp
+	// ../../bin/zcc --pedantic decl.C99/Error_struct_truncate1.hpp
+	// ../../bin/zcc --pedantic decl.C99/Error_union_truncate1.hpp
+	if (src.empty<0>()) return;
+
 	// handle template < ... > here, after class/struct/union/enum has been triggered
 	CPP_notice_template(src);
 }
