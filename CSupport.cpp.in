@@ -5254,7 +5254,7 @@ static bool CPP_literal_converts_to_integer(const parse_tree& src)
 
 //! the returned parse_tree struct has no content; safe to use OvewriteInto on
 //! \throw std::bad_alloc()
-static zaimoni::Loki::CheckReturnDisallow<NULL,parse_tree*>::value_type repurpose_inner_parentheses(parse_tree& src)
+static zaimoni::Loki::CheckReturnDisallow<0,parse_tree*>::value_type repurpose_inner_parentheses(parse_tree& src)
 {
 	if (1==src.size<0>() && is_naked_parentheses_pair(*src.data<0>()))
 		{
