@@ -15,7 +15,7 @@ OBJEXT = o
 
 CFLAGS = -fargument-alias -finline -Os -Wall -Wno-long-long --pedantic
 CXXFLAGS =
-ARCH_FLAGS = -mconsole -mno-cygwin -march=pentium -mtune=pentium3
+ARCH_FLAGS = -mconsole -march=pentium -mtune=pentium3
 LINK_FLAGS = -Llib/host.zcc
 
 OTHER_INCLUDEDIR =

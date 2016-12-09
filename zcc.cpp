@@ -19,8 +19,7 @@
 
 #include "Zaimoni.STL/POD.hpp"
 #include "Zaimoni.STL/LexParse/LangConf.hpp"
-
-#include <stdio.h>
+#include "Zaimoni.STL/Pure.C/stdio_c.h"
 
 error_counter<size_t> zcc_errors(100,"FATAL: too many errors");
 

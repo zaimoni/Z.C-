@@ -3,6 +3,7 @@
 #include "to_stdout.hpp"
 #include "Zaimoni.STL/LexParse/LangConf.hpp"
 #include "Zaimoni.STL/LexParse/Token.hpp"
+#include "Zaimoni.STL/Pure.C/stdio_c.h"
 
 void tokens_to_stdout(const zaimoni::autovalarray_ptr<zaimoni::Token<char>*>& TokenList, const zaimoni::LangConf& lexer) 
 {
