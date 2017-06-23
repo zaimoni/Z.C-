@@ -6,7 +6,7 @@
 
 include ../POSIX.inc
 
-CFLAGS := $(CFLAGS_CORE) $(CFLAGS_MICROOPT)
+CFLAGS := -Os -Wall -finline -Wextra -Winline -Wdisabled-optimization --param max-inline-insns-single=500 -pipe -DNDEBUG
 
 LIBS := libz_format_util.a libz_stdio_c.a
 
@@ -22,16 +22,15 @@ host_install: auto_int.h comptest.h $(addprefix ../../$(host_libdir)/, $(LIBS))
 format_util.o: format_util.c format_util.h
 
 auto_int.h : int_probe.c
-	$(CC) -oint_probe.exe $(CFLAGS) -mconsole $(ARCH_FLAGS) int_probe.c
+	$(CC) -oint_probe.exe $(CFLAGS) $(ARCH_FLAGS) int_probe.c
 	./int_probe.exe > auto_int.h
-	rm int_probe.exe
 
 comptest.h : comptest.in compile.test/exists_MS_io_h.c
 	cp comptest.in comptest.h
-	-$(CC) -oexists_MS_io_h.exe $(CFLAGS) -mconsole $(ARCH_FLAGS) compile.test/exists_MS_io_h.c
+	-$(CC) -oexists_MS_io_h.exe $(CFLAGS) $(ARCH_FLAGS) compile.test/exists_MS_io_h.c
 	-./exists_MS_io_h.exe >> comptest.h
 	-rm exists_MS_io_h.exe
-	-$(CC) -orealloc_0.exe $(CFLAGS) -mconsole $(ARCH_FLAGS) compile.test/realloc_0.c
+	-$(CC) -orealloc_0.exe $(CFLAGS) $(ARCH_FLAGS) compile.test/realloc_0.c
 	-./realloc_0.exe >> comptest.h
 	-rm realloc_0.exe
 
