@@ -10,7 +10,7 @@ libdir = $(exec_prefix)/lib
 host_libdir = lib/host.zcc
 
 AR = ar
-CC = gcc
+CC = gcc -std=gnu11
 CXX = g++ -std=c++11
 
 EXEEXT = exe
