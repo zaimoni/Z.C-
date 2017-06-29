@@ -13,9 +13,9 @@ CXX = g++ -std=gnu++11
 EXEEXT = exe
 OBJEXT = o
 
-CFLAGS = -fargument-alias -finline -Os -Wall -Wno-long-long --pedantic
+CFLAGS = -fargument-alias -finline -Os -Wall --pedantic
 CXXFLAGS =
-ARCH_FLAGS = -mconsole -march=pentium -mtune=pentium3
+ARCH_FLAGS = 
 LINK_FLAGS = -Llib/host.zcc
 
 OTHER_INCLUDEDIR =

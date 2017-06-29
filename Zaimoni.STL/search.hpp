@@ -111,9 +111,6 @@ errr
 linear_find(const Target& x, Iterator ref_data, const Iterator ref_data_end)
 {
 	assert(ref_data!=ref_data_end);
-#if SIZE_MAX==UINTMAX_MAX
-	assert(INTMAX_MAX>=StrictUB);
-#endif
 	size_t ret = 0;
 	do	{
 		if (x==*ref_data) return ret;

@@ -720,7 +720,7 @@ static size_t arithmetic_reconcile(size_t base_type_index1, size_t base_type_ind
 	BOOST_STATIC_ASSERT(0==(C_TYPE::UINT-C_TYPE::USHRT)%2);
 	BOOST_STATIC_ASSERT(0==(C_TYPE::ULONG-C_TYPE::UINT)%2);
 	BOOST_STATIC_ASSERT(0==(C_TYPE::ULLONG-C_TYPE::ULONG)%2);
-	if (0==(base_type_index2-base_type_index1)%2) return (base_type_index1<base_type_index1) ? base_type_index1 : base_type_index1;
+	if (0==(base_type_index2-base_type_index1)%2) return (base_type_index1<base_type_index2) ? base_type_index2 : base_type_index1;
 
 	// types of the same rank should calculate as having the same rank
 	BOOST_STATIC_ASSERT((C_TYPE::SCHAR-1)/2==(C_TYPE::UCHAR-1)/2);
