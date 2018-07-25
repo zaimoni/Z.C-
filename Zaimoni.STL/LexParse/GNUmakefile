@@ -24,7 +24,7 @@ LangConf.o: LangConf.cpp $(LangConf_hpp) $(addprefix ../, $(POD_hpp))
 LangConf_iso.o: LangConf.cpp $(LangConf_hpp) $(addprefix ../, $(POD_hpp))
 
 .cpp.o:
-	$(CXX) -c $< $(CXXFLAGS) $(ARCH_FLAGS) -o $*.o
+	$(CXX) -c $< $(CXXFLAGS) $(ARCH_FLAGS) -DZAIMONI_HAVE_ACCURATE_MSIZE -o $*.o
 
 LangConf_iso.o:
 	$(CXX) -c $< $(CXXFLAGS) $(ARCH_FLAGS) -DZAIMONI_FORCE_ISO -o $*.o
