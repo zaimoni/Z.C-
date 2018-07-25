@@ -3,6 +3,7 @@
 
 #include "C_PPOctalInteger.hpp"
 #include "unsigned_aux.hpp"
+#include "Zaimoni.STL/flat_alg.h"
 
 #include <stdlib.h>
 #include <string.h>

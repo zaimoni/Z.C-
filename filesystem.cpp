@@ -10,6 +10,7 @@
 
 #include "Zaimoni.STL/Compiler.h"
 #include "Zaimoni.STL/Logging.h"
+#include "Zaimoni.STL/flat_alg.h"
 
 // exposed in errors.hpp
 EXTERN_C const char* origin_dir = NULL;

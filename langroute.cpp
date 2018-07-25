@@ -4,6 +4,7 @@
 #include "_CSupport1.hpp"
 #include "Zaimoni.STL/Logging.h"
 #include "Zaimoni.STL/POD.hpp"
+#include "Zaimoni.STL/flat_alg.h"
 
 using namespace zaimoni;
 

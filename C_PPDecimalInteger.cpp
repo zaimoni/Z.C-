@@ -4,6 +4,7 @@
 #include "C_PPDecimalInteger.hpp"
 #include "unsigned_aux.hpp"
 #include "Zaimoni.STL/Pure.C/auto_int.h"
+#include "Zaimoni.STL/flat_alg.h"
 
 #include <stdlib.h>
 #include <string.h>

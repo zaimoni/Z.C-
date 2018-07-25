@@ -4,6 +4,7 @@
 #include "unsigned_aux.hpp"
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #ifndef FAST_ROUTE
 #define FAST_ROUTE 2<=(UINT_MAX/UCHAR_MAX)

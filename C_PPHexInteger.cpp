@@ -4,6 +4,7 @@
 #include "C_PPHexInteger.hpp"
 #include "lex_core.h"
 #include "unsigned_aux.hpp"
+#include "Zaimoni.STL/flat_alg.h"
 
 #include <stdlib.h>
 #include <string.h>
