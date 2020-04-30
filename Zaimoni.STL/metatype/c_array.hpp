@@ -157,7 +157,7 @@ struct static_c_array : public c_array_CRTP<static_c_array<T,N>, T>
 
 	bool Resize(size_t Idx) const {return N==Idx;};
 	void resize(size_t Idx) const {if (N!=Idx) FATAL("can't resize static_c_array");};
-	template<size_t Idx> void resize() const {BOOST_STATIC_ASSERT(N==Idx);}
+	template<size_t Idx> void resize() const {static_assert(N==Idx);}
 };
 
 template<class T,size_t N,class U>

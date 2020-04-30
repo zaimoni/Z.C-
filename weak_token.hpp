@@ -31,15 +31,4 @@ struct weak_token
 inline void INC_INFORM(const weak_token& src) {_inc_inform(src.token.first,src.token.second);}
 #endif
 
-namespace boost {
-
-#define ZAIMONI_TEMPLATE_SPEC template<>
-#define ZAIMONI_CLASS_SPEC weak_token
-ZAIMONI_POD_STRUCT(ZAIMONI_TEMPLATE_SPEC,ZAIMONI_CLASS_SPEC,char)
-#undef ZAIMONI_CLASS_SPEC
-#undef ZAIMONI_TEMPLATE_SPEC
-
-}
-
-
 #endif

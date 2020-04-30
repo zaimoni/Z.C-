@@ -6,7 +6,8 @@
 #include <limits.h>
 #include <time.h>
 #include <stdexcept>
-#include <unistd.h>
+//#include <unistd.h>
+#include <direct.h>
 
 #include "AtomicString.h"
 #include "CSupport_pp.hpp"
@@ -84,7 +85,7 @@ static const char* actual_system_include_search[] =	{
 	NULL
 };
 
-BOOST_STATIC_ASSERT(STATIC_SIZE(fixed_system_include_search)==STATIC_SIZE(actual_system_include_search));
+static_assert(STATIC_SIZE(fixed_system_include_search)==STATIC_SIZE(actual_system_include_search));
 
 #ifdef INSTALL_TO
 #define START_CPP_ONLY_PATHS 4
@@ -511,7 +512,7 @@ enum directive_indexes	{	IF = 0,
 
 // we assume that it takes exactly 4 bits to numerically represent the above enum
 // we assume that 15 is available to flag invalid
-BOOST_STATIC_ASSERT((1<<4)>=MAX_PP_DIRECTIVE && ((1<<3)<MAX_PP_DIRECTIVE));
+static_assert((1<<4)>=MAX_PP_DIRECTIVE && ((1<<3)<MAX_PP_DIRECTIVE));
 
 static errr find_directive(const char* const Text, const LangConf& lang)
 {

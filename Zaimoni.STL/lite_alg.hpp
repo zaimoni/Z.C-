@@ -5,8 +5,8 @@
 #define ZAIMONI_LITE_ALG_HPP 1
 
 #include "Logging.h"
+#include "polymorphic.hpp"
 #include <algorithm>
-#include <type_traits>
 
 namespace zaimoni {
 
@@ -17,8 +17,8 @@ in_range(unsigned long test, const unsigned long LB, const unsigned long UB)
 	return test-LB<=UB-LB;
 }
 
-template<unsigned long LB,unsigned long UB>
-bool in_range(unsigned long test)
+template<auto LB,auto UB>
+bool in_range(uintmax_t test)
 {
 	static_assert(LB<UB);
 	return test-LB<=UB-LB;
@@ -101,7 +101,7 @@ scale_quotient(unsigned long X,unsigned long numerator,unsigned long denominator
 
 template<class T>
 void
-quotient_of_products_incremental_init(T*& numerator,T*& denominator,typename boost::call_traits<T>::param_type for_numerator, typename boost::call_traits<T>::param_type for_denominator,size_t Idx)
+quotient_of_products_incremental_init(T*& numerator,T*& denominator,typename zaimoni::param<T>::type for_numerator, typename zaimoni::param<T>::type for_denominator,size_t Idx)
 {
 	assert(NULL!=numerator);
 	assert(NULL!=denominator);

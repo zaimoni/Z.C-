@@ -85,7 +85,7 @@ static const char* actual_system_include_search[] =	{
 	NULL
 };
 
-BOOST_STATIC_ASSERT(STATIC_SIZE(fixed_system_include_search)==STATIC_SIZE(actual_system_include_search));
+static_assert(STATIC_SIZE(fixed_system_include_search)==STATIC_SIZE(actual_system_include_search));
 
 #ifdef INSTALL_TO
 #define START_CPP_ONLY_PATHS 4
@@ -371,7 +371,7 @@ const POD_pair<const char*,size_t> pragma_relay_keywords[]
 			DICT_STRUCT("_ZCC_enable_typeid")
 		};
 
-BOOST_STATIC_ASSERT(PRAGMA_RELAY_KEYWORDS_STRICT_UB==STATIC_SIZE(pragma_relay_keywords));		
+static_assert(PRAGMA_RELAY_KEYWORDS_STRICT_UB==STATIC_SIZE(pragma_relay_keywords));		
 #undef DICT_STRUCT
 
 static void _init_weak_token(weak_token& dest, const Token<char>& x,const POD_triple<size_t,size_t,lex_flags>& pretoken)
@@ -527,7 +527,7 @@ enum directive_indexes	{	IF = 0,
 
 // we assume that it takes exactly 4 bits to numerically represent the above enum
 // we assume that 15 is available to flag invalid
-BOOST_STATIC_ASSERT((1<<4)>=MAX_PP_DIRECTIVE && ((1<<3)<MAX_PP_DIRECTIVE));
+static_assert((1<<4)>=MAX_PP_DIRECTIVE && ((1<<3)<MAX_PP_DIRECTIVE));
 
 static errr find_directive(const char* const Text, const LangConf& lang)
 {
@@ -2139,7 +2139,7 @@ CPreprocessor::interpret_pragma(const char* const x, size_t x_len, autovalarray_
 		{
 		if (1<pretokenized.size())
 			{
-			BOOST_STATIC_ASSERT(RELAY_ZCC_ENABLE_TYPEID==STATIC_SIZE(pragma_STDC_on_off_switch)*STATIC_SIZE(pragma_STDC_keywords));
+			static_assert(RELAY_ZCC_ENABLE_TYPEID==STATIC_SIZE(pragma_STDC_on_off_switch)*STATIC_SIZE(pragma_STDC_keywords));
 			const errr ZCC_pragma =  linear_find_lencached(x+pretokenized[1].first, pretokenized[1].second, pragma_ZCC_keywords, STATIC_SIZE(pragma_ZCC_keywords));
 			switch(ZCC_pragma)
 			{

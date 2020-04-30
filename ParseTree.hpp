@@ -15,16 +15,6 @@
 struct parse_tree;
 class type_system;
 
-namespace boost {
-
-#define ZAIMONI_TEMPLATE_SPEC template<>
-#define ZAIMONI_CLASS_SPEC parse_tree
-ZAIMONI_POD_STRUCT(ZAIMONI_TEMPLATE_SPEC,ZAIMONI_CLASS_SPEC,char)
-#undef ZAIMONI_CLASS_SPEC
-#undef ZAIMONI_TEMPLATE_SPEC
-
-}
-
 //! required to be POD to allow C memory management
 struct parse_tree
 {
@@ -61,7 +51,7 @@ struct parse_tree
 		};
 	template<size_t arg_idx> parse_tree* c_array()
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].c_array();
 		}
 	const parse_tree* data(size_t arg_idx) const
@@ -71,7 +61,7 @@ struct parse_tree
 		}
 	template<size_t arg_idx> const parse_tree* data() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].data();
 		}
 	size_t size(size_t arg_idx) const
@@ -81,7 +71,7 @@ struct parse_tree
 		}
 	template<size_t arg_idx> size_t size() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].size();
 		}
 	parse_tree* begin(size_t arg_idx)
@@ -91,7 +81,7 @@ struct parse_tree
 		};
 	template<size_t arg_idx> parse_tree* begin()
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].begin();
 		}
 	const parse_tree* begin(size_t arg_idx) const
@@ -101,7 +91,7 @@ struct parse_tree
 		}
 	template<size_t arg_idx> const parse_tree* begin() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].begin();
 		}
 	parse_tree* end(size_t arg_idx)
@@ -111,7 +101,7 @@ struct parse_tree
 		};
 	template<size_t arg_idx> parse_tree* end()
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].end();
 		}
 	const parse_tree* end(size_t arg_idx) const
@@ -121,7 +111,7 @@ struct parse_tree
 		}
 	template<size_t arg_idx> const parse_tree* end() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].end();
 		}
 	parse_tree& front(size_t arg_idx)
@@ -132,7 +122,7 @@ struct parse_tree
 		};
 	template<size_t arg_idx> parse_tree& front()
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
 		return _args[arg_idx].front();
 		}
@@ -144,7 +134,7 @@ struct parse_tree
 		}
 	template<size_t arg_idx> const parse_tree& front() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
 		return _args[arg_idx].front();
 		}
@@ -156,7 +146,7 @@ struct parse_tree
 		};
 	template<size_t arg_idx> parse_tree& back()
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
 		return _args[arg_idx].back();
 		}
@@ -168,7 +158,7 @@ struct parse_tree
 		}
 	template<size_t arg_idx> const parse_tree& back() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
 		return _args[arg_idx].back();
 		}
@@ -179,17 +169,17 @@ struct parse_tree
 		}
 	template<size_t arg_idx> bool empty() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].empty();
 		}
 	template<size_t i> bool own_index_token() const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>i);
+		static_assert(STATIC_SIZE(index_tokens)>i);
 		return (flags & ((zaimoni::lex_flags)(1)<<i));
 		}
 	template<size_t i> void control_index_token(bool have_it)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>i);
+		static_assert(STATIC_SIZE(index_tokens)>i);
 		(flags &= ~((zaimoni::lex_flags)(1)<<i)) |= ((zaimoni::lex_flags)(have_it)<<i);
 		}
 	bool resize(size_t arg_idx,size_t n)
@@ -199,18 +189,18 @@ struct parse_tree
 		}
 	template<size_t arg_idx> bool resize(size_t n)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _resize(arg_idx,n);
 		}
 	template<size_t arg_idx> void eval_to_arg(size_t i)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(size<arg_idx>()>i);
 		_eval_to_arg(arg_idx,i);
 		}
 	template<size_t arg_idx> void DeleteNSlotsAt(size_t n,size_t i)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(size<arg_idx>()>i);
 		assert(size<arg_idx>()-i>=n);
 		assert(0<n);
@@ -221,14 +211,14 @@ struct parse_tree
 		}
 	template<size_t arg_idx> void DeleteIdx(size_t i)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>arg_idx);
+		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(size<arg_idx>()>i);
 		c_array<arg_idx>()[i].destroy();
 		_args[arg_idx].DeleteIdx(i);
 		}
 	template<size_t dest_idx> void DestroyNAtAndRotateTo(size_t n,size_t i,const size_t actual_size)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>dest_idx);
+		static_assert(STATIC_SIZE(_args)>dest_idx);
 		assert(size<dest_idx>()>=actual_size);
 		assert(actual_size>i);
 		assert(actual_size-i>=n);
@@ -258,14 +248,10 @@ struct parse_tree
 
 	template<size_t dest_idx> void fast_set_arg(parse_tree* src)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>dest_idx);
+		static_assert(STATIC_SIZE(_args)>dest_idx);
 		assert(src);
 		assert(empty<dest_idx>());
-#ifndef ZAIMONI_FORCE_ISO
-		_args[dest_idx].Overwrite(src);
-#else
-		_args[dest_idx].Overwrite(src,1);
-#endif
+		_args[dest_idx].Overwrite(src ZAIMONI_ISO_PARAM(1));
 		}
 
 #undef ZCC_PARSETREE_CARRAY
@@ -275,16 +261,16 @@ struct parse_tree
 	static bool collapse_matched_pair(parse_tree& src, const zaimoni::POD_pair<size_t,size_t>& target);
 	template<size_t dest_idx,size_t src_idx> void grab_index_token_location_from(const parse_tree& tmp)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>dest_idx);
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>src_idx);
+		static_assert(STATIC_SIZE(index_tokens)>dest_idx);
+		static_assert(STATIC_SIZE(index_tokens)>src_idx);
 		assert(NULL!=tmp.index_tokens[src_idx].src_filename);
 		index_tokens[dest_idx].logical_line = tmp.index_tokens[src_idx].logical_line;
 		index_tokens[dest_idx].src_filename = tmp.index_tokens[src_idx].src_filename;
 		}
 	template<size_t dest_idx,size_t src_idx> void grab_index_token_from(parse_tree& tmp)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>dest_idx);
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>src_idx);
+		static_assert(STATIC_SIZE(index_tokens)>dest_idx);
+		static_assert(STATIC_SIZE(index_tokens)>src_idx);
 		if (own_index_token<dest_idx>()) free(const_cast<char*>(index_tokens[dest_idx].token.first));
 		index_tokens[dest_idx].token = tmp.index_tokens[src_idx].token;
 		index_tokens[dest_idx].flags = tmp.index_tokens[src_idx].flags;
@@ -293,7 +279,7 @@ struct parse_tree
 		}
 	template<size_t dest_idx> void grab_index_token_from(char*& src,zaimoni::lex_flags src_flags)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>dest_idx);
+		static_assert(STATIC_SIZE(index_tokens)>dest_idx);
 		assert(src);
 		if (own_index_token<dest_idx>()) free(const_cast<char*>(index_tokens[dest_idx].token.first));
 		index_tokens[dest_idx].token.first = src;
@@ -304,7 +290,7 @@ struct parse_tree
 		}
 	template<size_t dest_idx> void grab_index_token_from(const char*& src,zaimoni::lex_flags src_flags)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>dest_idx);
+		static_assert(STATIC_SIZE(index_tokens)>dest_idx);
 		assert(src);
 		if (own_index_token<dest_idx>()) free(const_cast<char*>(index_tokens[dest_idx].token.first));
 		index_tokens[dest_idx].token.first = src;
@@ -315,7 +301,7 @@ struct parse_tree
 		}
 	template<size_t dest_idx> void grab_index_token_from_str_literal(const char* const src,zaimoni::lex_flags src_flags)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>dest_idx);
+		static_assert(STATIC_SIZE(index_tokens)>dest_idx);
 		assert(src);
 		if (own_index_token<dest_idx>()) { free(const_cast<char*>(index_tokens[dest_idx].token.first)); };
 		index_tokens[dest_idx].token.first = src;
@@ -325,7 +311,7 @@ struct parse_tree
 		}
 	template<size_t dest_idx> void set_index_token_from_str_literal(const char* const src)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(index_tokens)>dest_idx);
+		static_assert(STATIC_SIZE(index_tokens)>dest_idx);
 		assert(src);
 		if (own_index_token<dest_idx>()) { free(const_cast<char*>(index_tokens[dest_idx].token.first)); };
 		index_tokens[dest_idx].token.first = src;
@@ -335,7 +321,7 @@ struct parse_tree
 
 	template<size_t src_idx,class scanner> size_t get_span(size_t i,scanner& x) const
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>src_idx);
+		static_assert(STATIC_SIZE(_args)>src_idx);
 		assert(size<src_idx>()>i);
 		size_t found = 0;
 		while(x(data<src_idx>()[i]) && (++found,size<src_idx>()> ++i));
@@ -343,7 +329,7 @@ struct parse_tree
 		}
 	template<size_t src_idx,class scanner> size_t destructive_get_span(size_t i,scanner& x)
 		{
-		BOOST_STATIC_ASSERT(STATIC_SIZE(_args)>src_idx);
+		static_assert(STATIC_SIZE(_args)>src_idx);
 		assert(size<src_idx>()>i);
 		size_t found = 0;
 		while(x(*this,i) && (++found,size<src_idx>()> ++i));

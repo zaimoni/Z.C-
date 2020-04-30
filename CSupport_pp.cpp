@@ -75,7 +75,7 @@ static const virtual_machine::CPUInfo* target_machine = NULL;
 // would have been in ParseTree.hpp, except that we don't have AtomicString.h there
 template<size_t i> void register_token(parse_tree& x)
 {
-	BOOST_STATIC_ASSERT(STATIC_SIZE(x.index_tokens)>i);
+	static_assert(STATIC_SIZE(x.index_tokens)>i);
 	if (!x.own_index_token<i>()) return;
 	const char* const tmp = register_substring(x.index_tokens[i].token.first,x.index_tokens[i].token.second);
 	assert(tmp!=x.index_tokens[i].token.first);
@@ -403,7 +403,7 @@ static const POD_triple<const char*,size_t,unsigned int> valid_pure_preprocessin
 #define C_PREPROC_OP_STRICT_UB (CPP_PREPROC_OP_STRICT_UB-3)
 #define NONATOMIC_PREPROC_OP_LB 10
 
-BOOST_STATIC_ASSERT(NONATOMIC_PREPROC_OP_LB<C_PREPROC_OP_STRICT_UB);
+static_assert(NONATOMIC_PREPROC_OP_LB<C_PREPROC_OP_STRICT_UB);
 
 static const POD_pair<const char*,size_t> valid_keyword[]
 	=	{	DICT_STRUCT("__asm"),		// reserved to the implementation, so OK to make a keyword for C only
@@ -498,8 +498,8 @@ static const POD_pair<const char*,size_t> valid_keyword[]
 #define C_KEYWORD_STRICT_UB 40
 #define CPP_KEYWORD_STRICT_UB STATIC_SIZE(valid_keyword)
 
-BOOST_STATIC_ASSERT(C_KEYWORD_NONSTRICT_LB<C_KEYWORD_STRICT_UB);
-BOOST_STATIC_ASSERT(CPP_KEYWORD_NONSTRICT_LB<C_KEYWORD_STRICT_UB);
+static_assert(C_KEYWORD_NONSTRICT_LB<C_KEYWORD_STRICT_UB);
+static_assert(CPP_KEYWORD_NONSTRICT_LB<C_KEYWORD_STRICT_UB);
 
 namespace C_TYPE {
 
@@ -630,7 +630,7 @@ static size_t arithmetic_reconcile(size_t base_type_index1, size_t base_type_ind
 	if (C_TYPE::INTEGERLIKE==base_type_index2) return C_TYPE::INTEGERLIKE;
 
 	// handle indeterminacy of char now
-	BOOST_STATIC_ASSERT(C_TYPE::SCHAR+1==C_TYPE::UCHAR);
+	static_assert(C_TYPE::SCHAR+1==C_TYPE::UCHAR);
 	if (C_TYPE::CHAR==base_type_index1)
 		{
 		base_type_index1 = C_TYPE::SCHAR + bool_options[boolopt::char_is_unsigned];
@@ -645,35 +645,35 @@ static size_t arithmetic_reconcile(size_t base_type_index1, size_t base_type_ind
 		}
 
 	// types of the same sign should have a difference divisible by 2
-	BOOST_STATIC_ASSERT(0==(C_TYPE::SHRT-C_TYPE::SCHAR)%2);
-	BOOST_STATIC_ASSERT(0==(C_TYPE::INT-C_TYPE::SHRT)%2);
-	BOOST_STATIC_ASSERT(0==(C_TYPE::LONG-C_TYPE::INT)%2);
-	BOOST_STATIC_ASSERT(0==(C_TYPE::LLONG-C_TYPE::LONG)%2);
+	static_assert(0==(C_TYPE::SHRT-C_TYPE::SCHAR)%2);
+	static_assert(0==(C_TYPE::INT-C_TYPE::SHRT)%2);
+	static_assert(0==(C_TYPE::LONG-C_TYPE::INT)%2);
+	static_assert(0==(C_TYPE::LLONG-C_TYPE::LONG)%2);
 
-	BOOST_STATIC_ASSERT(0==(C_TYPE::USHRT-C_TYPE::UCHAR)%2);
-	BOOST_STATIC_ASSERT(0==(C_TYPE::UINT-C_TYPE::USHRT)%2);
-	BOOST_STATIC_ASSERT(0==(C_TYPE::ULONG-C_TYPE::UINT)%2);
-	BOOST_STATIC_ASSERT(0==(C_TYPE::ULLONG-C_TYPE::ULONG)%2);
+	static_assert(0==(C_TYPE::USHRT-C_TYPE::UCHAR)%2);
+	static_assert(0==(C_TYPE::UINT-C_TYPE::USHRT)%2);
+	static_assert(0==(C_TYPE::ULONG-C_TYPE::UINT)%2);
+	static_assert(0==(C_TYPE::ULLONG-C_TYPE::ULONG)%2);
 	if (0==(base_type_index2-base_type_index1)%2) return (base_type_index1<base_type_index2) ? base_type_index2 : base_type_index1;
 
 	// types of the same rank should calculate as having the same rank
-	BOOST_STATIC_ASSERT((C_TYPE::SCHAR-1)/2==(C_TYPE::UCHAR-1)/2);
-	BOOST_STATIC_ASSERT((C_TYPE::SHRT-1)/2==(C_TYPE::USHRT-1)/2);
-	BOOST_STATIC_ASSERT((C_TYPE::INT-1)/2==(C_TYPE::UINT-1)/2);
-	BOOST_STATIC_ASSERT((C_TYPE::LONG-1)/2==(C_TYPE::ULONG-1)/2);
-	BOOST_STATIC_ASSERT((C_TYPE::LLONG-1)/2==(C_TYPE::ULLONG-1)/2);
+	static_assert((C_TYPE::SCHAR-1)/2==(C_TYPE::UCHAR-1)/2);
+	static_assert((C_TYPE::SHRT-1)/2==(C_TYPE::USHRT-1)/2);
+	static_assert((C_TYPE::INT-1)/2==(C_TYPE::UINT-1)/2);
+	static_assert((C_TYPE::LONG-1)/2==(C_TYPE::ULONG-1)/2);
+	static_assert((C_TYPE::LLONG-1)/2==(C_TYPE::ULLONG-1)/2);
 
 	// signed types should be odd, unsigned types should be even
-	BOOST_STATIC_ASSERT(0!=C_TYPE::SCHAR%2);
-	BOOST_STATIC_ASSERT(0==C_TYPE::UCHAR%2);
-	BOOST_STATIC_ASSERT(0!=C_TYPE::SHRT%2);
-	BOOST_STATIC_ASSERT(0==C_TYPE::USHRT%2);
-	BOOST_STATIC_ASSERT(0!=C_TYPE::INT%2);
-	BOOST_STATIC_ASSERT(0==C_TYPE::UINT%2);
-	BOOST_STATIC_ASSERT(0!=C_TYPE::LONG%2);
-	BOOST_STATIC_ASSERT(0==C_TYPE::ULONG%2);
-	BOOST_STATIC_ASSERT(0!=C_TYPE::LLONG%2);
-	BOOST_STATIC_ASSERT(0==C_TYPE::ULLONG%2);
+	static_assert(0!=C_TYPE::SCHAR%2);
+	static_assert(0==C_TYPE::UCHAR%2);
+	static_assert(0!=C_TYPE::SHRT%2);
+	static_assert(0==C_TYPE::USHRT%2);
+	static_assert(0!=C_TYPE::INT%2);
+	static_assert(0==C_TYPE::UINT%2);
+	static_assert(0!=C_TYPE::LONG%2);
+	static_assert(0==C_TYPE::ULONG%2);
+	static_assert(0!=C_TYPE::LLONG%2);
+	static_assert(0==C_TYPE::ULLONG%2);
 
 	//! \todo --do-what-i-mean is a bit more careful about signed/unsigned of the same rank; it promotes an equal-rank mismatch to the next larger signed integer type
 	if (0==base_type_index1%2)
@@ -829,8 +829,8 @@ const POD_pair<const char* const,size_t> CPP_atomic_types[]
 		DICT_STRUCT("std::typeinfo")	// C++-specific
 		};
 
-BOOST_STATIC_ASSERT(STATIC_SIZE(C_atomic_types)==C_TYPE_MAX);
-BOOST_STATIC_ASSERT(STATIC_SIZE(CPP_atomic_types)==CPP_TYPE_MAX);
+static_assert(STATIC_SIZE(C_atomic_types)==C_TYPE_MAX);
+static_assert(STATIC_SIZE(CPP_atomic_types)==CPP_TYPE_MAX);
 
 const size_t C_int_priority[]
 	=	{
@@ -843,7 +843,7 @@ const size_t C_int_priority[]
 		C_TYPE::INTEGERLIKE
 		};
 
-BOOST_STATIC_ASSERT(C_INT_PRIORITY_SIZE==STATIC_SIZE(C_int_priority));
+static_assert(C_INT_PRIORITY_SIZE==STATIC_SIZE(C_int_priority));
 
 // this only has to work on full strings, not embedded substrings
 const char* const system_headers[]
@@ -1699,19 +1699,19 @@ static unsigned int CPPPurePreprocessingOperatorPunctuationFlags(signed int i)
 }
 
 // encoding reality checks
-BOOST_STATIC_ASSERT(PP_CODE_MASK>CPP_PREPROC_OP_STRICT_UB);
-BOOST_STATIC_ASSERT((PP_CODE_MASK>>1)<=CPP_PREPROC_OP_STRICT_UB);
+static_assert(PP_CODE_MASK>CPP_PREPROC_OP_STRICT_UB);
+static_assert((PP_CODE_MASK>>1)<=CPP_PREPROC_OP_STRICT_UB);
 static signed int
 CPurePreprocessingOperatorPunctuationCode(const char* const x, size_t x_len)
 {
-	BOOST_STATIC_ASSERT(INT_MAX-1>=C_PREPROC_OP_STRICT_UB);
+	static_assert(INT_MAX-1>=C_PREPROC_OP_STRICT_UB);
 	return 1+linear_reverse_find_lencached(x,x_len,valid_pure_preprocessing_op_punc,C_PREPROC_OP_STRICT_UB);
 }
 
 static signed int
 CPPPurePreprocessingOperatorPunctuationCode(const char* const x, size_t x_len)
 {
-	BOOST_STATIC_ASSERT(INT_MAX-1>=CPP_PREPROC_OP_STRICT_UB);
+	static_assert(INT_MAX-1>=CPP_PREPROC_OP_STRICT_UB);
 	return 1+linear_reverse_find_lencached(x,x_len,valid_pure_preprocessing_op_punc,CPP_PREPROC_OP_STRICT_UB);
 }
 
@@ -1723,14 +1723,14 @@ static void _bad_syntax_tokenized(const char* const x, size_t x_len, lex_flags& 
 	assert((C_TESTFLAG_PP_NUMERAL | C_TESTFLAG_PP_OP_PUNC | C_TESTFLAG_STRING_LITERAL | C_TESTFLAG_CHAR_LITERAL | C_TESTFLAG_IDENTIFIER) & flags);
 
 	// reality checks on relation between flag constants and enums
-	BOOST_STATIC_ASSERT((C_PPFloatCore::F<<10)==C_TESTFLAG_F);
-	BOOST_STATIC_ASSERT((C_PPFloatCore::L<<10)==C_TESTFLAG_L);
+	static_assert((C_PPFloatCore::F<<10)==C_TESTFLAG_F);
+	static_assert((C_PPFloatCore::L<<10)==C_TESTFLAG_L);
 
-	BOOST_STATIC_ASSERT((C_PPIntCore::U<<10)==C_TESTFLAG_U);
-	BOOST_STATIC_ASSERT((C_PPIntCore::L<<10)==C_TESTFLAG_L);
-	BOOST_STATIC_ASSERT((C_PPIntCore::UL<<10)==(C_TESTFLAG_L | C_TESTFLAG_U));
-	BOOST_STATIC_ASSERT((C_PPIntCore::LL<<10)==C_TESTFLAG_LL);
-	BOOST_STATIC_ASSERT((C_PPIntCore::ULL<<10)==(C_TESTFLAG_LL | C_TESTFLAG_U));
+	static_assert((C_PPIntCore::U<<10)==C_TESTFLAG_U);
+	static_assert((C_PPIntCore::L<<10)==C_TESTFLAG_L);
+	static_assert((C_PPIntCore::UL<<10)==(C_TESTFLAG_L | C_TESTFLAG_U));
+	static_assert((C_PPIntCore::LL<<10)==C_TESTFLAG_LL);
+	static_assert((C_PPIntCore::ULL<<10)==(C_TESTFLAG_LL | C_TESTFLAG_U));
 
 	if (C_TESTFLAG_PP_NUMERAL==flags)
 		{
@@ -2857,7 +2857,7 @@ bool CCharLiteralIsFalse(const char* x,size_t x_len)
 #define PARSE_ENUM_TYPE ((lex_flags)(1)<<(sizeof(lex_flags)*CHAR_BIT-22))
 
 // check for collision with lowest three bits
-BOOST_STATIC_ASSERT(sizeof(lex_flags)*CHAR_BIT-parse_tree::PREDEFINED_STRICT_UB>=22);
+static_assert(sizeof(lex_flags)*CHAR_BIT-parse_tree::PREDEFINED_STRICT_UB>=22);
 
 /* nonstrict expression types */
 #define PARSE_POSTFIX_EXPRESSION (PARSE_PRIMARY_EXPRESSION | PARSE_STRICT_POSTFIX_EXPRESSION)
@@ -2995,7 +2995,7 @@ static bool is_CPP_bitwise_complement_expression(const parse_tree& src)
 #define C99_MULT_SUBTYPE_MOD 2
 #define C99_MULT_SUBTYPE_MULT 3
 
-BOOST_STATIC_ASSERT(C99_UNARY_SUBTYPE_DEREF==C99_MULT_SUBTYPE_MULT);
+static_assert(C99_UNARY_SUBTYPE_DEREF==C99_MULT_SUBTYPE_MULT);
 
 #ifndef NDEBUG
 static bool is_C99_mult_operator_expression(const parse_tree& src)
@@ -3028,8 +3028,8 @@ template<char c> static bool is_C99_mult_operator_expression(const parse_tree& s
 #define C99_ADD_SUBTYPE_PLUS 1
 #define C99_ADD_SUBTYPE_MINUS 2
 
-BOOST_STATIC_ASSERT(C99_UNARY_SUBTYPE_PLUS==C99_ADD_SUBTYPE_PLUS);
-BOOST_STATIC_ASSERT(C99_UNARY_SUBTYPE_NEG==C99_ADD_SUBTYPE_MINUS);
+static_assert(C99_UNARY_SUBTYPE_PLUS==C99_ADD_SUBTYPE_PLUS);
+static_assert(C99_UNARY_SUBTYPE_NEG==C99_ADD_SUBTYPE_MINUS);
 
 #ifndef NDEBUG
 static bool is_C99_add_operator_expression(const parse_tree& src)
@@ -5783,8 +5783,8 @@ static bool eval_mod_expression(parse_tree& src, const type_system& types, liter
 	return false;
 }
 
-BOOST_STATIC_ASSERT(1==C99_MULT_SUBTYPE_MOD-C99_MULT_SUBTYPE_DIV);
-BOOST_STATIC_ASSERT(1==C99_MULT_SUBTYPE_MULT-C99_MULT_SUBTYPE_MOD);
+static_assert(1==C99_MULT_SUBTYPE_MOD-C99_MULT_SUBTYPE_DIV);
+static_assert(1==C99_MULT_SUBTYPE_MULT-C99_MULT_SUBTYPE_MOD);
 
 static bool _mod_expression_typecheck(parse_tree& src SIG_CONST_TYPES)
 {
@@ -6357,7 +6357,7 @@ static bool eval_sub_expression(parse_tree& src, const type_system& types, liter
 static void C_CPP_add_expression_easy_syntax_check(parse_tree& src,const type_system& types,literal_converts_to_bool_func& literal_converts_to_bool,intlike_literal_to_VM_func& intlike_literal_to_VM)
 {
 	assert((C99_ADD_SUBTYPE_PLUS==src.subtype && is_C99_add_operator_expression<'+'>(src)) || (C99_ADD_SUBTYPE_MINUS==src.subtype && is_C99_add_operator_expression<'-'>(src)));
-	BOOST_STATIC_ASSERT(1==C99_ADD_SUBTYPE_MINUS-C99_ADD_SUBTYPE_PLUS);
+	static_assert(1==C99_ADD_SUBTYPE_MINUS-C99_ADD_SUBTYPE_PLUS);
 	const size_t lhs_pointer = src.data<1>()->type_code.pointer_power;
 	const size_t rhs_pointer = src.data<2>()->type_code.pointer_power;	
 
@@ -6615,7 +6615,7 @@ static bool eval_shift(parse_tree& src, const type_system& types, literal_conver
 	assert(converts_to_integerlike(src.data<1>()->type_code ARG_TYPES));
 	assert(converts_to_integerlike(src.data<2>()->type_code ARG_TYPES));
 	assert(C99_SHIFT_SUBTYPE_LEFT<=src.subtype && C99_SHIFT_SUBTYPE_RIGHT>=src.subtype);
-	BOOST_STATIC_ASSERT(1==C99_SHIFT_SUBTYPE_RIGHT-C99_SHIFT_SUBTYPE_LEFT);
+	static_assert(1==C99_SHIFT_SUBTYPE_RIGHT-C99_SHIFT_SUBTYPE_LEFT);
 	// handle:
 	// 0 << __ |-> 0
 	// __ << 0 |-> __
@@ -6792,9 +6792,9 @@ static bool terse_locate_relation_expression(parse_tree& src, size_t& i)
 
 static bool eval_relation_expression(parse_tree& src, const type_system& types,intlike_literal_to_VM_func& intlike_literal_to_VM)
 {
-	BOOST_STATIC_ASSERT(1==C99_RELATION_SUBTYPE_GT-C99_RELATION_SUBTYPE_LT);
-	BOOST_STATIC_ASSERT(1==C99_RELATION_SUBTYPE_LTE-C99_RELATION_SUBTYPE_GT);
-	BOOST_STATIC_ASSERT(1==C99_RELATION_SUBTYPE_GTE-C99_RELATION_SUBTYPE_LTE);
+	static_assert(1==C99_RELATION_SUBTYPE_GT-C99_RELATION_SUBTYPE_LT);
+	static_assert(1==C99_RELATION_SUBTYPE_LTE-C99_RELATION_SUBTYPE_GT);
+	static_assert(1==C99_RELATION_SUBTYPE_GTE-C99_RELATION_SUBTYPE_LTE);
 	assert(C99_RELATION_SUBTYPE_LT<=src.subtype && C99_RELATION_SUBTYPE_GTE>=src.subtype);
 	umaxint lhs_int;
 	umaxint rhs_int;
@@ -6827,19 +6827,19 @@ static bool eval_relation_expression(parse_tree& src, const type_system& types,i
 				const bool rhs_zero = target_machine->is_zero(rhs_int.data(),rhs_int.size(),targ);
 				const bool op_uses_less_than = (src.subtype%2);	// low-level, check with static assertions
 				// is above correct?
-				BOOST_STATIC_ASSERT(C99_RELATION_SUBTYPE_LT%2);
-				BOOST_STATIC_ASSERT(C99_RELATION_SUBTYPE_LTE%2);
-				BOOST_STATIC_ASSERT(!(C99_RELATION_SUBTYPE_GT%2));
-				BOOST_STATIC_ASSERT(!(C99_RELATION_SUBTYPE_GTE%2));
+				static_assert(C99_RELATION_SUBTYPE_LT%2);
+				static_assert(C99_RELATION_SUBTYPE_LTE%2);
+				static_assert(!(C99_RELATION_SUBTYPE_GT%2));
+				static_assert(!(C99_RELATION_SUBTYPE_GTE%2));
 				use_unsigned_compare = false;
 				if (!lhs_zero)
 					result = lhs_negative ? (op_uses_less_than ? "1" : "0") : (op_uses_less_than ? "0" : "1");
 				else if (!rhs_zero)
 					result = rhs_negative ? (op_uses_less_than ? "0" : "1") : (op_uses_less_than ? "1" : "0");
 				else{	// is below correct?
-					BOOST_STATIC_ASSERT(C99_RELATION_SUBTYPE_LTE<=C99_RELATION_SUBTYPE_GTE);
-					BOOST_STATIC_ASSERT(C99_RELATION_SUBTYPE_LT<C99_RELATION_SUBTYPE_LTE);
-					BOOST_STATIC_ASSERT(C99_RELATION_SUBTYPE_GT<C99_RELATION_SUBTYPE_LTE);
+					static_assert(C99_RELATION_SUBTYPE_LTE<=C99_RELATION_SUBTYPE_GTE);
+					static_assert(C99_RELATION_SUBTYPE_LT<C99_RELATION_SUBTYPE_LTE);
+					static_assert(C99_RELATION_SUBTYPE_GT<C99_RELATION_SUBTYPE_LTE);
 					result = (C99_RELATION_SUBTYPE_LTE<=src.subtype) ? "1" : "0"; 	// low-level, check with static assertions					
 					}				
 				}
@@ -7020,7 +7020,7 @@ static bool terse_locate_CPP_equality_expression(parse_tree& src, size_t& i)
 
 static bool eval_equality_expression(parse_tree& src, const type_system& types, literal_converts_to_bool_func& literal_converts_to_bool,intlike_literal_to_VM_func& intlike_literal_to_VM)
 {	
-	BOOST_STATIC_ASSERT(1==C99_EQUALITY_SUBTYPE_NEQ-C99_EQUALITY_SUBTYPE_EQ);
+	static_assert(1==C99_EQUALITY_SUBTYPE_NEQ-C99_EQUALITY_SUBTYPE_EQ);
 	assert(C99_EQUALITY_SUBTYPE_EQ<=src.subtype && C99_EQUALITY_SUBTYPE_NEQ>=src.subtype);
 	umaxint lhs_int;
 	umaxint rhs_int;
@@ -9443,26 +9443,26 @@ void InitializeCLexerDefs(const virtual_machine::CPUInfo& target)
 	assert(C_TYPE::WCHAR_T==linear_find("wchar_t",CPP_atomic_types,CPP_TYPE_MAX)+1);
 
 	/* does bool converts_to_integerlike(size_t base_type_index) work */
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::NOT_VOID && C_TYPE::NOT_VOID<=C_TYPE::INTEGERLIKE));
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::VOID && C_TYPE::VOID<=C_TYPE::INTEGERLIKE));
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::BOOL && C_TYPE::BOOL<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::CHAR && C_TYPE::CHAR<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::SCHAR && C_TYPE::SCHAR<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::UCHAR && C_TYPE::UCHAR<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::SHRT && C_TYPE::SHRT<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::USHRT && C_TYPE::USHRT<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::INT && C_TYPE::INT<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::UINT && C_TYPE::UINT<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::LONG && C_TYPE::LONG<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::ULONG && C_TYPE::ULONG<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::LLONG && C_TYPE::LLONG<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::ULLONG && C_TYPE::ULLONG<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(C_TYPE::BOOL<=C_TYPE::INTEGERLIKE && C_TYPE::INTEGERLIKE<=C_TYPE::INTEGERLIKE);
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::FLOAT && C_TYPE::FLOAT<=C_TYPE::INTEGERLIKE));
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::DOUBLE && C_TYPE::DOUBLE<=C_TYPE::INTEGERLIKE));
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::LDOUBLE && C_TYPE::LDOUBLE<=C_TYPE::INTEGERLIKE));
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::FLOAT__COMPLEX && C_TYPE::FLOAT__COMPLEX<=C_TYPE::INTEGERLIKE));
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::DOUBLE__COMPLEX && C_TYPE::DOUBLE__COMPLEX<=C_TYPE::INTEGERLIKE));
-	BOOST_STATIC_ASSERT(!(C_TYPE::BOOL<=C_TYPE::LDOUBLE__COMPLEX && C_TYPE::LDOUBLE__COMPLEX<=C_TYPE::INTEGERLIKE));
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::NOT_VOID && C_TYPE::NOT_VOID<=C_TYPE::INTEGERLIKE));
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::VOID && C_TYPE::VOID<=C_TYPE::INTEGERLIKE));
+	static_assert(C_TYPE::BOOL<=C_TYPE::BOOL && C_TYPE::BOOL<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::CHAR && C_TYPE::CHAR<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::SCHAR && C_TYPE::SCHAR<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::UCHAR && C_TYPE::UCHAR<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::SHRT && C_TYPE::SHRT<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::USHRT && C_TYPE::USHRT<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::INT && C_TYPE::INT<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::UINT && C_TYPE::UINT<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::LONG && C_TYPE::LONG<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::ULONG && C_TYPE::ULONG<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::LLONG && C_TYPE::LLONG<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::ULLONG && C_TYPE::ULLONG<=C_TYPE::INTEGERLIKE);
+	static_assert(C_TYPE::BOOL<=C_TYPE::INTEGERLIKE && C_TYPE::INTEGERLIKE<=C_TYPE::INTEGERLIKE);
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::FLOAT && C_TYPE::FLOAT<=C_TYPE::INTEGERLIKE));
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::DOUBLE && C_TYPE::DOUBLE<=C_TYPE::INTEGERLIKE));
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::LDOUBLE && C_TYPE::LDOUBLE<=C_TYPE::INTEGERLIKE));
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::FLOAT__COMPLEX && C_TYPE::FLOAT__COMPLEX<=C_TYPE::INTEGERLIKE));
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::DOUBLE__COMPLEX && C_TYPE::DOUBLE__COMPLEX<=C_TYPE::INTEGERLIKE));
+	static_assert(!(C_TYPE::BOOL<=C_TYPE::LDOUBLE__COMPLEX && C_TYPE::LDOUBLE__COMPLEX<=C_TYPE::INTEGERLIKE));
 }
 

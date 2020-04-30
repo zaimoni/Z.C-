@@ -612,7 +612,7 @@ CPreprocessor::create_stddef_header(zaimoni::autovalarray_ptr<zaimoni::Token<cha
 	// we assume that ptrdiff_t is the correct size (really should have an explicit void* size)
 	tmp[STDDEF_NULL_LINE]->append(NULL_constant_from_machine(target_machine.ptrdiff_t_type()));
 
-	BOOST_STATIC_ASSERT(6==STATIC_SIZE(stddef_h_reserved));
+	static_assert(6==STATIC_SIZE(stddef_h_reserved));
 	disallow_prior_definitions(TmpTokenList,STDDEF_INJECT_CPP_REALITY,stddef_h_reserved+5,1);
 	disallow_prior_definitions(TmpTokenList,STDDEF_INJECT_C_REALITY,stddef_h_reserved,1);
 	disallow_prior_definitions(TmpTokenList,STDDEF_INJECT_REALITY,stddef_h_reserved+1,4);
@@ -635,7 +635,7 @@ static void new_token_at(zaimoni::autovalarray_ptr<zaimoni::Token<char>* >& dest
 template<size_t offset,size_t buf_size>
 static void memset_strcpy(char* dest,const char* src)
 {
-	BOOST_STATIC_ASSERT(offset<buf_size);
+	static_assert(offset<buf_size);
 	assert(dest);
 	assert(src);
 	assert(buf_size-offset>strlen(src));

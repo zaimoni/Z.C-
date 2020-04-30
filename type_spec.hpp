@@ -4,8 +4,8 @@
 #ifndef TYPE_SPEC_HPP
 #define TYPE_SPEC_HPP 1
 
-#include "Zaimoni.STL/POD.hpp"
 #include "uchar_blob.hpp"
+#include <stdint.h>
 
 // KBB: this really should be a class rather than a struct; it would benefit from having a proper destructor.
 // Unfortunately, new/delete and realloc don't mix -- and this type can have multiple lists of tokens underneath it....
@@ -14,16 +14,6 @@ struct type_spec;
 
 //! ACID; may be replaced by operator= when 0==dest.pointer_power and 0==src.pointer_power
 void value_copy(type_spec& dest, const type_spec& src);
-
-namespace boost {
-
-#define ZAIMONI_TEMPLATE_SPEC template<>
-#define ZAIMONI_CLASS_SPEC type_spec
-ZAIMONI_POD_STRUCT(ZAIMONI_TEMPLATE_SPEC,ZAIMONI_CLASS_SPEC,char)
-#undef ZAIMONI_CLASS_SPEC
-#undef ZAIMONI_TEMPLATE_SPEC
-
-}
 
 //! required to be POD to allow C memory management
 struct type_spec

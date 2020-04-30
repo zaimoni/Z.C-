@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>	// for getcwd; POSIX
+// #include <unistd.h>	// for getcwd; POSIX
+#include <direct.h>
 
 #include "Zaimoni.STL/Compiler.h"
 #include "Zaimoni.STL/Logging.h"

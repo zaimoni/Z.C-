@@ -9,16 +9,6 @@
 struct uchar_blob;
 void value_copy(uchar_blob& dest,const uchar_blob& src);
 
-namespace boost {
-
-#define ZAIMONI_TEMPLATE_SPEC template<>
-#define ZAIMONI_CLASS_SPEC uchar_blob
-ZAIMONI_POD_STRUCT(ZAIMONI_TEMPLATE_SPEC,ZAIMONI_CLASS_SPEC,char)
-#undef ZAIMONI_CLASS_SPEC
-#undef ZAIMONI_TEMPLATE_SPEC
-
-}
-
 struct uchar_blob
 {
 private:
