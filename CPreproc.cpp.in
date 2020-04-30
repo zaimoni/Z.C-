@@ -16,7 +16,6 @@
 #include <limits.h>
 #include <time.h>
 #include <stdexcept>
-#include <unistd.h>
 
 #include "AtomicString.h"
 #/*cut-cpp*/
@@ -52,6 +51,16 @@
 #include "Zaimoni.STL/Perl_localize.hpp"
 
 #include "DebugCSupport.h"
+
+#ifndef F_OK
+#define F_OK 0
+#define R_OK 2
+#define W_OK 4
+// #define X_OK
+#endif
+#else
+#include <unistd.h>	// for getcwd; POSIX
+#endif
 
 using namespace zaimoni;
 

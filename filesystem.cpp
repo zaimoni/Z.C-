@@ -6,12 +6,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-// #include <unistd.h>	// for getcwd; POSIX
-#include <direct.h>
 
 #include "Zaimoni.STL/Compiler.h"
 #include "Zaimoni.STL/Logging.h"
 #include "Zaimoni.STL/flat_alg.h"
+
+#include "Zaimoni.STL/Pure.C/comptest.h"
+#ifdef ZAIMONI_HAS_MICROSOFT_IO_H
+#include <direct.h>
+#else
+ #include <unistd.h>	// for getcwd; POSIX
+#endif
 
 // exposed in errors.hpp
 EXTERN_C const char* origin_dir = NULL;

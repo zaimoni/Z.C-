@@ -211,7 +211,7 @@ _delete_idx(T*& _ptr ZAIMONI_ISO_PARAM(size_t& _ptr_size), size_t i)
 		}
 	if (2<=_ptr_size-i)
 		memmove(_ptr+i,_ptr+i+1,sizeof(*_ptr)*(_ptr_size-i-1));
-	_ptr = REALLOC(_ptr, sizeof(*_ptr) * ZAIMONI_NONISO_ISO_SRC(--_ptr_size, (_ptr_size - 1)));
+	_ptr = REALLOC(_ptr, sizeof(*_ptr) * ZAIMONI_NONISO_ISO_SRC((_ptr_size - 1), --_ptr_size));
 }
 
 template<typename T>

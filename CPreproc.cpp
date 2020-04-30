@@ -6,7 +6,6 @@
 #include <limits.h>
 #include <time.h>
 #include <stdexcept>
-#include <unistd.h>
 
 #include "AtomicString.h"
 #include "CSupport.hpp"
@@ -32,6 +31,21 @@
 #include "Zaimoni.STL/Perl_localize.hpp"
 
 #include "DebugCSupport.h"
+
+#include "Zaimoni.STL/Pure.C/comptest.h"
+#ifdef ZAIMONI_HAS_MICROSOFT_IO_H
+#include <direct.h>
+#include <io.h>
+
+#ifndef F_OK
+#define F_OK 0
+#define R_OK 2
+#define W_OK 4
+// #define X_OK
+#endif
+#else
+#include <unistd.h>	// for getcwd; POSIX
+#endif
 
 using namespace zaimoni;
 

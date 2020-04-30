@@ -60,26 +60,17 @@ load_sourcefile(autovalarray_ptr<Token<char>* >& TokenList, const char* const fi
 	assert(filename && *filename);
 
 	// XXX should return true for empty files XXX
-#ifndef ZAIMONI_FORCE_ISO
-	if (!GetBinaryFileImage(filename,Buffer)) return false;
-	ConvertBinaryModeToTextMode(Buffer);
-	if (!lang.ApplyGlobalFilters(Buffer,filename)) exit(EXIT_FAILURE);
-	lang.FlattenComments(Buffer);
-#else
-	if (!GetBinaryFileImage(filename,Buffer,Buffer_size)) return false;
-	ConvertBinaryModeToTextMode(Buffer,Buffer_size);
-	if (!lang.ApplyGlobalFilters(Buffer,Buffer_size,filename)) exit(EXIT_FAILURE);
-	lang.FlattenComments(Buffer,Buffer_size);
-#endif
+	if (!GetBinaryFileImage(filename, Buffer ZAIMONI_ISO_PARAM(Buffer_size))) return false;
+	ConvertBinaryModeToTextMode(Buffer ZAIMONI_ISO_PARAM(Buffer_size));
+	if (!lang.ApplyGlobalFilters(Buffer ZAIMONI_ISO_PARAM(Buffer_size), filename)) exit(EXIT_FAILURE);
+	lang.FlattenComments(Buffer ZAIMONI_ISO_PARAM(Buffer_size));
 
 	try {
 		zaimoni::autovalarray_ptr_throws<char> tmp(strlen(filename));
 		memmove(tmp.c_array(),filename,strlen(filename));
-#ifndef ZAIMONI_FORCE_ISO
-		tmpTokenList[0] = new Token<char>(Buffer,tmp.release());
-#else
-		tmpTokenList[0] = new Token<char>(Buffer,Buffer_size,tmp.release());
-//		Buffer_size = 0;	// dead code
+		tmpTokenList[0] = new Token<char>(Buffer ZAIMONI_ISO_PARAM(Buffer_size), tmp.release());
+#ifdef ZAIMONI_FORCE_ISO
+//		Buffer_size = 0;	// dead code; 
 #endif
 		}
 	catch(...)
@@ -94,7 +85,7 @@ load_sourcefile(autovalarray_ptr<Token<char>* >& TokenList, const char* const fi
 
 	if (lang.BreakTokenOnNewline)
 		{
-		char* newline_where = strchr(tmpTokenList.back()->data(),'\n');
+		const char* newline_where = strchr(tmpTokenList.back()->data(),'\n');
 		while(newline_where)
 			{
 			const size_t offset = newline_where-tmpTokenList.back()->data();
@@ -172,27 +163,16 @@ bool load_raw_sourcefile(autovalarray_ptr<Token<char>* >& TokenList, const char*
 	assert(filename && *filename);
 
 	// XXX should return true for empty files XXX
-#ifndef ZAIMONI_FORCE_ISO
-	if (!GetBinaryFileImage(filename,Buffer)) return false;
-	ConvertBinaryModeToTextMode(Buffer);
-#else
-	if (!GetBinaryFileImage(filename,Buffer,Buffer_size)) return false;
-	ConvertBinaryModeToTextMode(Buffer,Buffer_size);
-#endif
+	if (!GetBinaryFileImage(filename, Buffer ZAIMONI_ISO_PARAM(Buffer_size))) return false;
+	ConvertBinaryModeToTextMode(Buffer ZAIMONI_ISO_PARAM(Buffer_size));
 
 	// if target language needs a warning for not ending in \n, emit one here
 	// but we normalize to that
-#ifndef ZAIMONI_FORCE_ISO
-	TrimMandatoryTerminalNewline(Buffer,filename);
-#else
-	TrimMandatoryTerminalNewline(Buffer,Buffer_size,filename);
-#endif
+	TrimMandatoryTerminalNewline(Buffer ZAIMONI_ISO_PARAM(Buffer_size), filename);
 
 	try	{
-#ifndef ZAIMONI_FORCE_ISO
-		tmpTokenList[0] = new Token<char>(Buffer,filename);
-#else
-		tmpTokenList[0] = new Token<char>(Buffer,Buffer_size,filename);
+		tmpTokenList[0] = new Token<char>(Buffer ZAIMONI_ISO_PARAM(Buffer_size), filename);
+#ifdef ZAIMONI_FORCE_ISO
 //		Buffer_size = 0;	// dead code
 #endif
 		}
@@ -202,7 +182,7 @@ bool load_raw_sourcefile(autovalarray_ptr<Token<char>* >& TokenList, const char*
 		throw;
 		};
 
-	char* newline_where = strchr(tmpTokenList.back()->data(),'\n');
+	const char* newline_where = strchr(tmpTokenList.back()->data(),'\n');
 	while(newline_where)
 		{
 		const size_t offset = newline_where-tmpTokenList.back()->data();

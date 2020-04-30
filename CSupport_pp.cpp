@@ -3821,7 +3821,7 @@ static zaimoni::Loki::CheckReturnDisallow<0,parse_tree*>::value_type repurpose_i
 {
 	if (1==src.size<0>() && is_naked_parentheses_pair(*src.data<0>()))
 		{
-		zaimoni::POD_autoarray_ptr<parse_tree> tmp = src.c_array<0>()->_args[0];
+		auto tmp = src.c_array<0>()->_args[0];
 		src.c_array<0>()->_args[0].NULLPtr();
 		src.c_array<0>()->destroy();
 		parse_tree* const tmp2 = src.c_array<0>();
@@ -3835,7 +3835,7 @@ static void cancel_inner_parentheses(parse_tree& src)
 {
 	while(1==src.size<0>() && is_naked_parentheses_pair(*src.data<0>()))
 		{
-		zaimoni::POD_autoarray_ptr<parse_tree> tmp = src.c_array<0>()->_args[0];
+		auto tmp = src.c_array<0>()->_args[0];
 		src.c_array<0>()->_args[0].NULLPtr();
 		src.c_array<0>()->destroy();
 		free(src.c_array<0>());
