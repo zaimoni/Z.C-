@@ -5,7 +5,7 @@
 #define WEAK_TOKEN_HPP
 
 #include "Zaimoni.STL/POD.hpp"
-#include "Zaimoni.STL/Lexparse/std.h"
+#include "Zaimoni.STL/LexParse/std.h"
 
 struct weak_token
 {

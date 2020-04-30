@@ -21,7 +21,7 @@ public:
 	// uchar_blob is a POD backing store for unsigned_var_int here
 	typedef zaimoni::POD_pair<const char*,zaimoni::POD_pair<zaimoni::POD_triple<type_index,unsigned char,uchar_blob>, zaimoni::POD_pair<const char*,zaimoni::POD_pair<size_t,size_t> > > > enumerator_info;
 	typedef zaimoni::POD_quartet<type_spec,const char*,size_t,size_t> object_type_loc_linkage;
-	enum linkage {
+	enum linkage : unsigned char {
 		linkage_none = 0,	// no linkage
 		linkage_static,		// internal linkage
 		linkage_extern_C,	// external linkage, C

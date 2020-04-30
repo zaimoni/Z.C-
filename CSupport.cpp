@@ -3946,24 +3946,24 @@ static bool is_nonempty_naked_pair(const parse_tree& src)
 static bool is_array_deref_strict(const parse_tree& src)
 {
 	return		robust_token_is_char<'['>(src.index_tokens[0].token)
-			&&	robust_token_is_char<']'>(src.index_tokens[1].token)
-			&&	src.index_tokens[0].src_filename && src.index_tokens[1].src_filename
-			&&	1==src.size<0>() && (PARSE_EXPRESSION & src.data<0>()->flags)			// content of [ ]
-			&&	1==src.size<1>() && (PARSE_POSTFIX_EXPRESSION & src.data<1>()->flags)	// prefix arg of [ ]
-			&&	src.empty<2>();
+		&& robust_token_is_char<']'>(src.index_tokens[1].token)
+		&& src.index_tokens[0].src_filename && src.index_tokens[1].src_filename
+		&& 1 == src.size<0>() && (PARSE_EXPRESSION & src.front<0>().flags)			// content of [ ]
+		&& 1 == src.size<1>() && (PARSE_POSTFIX_EXPRESSION & src.front<1>().flags)	// prefix arg of [ ]
+		&& src.empty<2>();
 }
 #endif
 
 static bool is_array_deref(const parse_tree& src)
 {
 	return		robust_token_is_char<'['>(src.index_tokens[0].token)
-			&&	robust_token_is_char<']'>(src.index_tokens[1].token)
+		&& robust_token_is_char<']'>(src.index_tokens[1].token)
 #ifndef NDEBUG
-			&&	src.index_tokens[0].src_filename && src.index_tokens[1].src_filename
+		&& src.index_tokens[0].src_filename && src.index_tokens[1].src_filename
 #endif
-			&&	1==src.size<0>() && (PARSE_EXPRESSION & src.data<0>()->flags)			// content of [ ]
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)	// prefix arg of [ ]
-			&&	src.empty<2>();
+		&& 1 == src.size<0>() && (PARSE_EXPRESSION & src.front<0>().flags)	// content of [ ]
+		&& 1 == src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)	// prefix arg of [ ]
+		&& src.empty<2>();
 }
 
 #define C99_UNARY_SUBTYPE_PLUS 1
@@ -4046,28 +4046,27 @@ static bool is_ZCC_linkage_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>() && src.empty<1>();
-//			&&	1==src.size<2>() && ((PARSE_EXPRESSION | PARSE_TYPE) & src.data<2>()->flags);
-//			&&	1==src.size<2>() && ((PARSE_UNARY_EXPRESSION | PARSE_TYPE) & src.data<2>()->flags);
+	        && 1 == src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+	//		&&	1==src.size<2>() && (PARSE_CAST_EXPRESSION & src.front<2>().flags);
 }
-#endif
 
 #define C99_MULT_SUBTYPE_DIV 1
 #define C99_MULT_SUBTYPE_MOD 2
 #define C99_MULT_SUBTYPE_MULT 3
 
-static_assert(C99_UNARY_SUBTYPE_DEREF==C99_MULT_SUBTYPE_MULT);
+static_assert(C99_UNARY_SUBTYPE_DEREF == C99_MULT_SUBTYPE_MULT);
 
 #ifndef NDEBUG
 static bool is_C99_mult_operator_expression(const parse_tree& src)
 {
 	return		(robust_token_is_char<'/'>(src.index_tokens[0].token) || robust_token_is_char<'%'>(src.index_tokens[0].token) || robust_token_is_char<'*'>(src.index_tokens[0].token))
-			&&	src.index_tokens[0].src_filename
-			&&	!src.index_tokens[1].token.first
-			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_MULT_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_PM_EXPRESSION & src.data<2>()->flags);
+		&& src.index_tokens[0].src_filename
+		&& !src.index_tokens[1].token.first
+		&& src.empty<0>()
+		&& 1 == src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+		&& 1 == src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+	//	&&	1==src.size<1>() && (PARSE_MULT_EXPRESSION & src.front<1>().flags)
+	//	&&	1==src.size<2>() && (PARSE_PM_EXPRESSION & src.front<2>().flags);
 }
 #endif
 
@@ -4075,14 +4074,14 @@ template<char c> static bool is_C99_mult_operator_expression(const parse_tree& s
 {
 	return		robust_token_is_char<c>(src.index_tokens[0].token)
 #ifndef NDEBUG
-			&&	src.index_tokens[0].src_filename
+		&& src.index_tokens[0].src_filename
 #endif
-			&&	!src.index_tokens[1].token.first
-			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_MULT_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_PM_EXPRESSION & src.data<2>()->flags);
+		&& !src.index_tokens[1].token.first
+		&& src.empty<0>()
+		&& 1 == src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+		&& 1 == src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+	//	&&	1==src.size<1>() && (PARSE_MULT_EXPRESSION & src.front<1>().flags)
+	//	&&	1==src.size<2>() && (PARSE_PM_EXPRESSION & src.front<2>().flags);
 }
 
 #define C99_ADD_SUBTYPE_PLUS 1
@@ -4100,10 +4099,10 @@ static bool is_C99_add_operator_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_ADD_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_MULT_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+//			&&	1==src.size<1>() && (PARSE_ADD_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_MULT_EXPRESSION & src.front<2>().flags);
 }
 #endif
 
@@ -4115,10 +4114,10 @@ template<char c> static bool is_C99_add_operator_expression(const parse_tree& sr
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_ADD_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_MULT_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+//			&&	1==src.size<1>() && (PARSE_ADD_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_MULT_EXPRESSION & src.front<2>().flags);
 }
 
 #define C99_SHIFT_SUBTYPE_LEFT 1
@@ -4131,10 +4130,10 @@ static bool is_C99_shift_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_SHIFT_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_ADD_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+//			&&	1==src.size<1>() && (PARSE_SHIFT_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_ADD_EXPRESSION & src.front<2>().flags);
 }
 
 #define C99_RELATION_SUBTYPE_LT 1
@@ -4150,10 +4149,10 @@ static bool is_C99_relation_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_RELATIONAL_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_SHIFT_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+//			&&	1==src.size<1>() && (PARSE_RELATIONAL_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_SHIFT_EXPRESSION & src.front<2>().flags);
 }
 
 #define C99_EQUALITY_SUBTYPE_EQ 1
@@ -4166,10 +4165,10 @@ static bool is_C99_equality_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_EQUALITY_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_RELATIONAL_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+//			&&	1==src.size<1>() && (PARSE_EQUALITY_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_RELATIONAL_EXPRESSION & src.front<2>().flags);
 }
 
 static bool is_CPP_equality_expression(const parse_tree& src)
@@ -4180,38 +4179,38 @@ static bool is_CPP_equality_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<1>() && (PARSE_EQUALITY_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_RELATIONAL_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+//			&&	1==src.size<1>() && (PARSE_EQUALITY_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_RELATIONAL_EXPRESSION & src.front<2>().flags);
 }
 
 static bool is_C99_bitwise_AND_expression(const parse_tree& src)
 {
-	return (	robust_token_is_char<'&'>(src.index_tokens[0].token)
+	return (robust_token_is_char<'&'>(src.index_tokens[0].token)
 #ifndef NDEBUG
-			&&	src.index_tokens[0].src_filename
+		&& src.index_tokens[0].src_filename
 #endif
-			&&	!src.index_tokens[1].token.first
-			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_BITAND_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_EQUALITY_EXPRESSION & src.data<2>()->flags));
+		&& !src.index_tokens[1].token.first
+		&& src.empty<0>()
+		&& 1 == src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+		&& 1 == src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+	//			&&	1==src.size<1>() && (PARSE_BITAND_EXPRESSION & src.front<1>().flags)
+	//			&&	1==src.size<2>() && (PARSE_EQUALITY_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_CPP_bitwise_AND_expression(const parse_tree& src)
 {
-	return (	(robust_token_is_char<'&'>(src.index_tokens[0].token) || robust_token_is_string<6>(src.index_tokens[0].token,"bitand"))
+	return ((robust_token_is_char<'&'>(src.index_tokens[0].token) || robust_token_is_string<6>(src.index_tokens[0].token, "bitand"))
 #ifndef NDEBUG
-			&&	src.index_tokens[0].src_filename
+		&& src.index_tokens[0].src_filename
 #endif
-			&&	!src.index_tokens[1].token.first
-			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_BITAND_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_EQUALITY_EXPRESSION & src.data<2>()->flags));
+		&& !src.index_tokens[1].token.first
+		&& src.empty<0>()
+		&& 1 == src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+		&& 1 == src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+	//			&&	1==src.size<1>() && (PARSE_BITAND_EXPRESSION & src.front<1>().flags)
+	//			&&	1==src.size<2>() && (PARSE_EQUALITY_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_C99_bitwise_XOR_expression(const parse_tree& src)
@@ -4222,10 +4221,10 @@ static bool is_C99_bitwise_XOR_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_BITXOR_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_BITAND_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_BITXOR_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_BITAND_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_CPP_bitwise_XOR_expression(const parse_tree& src)
@@ -4236,10 +4235,10 @@ static bool is_CPP_bitwise_XOR_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_BITXOR_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_BITAND_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_BITXOR_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_BITAND_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_C99_bitwise_OR_expression(const parse_tree& src)
@@ -4250,10 +4249,10 @@ static bool is_C99_bitwise_OR_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_BITOR_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_BITXOR_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_BITOR_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_BITXOR_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_CPP_bitwise_OR_expression(const parse_tree& src)
@@ -4264,10 +4263,10 @@ static bool is_CPP_bitwise_OR_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_BITOR_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_BITXOR_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_BITOR_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_BITXOR_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_C99_logical_AND_expression(const parse_tree& src)
@@ -4278,10 +4277,10 @@ static bool is_C99_logical_AND_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_LOGICAND_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_BITOR_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_LOGICAND_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_BITOR_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_CPP_logical_AND_expression(const parse_tree& src)
@@ -4292,10 +4291,10 @@ static bool is_CPP_logical_AND_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_LOGICAND_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_BITOR_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_LOGICAND_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_BITOR_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_C99_logical_OR_expression(const parse_tree& src)
@@ -4306,10 +4305,10 @@ static bool is_C99_logical_OR_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_LOGICOR_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_LOGICAND_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_LOGICOR_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_LOGICAND_EXPRESSION & src.front<2>().flags));
 }
 
 static bool is_CPP_logical_OR_expression(const parse_tree& src)
@@ -4320,10 +4319,10 @@ static bool is_CPP_logical_OR_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>()
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<1>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags));
-//			&&	1==src.size<1>() && (PARSE_LOGICOR_EXPRESSION & src.data<1>()->flags)
-//			&&	1==src.size<2>() && (PARSE_LOGICAND_EXPRESSION & src.data<2>()->flags));
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<1>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags));
+//			&&	1==src.size<1>() && (PARSE_LOGICOR_EXPRESSION & src.front<1>().flags)
+//			&&	1==src.size<2>() && (PARSE_LOGICAND_EXPRESSION & src.front<2>().flags));
 }
 
 #ifndef NDEBUG
@@ -4332,9 +4331,9 @@ static bool is_C99_conditional_operator_expression_strict(const parse_tree& src)
 	return		robust_token_is_char<'?'>(src.index_tokens[0].token)
 			&&	robust_token_is_char<':'>(src.index_tokens[1].token)
 			&&	src.index_tokens[0].src_filename && src.index_tokens[1].src_filename
-			&&	1==src.size<0>() && (PARSE_EXPRESSION & src.data<2>()->flags)
-			&&	1==src.size<1>() && (PARSE_LOGICOR_EXPRESSION & src.data<2>()->flags)
-			&&	1==src.size<2>() && (PARSE_CONDITIONAL_EXPRESSION & src.data<2>()->flags);		
+			&&	1==src.size<0>() && (PARSE_EXPRESSION & src.front<2>().flags)
+			&&	1==src.size<1>() && (PARSE_LOGICOR_EXPRESSION & src.front<2>().flags)
+			&&	1==src.size<2>() && (PARSE_CONDITIONAL_EXPRESSION & src.front<2>().flags);
 }
 #endif
 
@@ -4345,9 +4344,9 @@ static bool is_C99_conditional_operator_expression(const parse_tree& src)
 #ifndef NDEBUG
 			&&	src.index_tokens[0].src_filename && src.index_tokens[1].src_filename
 #endif
-			&&	1==src.size<0>() && (PARSE_EXPRESSION & src.data<2>()->flags)
-			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.data<2>()->flags)
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<0>() && (PARSE_EXPRESSION & src.front<2>().flags)
+			&&	1==src.size<1>() && (PARSE_EXPRESSION & src.front<2>().flags)
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
 }
 
 static bool is_C99_anonymous_specifier(const parse_tree& src,const char* const spec_name)
@@ -4358,7 +4357,7 @@ static bool is_C99_anonymous_specifier(const parse_tree& src,const char* const s
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && is_naked_brace_pair(*src.data<2>()))
+			&&	1==src.size<2>() && is_naked_brace_pair(src.front<2>()))
 		return true;
 	return false;
 }
@@ -4384,7 +4383,7 @@ static bool is_C99_named_specifier_definition(const parse_tree& src,const char* 
 #endif
 			&&	src.index_tokens[1].token.first
 			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && is_naked_brace_pair(*src.data<2>()))
+			&&	1==src.size<2>() && is_naked_brace_pair(src.front<2>()))
 		return true;
 	return false;
 }
@@ -4397,7 +4396,7 @@ static bool is_C99_named_specifier_definitionlike(const parse_tree& src)
 #endif
 			&&	src.index_tokens[1].token.first
 			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && is_naked_brace_pair(*src.data<2>()))
+			&&	1==src.size<2>() && is_naked_brace_pair(src.front<2>()))
 		return true;
 	return false;
 }
@@ -4437,7 +4436,7 @@ static bool is_CPP_template_parameter_like(const parse_tree& src)
 			&&	src.index_tokens[1].src_filename
 #endif
 			&&	src.empty<2>()
-			&&	1==src.size<1>() && robust_token_is_string<8>(*src.data<1>(),"template"))
+			&&	1==src.size<1>() && robust_token_is_string<8>(src.front<1>(),"template"))
 		return true;
 	return false;
 }

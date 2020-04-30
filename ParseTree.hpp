@@ -12,8 +12,12 @@
 // KBB: this really should be a class rather than a struct; it would benefit from having a proper destructor.
 // Unfortunately, new/delete and realloc don't mix -- and this type can have multiple lists of tokens underneath it....
 
+// 2020-04-29: this type is naive.  We likely should be using something based on Kuroda normal form instead
+
 struct parse_tree;
 class type_system;
+
+#define ACTIVATE_PARSE_TREE_C_ARRAY 1
 
 //! required to be POD to allow C memory management
 struct parse_tree
@@ -27,7 +31,8 @@ struct parse_tree
 	};
 
 	weak_token index_tokens[2];	//!< 0: left, 1: right
-	zaimoni::POD_autoarray_ptr<parse_tree> _args[3];		//!< 0: infix, 1: prefix, 2: postfix
+	// 2020-04-29: zaimoni::POD_autoarray_ptr<parse_tree> was ok in C++03, but not in C++17 
+	zaimoni::POD_autoarray_ptr<parse_tree*> _args[3];		//!< 0: infix, 1: prefix, 2: postfix
 	zaimoni::lex_flags flags;	// mostly opaque flag suite (parse_tree reserves the lowest 3 bits)
 	size_t subtype;				// opaque assistant to parser
 
@@ -44,26 +49,28 @@ struct parse_tree
 	void MoveInto(parse_tree& dest);
 	void OverwriteInto(parse_tree& dest);
 
-	parse_tree* c_array(size_t arg_idx)
+#if ACTIVATE_PARSE_TREE_C_ARRAY
+	parse_tree** c_array(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].c_array();
 		};
-	template<size_t arg_idx> parse_tree* c_array()
+	template<size_t arg_idx> parse_tree** c_array()
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].c_array();
 		}
-	const parse_tree* data(size_t arg_idx) const
+	const parse_tree* const * data(size_t arg_idx) const
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].data();
 		}
-	template<size_t arg_idx> const parse_tree* data() const
+	template<size_t arg_idx> const parse_tree* const* data() const
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].data();
 		}
+#endif
 	size_t size(size_t arg_idx) const
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
@@ -74,6 +81,7 @@ struct parse_tree
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].size();
 		}
+#if 0
 	parse_tree* begin(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
@@ -114,53 +122,54 @@ struct parse_tree
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].end();
 		}
+#endif
 	parse_tree& front(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty(arg_idx));
-		return _args[arg_idx].front();
+		return *_args[arg_idx].front();
 		};
 	template<size_t arg_idx> parse_tree& front()
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
-		return _args[arg_idx].front();
+		return *_args[arg_idx].front();
 		}
 	const parse_tree& front(size_t arg_idx) const
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty(arg_idx));
-		return _args[arg_idx].front();
+		return *_args[arg_idx].front();
 		}
 	template<size_t arg_idx> const parse_tree& front() const
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
-		return _args[arg_idx].front();
+		return *_args[arg_idx].front();
 		}
 	parse_tree& back(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty(arg_idx));
-		return _args[arg_idx].back();
+		return *_args[arg_idx].back();
 		};
 	template<size_t arg_idx> parse_tree& back()
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
-		return _args[arg_idx].back();
+		return *_args[arg_idx].back();
 		}
 	const parse_tree& back(size_t arg_idx) const
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty(arg_idx));
-		return _args[arg_idx].back();
+		return *_args[arg_idx].back();
 		}
 	template<size_t arg_idx> const parse_tree& back() const
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(!empty<arg_idx>());
-		return _args[arg_idx].back();
+		return *_args[arg_idx].back();
 		}
 	bool empty(size_t arg_idx) const
 		{
@@ -205,7 +214,11 @@ struct parse_tree
 		assert(size<arg_idx>()-i>=n);
 		assert(0<n);
 		size_t idx = n;
+#if ACTIVATE_PARSE_TREE_C_ARRAY
+		do	c_array<arg_idx>()[i + --idx]->destroy();
+#else
 		do	c_array<arg_idx>()[i+ --idx].destroy();
+#endif
 		while(0<idx);
 		_args[arg_idx].DeleteNSlotsAt(n,i);
 		}
@@ -213,7 +226,11 @@ struct parse_tree
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(size<arg_idx>()>i);
+#if ACTIVATE_PARSE_TREE_C_ARRAY
+		c_array<arg_idx>()[i]->destroy();
+#else
 		c_array<arg_idx>()[i].destroy();
+#endif
 		_args[arg_idx].DeleteIdx(i);
 		}
 	template<size_t dest_idx> void DestroyNAtAndRotateTo(size_t n,size_t i,const size_t actual_size)
@@ -239,7 +256,8 @@ struct parse_tree
 	void clear();	// XXX should be constructor; good way to leak memory in other contexts
 	void destroy();	// XXX should be destructor; note that this does *not* touch line/col information or src_filename in its own index_tokens
 	void core_flag_update();
-#ifndef ZAIMONI_FORCE_ISO
+#if 0
+// #ifndef ZAIMONI_FORCE_ISO
 	bool syntax_ok() const;
 	bool entangled_with(const type_spec& x) const;
 	bool entangled_with(const parse_tree& x) const;
