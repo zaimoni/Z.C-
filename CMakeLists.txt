@@ -36,4 +36,13 @@ target_link_libraries(zcc z_langconf z_log_adapter z_stdio_log z_mutex z_format_
 target_link_options(zcc PRIVATE /FORCE:MULTIPLE)	# for z_memory
 # add_dependencies(... AutoDetect)
 
+add_custom_command(TARGET z_cpp POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:z_memory>
+        $<TARGET_FILE_DIR:z_cpp>)
+add_custom_command(TARGET zcc POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:z_memory>
+        $<TARGET_FILE_DIR:zcc>)
+
 # EXCLUDE_FROM_ALL means "can't test"

@@ -189,9 +189,6 @@ static void help(void)
 
 int main(int argc, char* argv[])
 {
-#ifndef ZAIMONI_FORCE_ISO
-	AppRunning = 1;	/* using custom memory manager, cancel non-ANSI mode for M$ Windows */
-#endif
 	if (2>argc) help();
 
 	bootstrap_filesystem(argv[0]);
