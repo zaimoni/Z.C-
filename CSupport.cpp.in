@@ -33,12 +33,7 @@
 #include "errcount.hpp"
 #include "CPUInfo.hpp"
 #include "ParseTree.hpp"
-#/*cut-cpp*/
 #include "type_system.hpp"
-#/*cut-cpp*/
-#/*cut-nocpp*/
-#include "type_system_pp.hpp"
-#/*cut-nocpp*/
 #include "type_algebra.hpp"
 #include "weak_token.hpp"
 #include "C_PPDecimalInteger.hpp"

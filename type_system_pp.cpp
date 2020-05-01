@@ -1,7 +1,7 @@
 // type_system_pp.cpp
 // (C)2009-2011 Kenneth Boyd, license: MIT.txt
 
-#include "type_system_pp.hpp"
+#include "type_system.hpp"
 
 const char* type_system::_name(size_t id) const
 {

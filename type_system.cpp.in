@@ -6,12 +6,7 @@
 #/*cut-nocpp*/
 // (C)2009-2011 Kenneth Boyd, license: MIT.txt
 
-#/*cut-cpp*/
 #include "type_system.hpp"
-#/*cut-cpp*/
-#/*cut-nocpp*/
-#include "type_system_pp.hpp"
-#/*cut-nocpp*/
 #/*cut-cpp*/
 #include "enum_type.hpp"
 #include "struct_type.hpp"

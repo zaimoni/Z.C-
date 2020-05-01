@@ -5,6 +5,9 @@
 #define TYPE_SYSTEM_HPP 1
 
 #include "Zaimoni.STL/POD.hpp"
+#ifdef BUILD_Z_CPP
+#include "Zaimoni.STL/Logging.h"
+#else
 #include "Zaimoni.STL/AutoPtr.hpp"
 #include "type_spec.hpp"
 
@@ -12,11 +15,13 @@ class function_type;
 class union_struct_decl;
 class C_union_struct_def;
 class enum_def;
+#endif
 
 class type_system
 {
 public:
 	typedef size_t type_index;
+#ifndef BUILD_Z_CPP
 	// { {type, representation, value}, {filename, location }}
 	// uchar_blob is a POD backing store for unsigned_var_int here
 	typedef zaimoni::POD_pair<const char*,zaimoni::POD_pair<zaimoni::POD_triple<type_index,unsigned char,uchar_blob>, zaimoni::POD_pair<const char*,zaimoni::POD_pair<size_t,size_t> > > > enumerator_info;
@@ -27,12 +32,19 @@ public:
 		linkage_extern_C,	// external linkage, C
 		linkage_extern_CPP	// external linkage, C++ 
 	};
+#endif
 
 	const zaimoni::POD_pair<const char* const,size_t>* const core_types;
 	const type_index* const int_priority;
 	const size_t core_types_size;
 	const size_t int_priority_size;
 private:
+	type_system(const type_system& src) = delete;
+	type_system(type_system&& src) = delete;
+	void operator=(const type_system& src) = delete;
+	void operator=(type_system&& src) = delete;
+
+#ifndef BUILD_Z_CPP
 	typedef zaimoni::POD_quartet<const char*,size_t,zaimoni::POD_pair<zaimoni::union_quartet<function_type*,union_struct_decl*,C_union_struct_def*,enum_def*>, unsigned char>, size_t> dynamic_type_format;
 	zaimoni::autovalarray_ptr<dynamic_type_format> dynamic_types;
 	zaimoni::autovalarray_ptr<zaimoni::POD_pair<const char*,zaimoni::POD_triple<type_spec,const char*,size_t> > > typedef_registry;
@@ -40,9 +52,7 @@ private:
 	zaimoni::weakautovalarray_ptr<const char*> inline_namespace_alias_targets;
 	zaimoni::autovalarray_ptr<zaimoni::POD_pair<const char*,const char*> > inline_namespace_alias_map;
 	zaimoni::autovalarray_ptr<enumerator_info> enumerator_registry;
-	// uncopyable
-	type_system(const type_system& src);
-	void operator=(const type_system& src);
+#endif
 public:
 	type_system(const zaimoni::POD_pair<const char* const,size_t>* _core_types,size_t _core_types_size,const type_index* _int_priority,size_t _int_priority_size)
 	:	core_types((assert(_core_types),_core_types)),
@@ -50,6 +60,7 @@ public:
 		core_types_size((assert(0<_core_types_size),_core_types_size)),
 		int_priority_size((assert(0<_int_priority_size),_int_priority_size)) {};
 
+#ifndef BUILD_Z_CPP
 	type_index get_id_union(const char* x) const
 		{
 		assert(x && *x);
@@ -78,11 +89,6 @@ public:
 		assert(core_types_size+dynamic_types.size()>=id);
 		if (core_types_size>=id) return SIZE_MAX;
 		return dynamic_types[id-(core_types_size+1)].fourth;
-		}
-	const char* name(type_index id) const
-		{
-		assert(core_types_size+dynamic_types.size()>=id);
-		return _name(id);
 		}
 
 	// can throw std::bad_alloc; returned string is owned by the caller (use free to deallocate)
@@ -155,8 +161,21 @@ public:
 		assert(alias && *alias);
 		return _CPP_linkage_code(alias,active_namespace);
 		};
+#endif
+
+	const char* name(type_index id) const
+		{
+#ifdef BUILD_Z_CPP
+		assert(core_types_size >= id);
+#else
+		assert(core_types_size+dynamic_types.size()>=id);
+#endif
+		return _name(id);
+		}
+
 private:
 	const char* _name(type_index id) const;
+#ifndef BUILD_Z_CPP
 	type_index _get_id_union(const char* x) const;
 	type_index _get_id_union_CPP(const char* x) const;
 	type_index _get_id_enum(const char* x) const;
@@ -179,5 +198,6 @@ private:
 	// can throw std::bad_alloc; returned string is owned by the caller (use free to deallocate)
 	static char* _namespace_concatenate(const char* const name, size_t name_len, const char* const active_namespace, size_t active_namespace_len,const char* namespace_separator, size_t namespace_separator_len);
 	static void _namespace_concatenate(char* buf, const char* const name, size_t name_len, const char* const active_namespace, size_t active_namespace_len,const char* namespace_separator, size_t namespace_separator_len);
+#endif
 };
 #endif

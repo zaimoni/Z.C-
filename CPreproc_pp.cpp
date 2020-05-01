@@ -18,7 +18,7 @@
 #include "load_src.hpp"
 #include "ParseTree.hpp"
 #include "str_aux.h"
-#include "type_system_pp.hpp"
+#include "type_system.hpp"
 #include "weak_token.hpp"
 #include "_version.h"
 #include "Zaimoni.STL/POD.hpp"

@@ -21,7 +21,7 @@
 #include "errcount.hpp"
 #include "CPUInfo.hpp"
 #include "ParseTree.hpp"
-#include "type_system_pp.hpp"
+#include "type_system.hpp"
 #include "type_algebra.hpp"
 #include "weak_token.hpp"
 #include "C_PPDecimalInteger.hpp"

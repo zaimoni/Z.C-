@@ -31,12 +31,7 @@
 #include "load_src.hpp"
 #include "ParseTree.hpp"
 #include "str_aux.h"
-#/*cut-cpp*/
 #include "type_system.hpp"
-#/*cut-cpp*/
-#/*cut-nocpp*/
-#include "type_system_pp.hpp"
-#/*cut-nocpp*/
 #include "weak_token.hpp"
 #include "_version.h"
 #include "Zaimoni.STL/POD.hpp"
