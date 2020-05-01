@@ -3950,19 +3950,14 @@ static void CPP_notice_primary_type(parse_tree& src)
 }
 #/*cut-cpp*/
 
-//! \todo generalize -- function pointer parameter target, functor target
 static size_t _count_identifiers(const parse_tree& src)
 {
-	size_t count_id = 0;
-	if (src.index_tokens[0].token.first && C_TESTFLAG_IDENTIFIER==src.index_tokens[0].flags) ++count_id;
-	if (src.index_tokens[1].token.first && C_TESTFLAG_IDENTIFIER==src.index_tokens[1].flags) ++count_id;
-	size_t i = src.size<0>();
-	while(0<i) count_id += _count_identifiers(src.data<0>()[--i]);
-	i = src.size<1>();
-	while(0<i) count_id += _count_identifiers(src.data<1>()[--i]);
-	i = src.size<2>();
-	while(0<i) count_id += _count_identifiers(src.data<2>()[--i]);
-	return count_id;
+	return src.recursive_count<size_t>([](const parse_tree& x) {
+		size_t ret = 0;
+		if (x.index_tokens[0].token.first && C_TESTFLAG_IDENTIFIER==x.index_tokens[0].flags) ++ret;
+		if (x.index_tokens[1].token.first && C_TESTFLAG_IDENTIFIER==x.index_tokens[1].flags) ++ret;
+		return ret;
+	});
 }
 
 static bool is_naked_parentheses_pair(const parse_tree& src)
@@ -4101,6 +4096,7 @@ static bool is_C99_CPP_sizeof_expression(const parse_tree& src)
 			&&	1==src.size<2>() && ((PARSE_EXPRESSION | PARSE_TYPE) & src.data<2>()->flags);
 //			&&	1==src.size<2>() && ((PARSE_UNARY_EXPRESSION | PARSE_TYPE) & src.data<2>()->flags);
 }
+#endif
 
 static bool is_ZCC_linkage_expression(const parse_tree& src)
 {
@@ -5000,11 +4996,12 @@ static void _label_literals(parse_tree& src,const type_system& types)
 	size_t i = src.size<0>();
 	while(0<i)
 		{
-		if (!src.data<0>()[--i].is_atomic()) continue;
-		_label_one_literal(src.c_array<0>()[i],types);
-		if (C_TESTFLAG_STRING_LITERAL==src.data<0>()[i].index_tokens[0].flags)
+		parse_tree& token = *src.c_array<0>()[--i];
+		if (!token.is_atomic()) continue;
+		_label_one_literal(token,types);
+		if (C_TESTFLAG_STRING_LITERAL == token.index_tokens[0].flags)
 			{
-			if (SIZE_MAX==str_span.first) str_span.second = i;
+			if (SIZE_MAX == str_span.first) str_span.second = i;
 			str_span.first = i;
 			++str_count;
 			}
@@ -5019,7 +5016,7 @@ static void _label_literals(parse_tree& src,const type_system& types)
 			if (src.size<0>()<=str_span.second+2 || C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.first+2].index_tokens[0].flags)
 				{	// psuedo-concatenate
 					// that this is still a constant primary expression, as we are just pretending that the string concatenation went through
-				src.c_array<0>()[str_span.first].grab_index_token_from<1,0>(src.c_array<0>()[str_span.first+1]);
+				src.c_array<0>()[str_span.second - 1]->grab_index_token_from<1, 0>(*src.c_array<0>()[str_span.second]);
 				src.DeleteIdx<0>(str_span.first+1);
 				if (1>=(str_count -= 2)) break;
 				str_span.first += 2;
@@ -5029,7 +5026,7 @@ static void _label_literals(parse_tree& src,const type_system& types)
 				POD_pair<size_t,size_t> scan = {str_span.first,str_span.first+2};
 				while(src.size<0>()>scan.second+1 && C_TESTFLAG_STRING_LITERAL==src.data<0>()[scan.second+1].index_tokens[0].flags) ++scan.second;
 				if (parse_tree::collapse_matched_pair(src,scan))
-					src.c_array<0>()[scan.first].flags |= (PARSE_PRIMARY_EXPRESSION | parse_tree::CONSTANT_EXPRESSION);
+					src.c_array<0>()[scan.first]->flags |= (PARSE_PRIMARY_EXPRESSION | parse_tree::CONSTANT_EXPRESSION);
 				else
 					RAMfail = true;
 				}
@@ -5054,7 +5051,7 @@ static void _label_literals(parse_tree& src,const type_system& types)
 				POD_pair<size_t,size_t> scan = {str_span.second-2,str_span.second};
 				while(0<scan.first && C_TESTFLAG_STRING_LITERAL==src.data<0>()[scan.first-1].index_tokens[0].flags) --scan.first;
 				if (parse_tree::collapse_matched_pair(src,scan))
-					src.c_array<0>()[scan.first].flags |= (PARSE_PRIMARY_EXPRESSION | parse_tree::CONSTANT_EXPRESSION);
+					src.c_array<0>()[scan.first]->flags |= (PARSE_PRIMARY_EXPRESSION | parse_tree::CONSTANT_EXPRESSION);
 					// note: as current item was already typed properly, do not need to update
 				else
 					RAMfail = true;
@@ -5068,7 +5065,7 @@ static void _label_literals(parse_tree& src,const type_system& types)
 
 		if (want_first_slideup)
 			{
-			while(C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.first].index_tokens[0].flags)
+			while(C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.first]->index_tokens[0].flags)
 				{
 				++str_span.first;
 				assert(str_span.second > str_span.first);
@@ -5077,7 +5074,7 @@ static void _label_literals(parse_tree& src,const type_system& types)
 			}
 		if (want_second_slidedown)
 			{
-			while(C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.second].index_tokens[0].flags)
+			while(C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.second]->index_tokens[0].flags)
 				{
 				--str_span.second;
 				assert(str_span.first < str_span.second);

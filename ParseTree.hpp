@@ -8,6 +8,7 @@
 
 #include "Zaimoni.STL/POD_autoarray.hpp"
 #include "weak_token.hpp"
+#include <functional>
 
 // KBB: this really should be a class rather than a struct; it would benefit from having a proper destructor.
 // Unfortunately, new/delete and realloc don't mix -- and this type can have multiple lists of tokens underneath it....
@@ -250,7 +251,18 @@ struct parse_tree
 			while(0<j);
 			}
 		}
-	
+
+	template <typename R> R recursive_count(std::function<R(const parse_tree&)> count) const {
+		R ret = count(*this);
+		size_t i = src.size<0>();
+		while (0 < i) ret += count(*data<0>()[--i]);
+		i = src.size<1>();
+		while (0 < i) ret += count(*data<1>()[--i]);
+		i = src.size<2>();
+		while (0 < i) ret += count(*data<2>()[--i]);
+		return ret;
+	}
+
 	bool is_atomic() const;
 	bool is_raw_list() const;
 	void clear();	// XXX should be constructor; good way to leak memory in other contexts

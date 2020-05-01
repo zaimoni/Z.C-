@@ -408,7 +408,7 @@ static void _parsetreeize_aux(const Token<char>& x,const autovalarray_ptr<POD_tr
 	size_t j = pretokenized.size();
 	do	{
 		--j;
-		_init_weak_token(parsetree.c_array<0>()[j].index_tokens[0],x,pretokenized[j]);
+		_init_weak_token(parsetree.c_array<0>()[j]->index_tokens[0],x,pretokenized[j]);
 		}
 	while(0<j);
 }
