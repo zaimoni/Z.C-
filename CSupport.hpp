@@ -1,4 +1,4 @@
-// CSupport_pp.hpp
+// CSupport.hpp
 // support for C/C++ language parsing
 // (C)2009 Kenneth Boyd, license: MIT.txt
 
@@ -17,6 +17,16 @@
 struct weak_token;
 struct parse_tree;
 class type_system;
+
+// should lift this configuration sanity check eventually
+#if defined(BUILD_ZCC)
+#if defined(BUILD_Z_CPP)
+#error multiple build targets
+#endif
+#elif defined(BUILD_Z_CPP)
+#else
+#error no positive build target
+#endif
 
 /* the current draft of UNICODE only uses 17 planes so far */
 /* unfortunately, we can't assume wchar_t is correctly defined */
@@ -114,7 +124,7 @@ struct PP_auxfunc
 	func_traits<int (*)(const char* src, size_t src_len, const char* src2, size_t src2_len, char*& target)>::function_ref_type EscapedStringConcatenate;
 	// z_cpp 0.0.2
 	func_traits<void (*)(const char* const x, size_t x_len, lex_flags& flags, const char* const src_filename, size_t line_no)>::function_ref_type AddPostLexFlags;
-#/*cut-cpp*/
+#ifndef BUILD_Z_CPP
 	// zcc 0.0.2
 	func_traits<const char* (*)(const char* x,size_t x_len)>::function_ref_type EchoReservedKeyword;
 	func_traits<const char* (*)(const char* x,size_t x_len)>::function_ref_type EchoReservedSymbol;
@@ -123,7 +133,7 @@ struct PP_auxfunc
 	// zcc 0.0.3
 	func_traits<void (*)(parse_tree&,const size_t,const type_system&)>::function_ref_type LocateExpression;
 	func_traits<bool (*)(const parse_tree&, bool&,const type_system&)>::function_ref_type LiteralConvertsToBool;
-#/*cut-cpp*/
+#endif
 };
 
 }

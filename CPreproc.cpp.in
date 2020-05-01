@@ -18,13 +18,10 @@
 #include <stdexcept>
 
 #include "AtomicString.h"
-#/*cut-cpp*/
 #include "CSupport.hpp"
+#/*cut-cpp*/
 #include "_CSupport3.hpp"
 #/*cut-cpp*/
-#/*cut-nocpp*/
-#include "CSupport_pp.hpp"
-#/*cut-nocpp*/
 #include "C_PPDecimalInteger.hpp"
 #include "CPUInfo.hpp"
 #include "errors.hpp"

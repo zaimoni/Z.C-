@@ -8,7 +8,7 @@
 #include <stdexcept>
 
 #include "AtomicString.h"
-#include "CSupport_pp.hpp"
+#include "CSupport.hpp"
 #include "C_PPDecimalInteger.hpp"
 #include "CPUInfo.hpp"
 #include "errors.hpp"

@@ -7,14 +7,11 @@
 // support for C/C++ parsing
 // (C)2009-2011 Kenneth Boyd, license: MIT.txt
 
-#/*cut-cpp*/
 #include "CSupport.hpp"
+#/*cut-cpp*/
 #include "_CSupport3.hpp"
 #include "_CSupport4.hpp"
 #/*cut-cpp*/
-#/*cut-nocpp*/
-#include "CSupport_pp.hpp"
-#/*cut-nocpp*/
 #include "_CSupport1.hpp"
 #include "_CSupport2.hpp"
 
