@@ -2954,24 +2954,24 @@ template<char c> static bool is_C99_unary_operator_expression(const parse_tree& 
 {
 	return		robust_token_is_char<c>(src.index_tokens[0].token)
 #ifndef NDEBUG
-			&&	src.index_tokens[0].src_filename
+		&& src.index_tokens[0].src_filename
 #endif
-			&&	!src.index_tokens[1].token.first
-			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<2>() && (PARSE_CAST_EXPRESSION & src.data<2>()->flags);
+		&& !src.index_tokens[1].token.first
+		&& src.empty<0>() && src.empty<1>()
+		&& 1 == src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+	//			&&	1==src.size<2>() && (PARSE_CAST_EXPRESSION & src.front<2>().flags);
 }
 
 static bool is_CPP_logical_NOT_expression(const parse_tree& src)
 {
-	return		(robust_token_is_char<'!'>(src.index_tokens[0].token) || robust_token_is_string<3>(src.index_tokens[0].token,"not"))
+	return		(robust_token_is_char<'!'>(src.index_tokens[0].token) || robust_token_is_string<3>(src.index_tokens[0].token, "not"))
 #ifndef NDEBUG
-			&&	src.index_tokens[0].src_filename
+		&& src.index_tokens[0].src_filename
 #endif
-			&&	!src.index_tokens[1].token.first
-			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<2>() && (PARSE_CAST_EXPRESSION & src.data<2>()->flags);
+		&& !src.index_tokens[1].token.first
+		&& src.empty<0>() && src.empty<1>()
+		&& 1 == src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+	//			&&	1==src.size<2>() && (PARSE_CAST_EXPRESSION & src.front<2>().flags);
 }
 
 static bool is_CPP_bitwise_complement_expression(const parse_tree& src)
@@ -3334,35 +3334,35 @@ static bool _C99_intlike_literal_to_VM(umaxint& dest, const parse_tree& src SIG_
 		{
 		const promote_aux old(src.type_code.base_type_index ARG_TYPES);
 		if (old.is_signed)
-			{
-			const promote_aux lhs(src.data<1>()->type_code.base_type_index ARG_TYPES);
-			assert(old.bitcount>=lhs.bitcount);
+		{
+			const promote_aux lhs(src.front<1>().type_code.base_type_index ARG_TYPES);
+			assert(old.bitcount >= lhs.bitcount);
 			if (lhs.is_signed)
-				{
+			{
 				umaxint lhs_int;
 				umaxint rhs_int;
-				if (	C99_intlike_literal_to_VM(lhs_int,*src.data<1>() ARG_TYPES)
-					&&	C99_intlike_literal_to_VM(rhs_int,*src.data<2>() ARG_TYPES))
-					{
-					const promote_aux rhs(src.data<2>()->type_code.base_type_index ARG_TYPES);
-					assert(old.bitcount>=rhs.bitcount);
-					assert(old.bitcount>rhs.bitcount || rhs.is_signed);
-					if (lhs_int.test(lhs.bitcount-1) && (!rhs.is_signed || !rhs_int.test(rhs.bitcount-1)))
-						{	// lhs -, rhs +: could land exactly on INT_MIN/LONG_MIN/LLONG_MIN
-						target_machine->signed_additive_inverse(lhs_int,lhs.machine_type);
+				if (C99_intlike_literal_to_VM(lhs_int, src.front<1>() ARG_TYPES)
+					&& C99_intlike_literal_to_VM(rhs_int, src.front<2>() ARG_TYPES))
+				{
+					const promote_aux rhs(src.front<1>().type_code.base_type_index ARG_TYPES);
+					assert(old.bitcount >= rhs.bitcount);
+					assert(old.bitcount > rhs.bitcount || rhs.is_signed);
+					if (lhs_int.test(lhs.bitcount - 1) && (!rhs.is_signed || !rhs_int.test(rhs.bitcount - 1)))
+					{	// lhs -, rhs +: could land exactly on INT_MIN/LONG_MIN/LLONG_MIN
+						target_machine->signed_additive_inverse(lhs_int, lhs.machine_type);
 						lhs_int += rhs_int;
 						lhs_int -= 1;
-						if (lhs_int==target_machine->signed_max(old.machine_type))
-							{
+						if (lhs_int == target_machine->signed_max(old.machine_type))
+						{
 							lhs_int += 1;
 							dest = lhs_int;
 							return true;	// signed additive inverse on twos-complement nontrapping machines has INT_MIN/LONG_MIN/LLONG_MIN as a fixed point
-							}
 						}
 					}
 				}
 			}
 		}
+	}
 
 	if (!src.is_atomic() || !(PARSE_PRIMARY_EXPRESSION & src.flags))
 		return false;
