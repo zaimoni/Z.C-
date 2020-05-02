@@ -37,6 +37,8 @@ public:
 	static void value_copy(uchar_blob& dest,const uchar_blob& src) {::value_copy(dest,src);};
 };
 
+static_assert(std::is_pod_v<uchar_blob>);
+
 inline bool operator==(const uchar_blob& lhs, const uchar_blob& rhs)
 {return lhs.size()==rhs.size() && !memcmp(lhs.data(),rhs.data(),lhs.size());}
 

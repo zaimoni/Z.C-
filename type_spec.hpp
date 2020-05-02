@@ -70,6 +70,8 @@ struct type_spec
 #endif
 };
 
+static_assert(std::is_pod_v<type_spec>);
+
 // non-virtual, intentionally
 class type_spec_class : public type_spec
 {
