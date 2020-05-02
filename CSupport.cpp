@@ -4003,8 +4003,8 @@ static bool is_CPP_bitwise_complement_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.data<2>()->flags);
-//			&&	1==src.size<2>() && (PARSE_CAST_EXPRESSION & src.data<2>()->flags);
+			&&	1==src.size<2>() && (PARSE_EXPRESSION & src.front<2>().flags);
+//			&&	1==src.size<2>() && (PARSE_CAST_EXPRESSION & src.front<2>().flags);
 }
 
 static bool is_CPP0X_typeid_expression(const parse_tree& src)
@@ -4015,7 +4015,7 @@ static bool is_CPP0X_typeid_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && ((PARSE_EXPRESSION | PARSE_TYPE) & src.data<2>()->flags)
+			&&	1==src.size<2>() && ((PARSE_EXPRESSION | PARSE_TYPE) & src.front<2>().flags)
 			&&	src.type_code.is_type<C_TYPE::TYPEINFO>()
 			&&	(src.type_code.qualifier<0>() & (type_spec::lvalue | type_spec::_const))==(type_spec::lvalue | type_spec::_const);
 }
@@ -4029,8 +4029,8 @@ static bool is_C99_CPP_sizeof_expression(const parse_tree& src)
 #endif
 			&&	!src.index_tokens[1].token.first
 			&&	src.empty<0>() && src.empty<1>()
-			&&	1==src.size<2>() && ((PARSE_EXPRESSION | PARSE_TYPE) & src.data<2>()->flags);
-//			&&	1==src.size<2>() && ((PARSE_UNARY_EXPRESSION | PARSE_TYPE) & src.data<2>()->flags);
+			&&	1==src.size<2>() && ((PARSE_EXPRESSION | PARSE_TYPE) & src.front<2>().flags);
+//			&&	1==src.size<2>() && ((PARSE_UNARY_EXPRESSION | PARSE_TYPE) & src.front<2>().flags);
 }
 #endif
 

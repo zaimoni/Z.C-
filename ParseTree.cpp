@@ -151,8 +151,7 @@ bool parse_tree::self_entangled() const
 
 void parse_tree::clear()
 {
-	index_tokens[0].clear();
-	index_tokens[1].clear();
+	zaimoni::clear<2>(index_tokens);
 	_args[0].NULLPtr();
 	_args[1].NULLPtr();
 	_args[2].NULLPtr();

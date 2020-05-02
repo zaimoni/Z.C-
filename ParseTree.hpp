@@ -20,7 +20,8 @@ class type_system;
 
 #define ACTIVATE_PARSE_TREE_C_ARRAY 1
 
-//! required to be POD to allow C memory management
+// Historically required to be POD to allow C memory management
+// However, C++2017 unlike C++2003 disallowed using parse_tree in its own container class
 struct parse_tree
 {
 	enum core_flags {	// standardize bitflag use

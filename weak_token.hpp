@@ -15,16 +15,15 @@ struct weak_token
 	zaimoni::lex_flags flags;
 	const char* src_filename;	// *NOT* owned; default NULL
 
-	void clear()
-		{
-		token.first = NULL;
-		token.second = 0;
-		logical_line.first = 0;
-		logical_line.second = 0;
-		flags = 0;
-		src_filename = NULL;
-		}
+	weak_token() = default;
+	~weak_token() = default;
+	weak_token(const weak_token& src) = default;
+	weak_token(weak_token&& src) = delete;
+	weak_token& operator=(const weak_token & src) = default;
+	weak_token& operator=(weak_token&& src) = delete;
 };
+
+static_assert(std::is_pod_v<weak_token>);
 
 // if we're already getting INC_INFORM from Zaimoni.STL/Logging.h then provide our own
 #ifdef ZAIMONI_LOGGING_H
