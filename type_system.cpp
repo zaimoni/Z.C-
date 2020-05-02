@@ -2,12 +2,27 @@
 // (C)2009-2011 Kenneth Boyd, license: MIT.txt
 
 #include "type_system.hpp"
+#ifndef BUILD_Z_CPP
 #include "enum_type.hpp"
 #include "struct_type.hpp"
 #include "Zaimoni.STL/search.hpp"
 #include "Zaimoni.STL/Pure.C/auto_int.h"
 #include "AtomicString.h"
 #include "str_aux.h"
+#endif
+
+const char* type_system::_name(size_t id) const
+{
+	if (0 == id) return "(?)";
+	if (core_types_size > --id) return core_types[id].first;
+#ifndef BUILD_Z_CPP
+	if (dynamic_types.size() > (id -= core_types_size))
+		return dynamic_types[id].first;
+#endif
+	return "(?)";
+}
+
+#ifndef BUILD_Z_CPP
 
 // macros to help out dynamic registration
 #define DYNAMIC_FUNCTYPE 1
@@ -346,15 +361,6 @@ void type_system::unuse_type(type_index id)
 		}
 		dynamic_types.DeleteIdx(id);		
 		}
-}
-
-const char* type_system::_name(size_t id) const
-{
-	if (0==id) return "(?)";
-	if (core_types_size> --id) return core_types[id].first;
-	if (dynamic_types.size() > (id -= core_types_size))
-		return dynamic_types[id].first;
-	return "(?)";
 }
 
 // implement C/C++ typedef system
@@ -1176,3 +1182,4 @@ int type_system::_CPP_linkage_code(const char* alias,const char* active_namespac
 	return -1; // not defined
 }
 
+#endif

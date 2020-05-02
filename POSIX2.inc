@@ -48,11 +48,11 @@ type_spec_pp.cpp: type_spec.cpp
 	$(PYTHON) $(SELECTIVE_CUT) cpp type_spec.cpp type_spec_pp.cpp.alt 
 	if cmp -s type_spec_pp.cpp type_spec_pp.cpp.alt; then rm type_spec_pp.cpp.alt ; else mv type_spec_pp.cpp.alt type_spec_pp.cpp; fi
 	
-type_system_pp.hpp: type_system.hpp.in
-	$(PYTHON) $(SELECTIVE_CUT) cpp type_system.hpp.in type_system_pp.hpp.alt2 
-	$(PYTHON) $(SUPPRESS_CUT) nocpp type_system_pp.hpp.alt2 type_system_pp.hpp.alt 
-	if cmp -s type_system_pp.hpp type_system_pp.hpp.alt; then rm type_system_pp.hpp.alt; else mv type_system_pp.hpp.alt type_system_pp.hpp; fi
-	rm type_system_pp.hpp.alt2
+#type_system_pp.hpp: type_system.hpp.in
+#	$(PYTHON) $(SELECTIVE_CUT) cpp type_system.hpp.in type_system_pp.hpp.alt2 
+#	$(PYTHON) $(SUPPRESS_CUT) nocpp type_system_pp.hpp.alt2 type_system_pp.hpp.alt 
+#	if cmp -s type_system_pp.hpp type_system_pp.hpp.alt; then rm type_system_pp.hpp.alt; else mv type_system_pp.hpp.alt type_system_pp.hpp; fi
+#	rm type_system_pp.hpp.alt2
 
 #type_system.hpp: type_system.hpp.in
 #	$(PYTHON) $(SUPPRESS_CUT) cpp type_system.hpp.in type_system.hpp.alt2 
@@ -66,11 +66,11 @@ type_system_pp.hpp: type_system.hpp.in
 #	if cmp -s type_system_pp.cpp type_system_pp.cpp.alt; then rm type_system_pp.cpp.alt ; else mv type_system_pp.cpp.alt type_system_pp.cpp; fi
 #	rm type_system_pp.cpp.alt2
 
-type_system.cpp: type_system.cpp.in
-	$(PYTHON) $(SUPPRESS_CUT) cpp type_system.cpp.in type_system.cpp.alt2 
-	$(PYTHON) $(SELECTIVE_CUT) nocpp type_system.cpp.alt2 type_system.cpp.alt 
-	if cmp -s type_system.cpp type_system.cpp.alt; then rm type_system.cpp.alt ; else mv type_system.cpp.alt type_system.cpp; fi
-	rm type_system.cpp.alt2
+#type_system.cpp: type_system.cpp.in
+#	$(PYTHON) $(SUPPRESS_CUT) cpp type_system.cpp.in type_system.cpp.alt2 
+#	$(PYTHON) $(SELECTIVE_CUT) nocpp type_system.cpp.alt2 type_system.cpp.alt 
+#	if cmp -s type_system.cpp type_system.cpp.alt; then rm type_system.cpp.alt ; else mv type_system.cpp.alt type_system.cpp; fi
+#	rm type_system.cpp.alt2
 
 # test case support
 regenerate_tests: tests/zcc/decl.C99/Pass_class_def.hpp \
