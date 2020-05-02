@@ -12,17 +12,17 @@ SUPPRESS_CUT = tools\suppress_cut.py
 #	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc.hpp CPreproc_pp.hpp.alt 
 #	if cmp -s CPreproc_pp.hpp CPreproc_pp.hpp.alt; then rm CPreproc_pp.hpp.alt ; else mv CPreproc_pp.hpp.alt CPreproc_pp.hpp; fi
 
-CPreproc_pp.cpp: CPreproc.cpp.in
-	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc.cpp.in CPreproc_pp.cpp.alt2 
-	$(PYTHON) $(SUPPRESS_CUT) nocpp CPreproc_pp.cpp.alt2 CPreproc_pp.cpp.alt 
-	if cmp -s CPreproc_pp.cpp CPreproc_pp.cpp.alt; then rm CPreproc_pp.cpp.alt ; else mv CPreproc_pp.cpp.alt CPreproc_pp.cpp; fi
-	rm CPreproc_pp.cpp.alt2
+#CPreproc_pp.cpp: CPreproc.cpp.in
+#	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc.cpp.in CPreproc_pp.cpp.alt2 
+#	$(PYTHON) $(SUPPRESS_CUT) nocpp CPreproc_pp.cpp.alt2 CPreproc_pp.cpp.alt 
+#	if cmp -s CPreproc_pp.cpp CPreproc_pp.cpp.alt; then rm CPreproc_pp.cpp.alt ; else mv CPreproc_pp.cpp.alt CPreproc_pp.cpp; fi
+#	rm CPreproc_pp.cpp.alt2
 
-CPreproc.cpp: CPreproc.cpp.in
-	$(PYTHON) $(SUPPRESS_CUT) cpp CPreproc.cpp.in CPreproc.cpp.alt2 
-	$(PYTHON) $(SELECTIVE_CUT) nocpp CPreproc.cpp.alt2 CPreproc.cpp.alt 
-	if cmp -s CPreproc.cpp CPreproc.cpp.alt; then rm CPreproc.cpp.alt ; else mv CPreproc.cpp.alt CPreproc.cpp; fi
-	rm CPreproc.cpp.alt2
+#CPreproc.cpp: CPreproc.cpp.in
+#	$(PYTHON) $(SUPPRESS_CUT) cpp CPreproc.cpp.in CPreproc.cpp.alt2 
+#	$(PYTHON) $(SELECTIVE_CUT) nocpp CPreproc.cpp.alt2 CPreproc.cpp.alt 
+#	if cmp -s CPreproc.cpp CPreproc.cpp.alt; then rm CPreproc.cpp.alt ; else mv CPreproc.cpp.alt CPreproc.cpp; fi
+#	rm CPreproc.cpp.alt2
 	
 #CPreproc_autogen_pp.cpp: CPreproc_autogen.cpp
 #	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc_autogen.cpp CPreproc_autogen_pp.cpp.alt 

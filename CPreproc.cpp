@@ -9,7 +9,9 @@
 
 #include "AtomicString.h"
 #include "CSupport.hpp"
+#ifndef BUILD_Z_CPP
 #include "_CSupport3.hpp"
+#endif
 #include "C_PPDecimalInteger.hpp"
 #include "CPUInfo.hpp"
 #include "errors.hpp"
@@ -371,21 +373,6 @@ static const POD_pair<const char*,size_t> pragma_ZCC_keywords[]
 
 #define PRAGMA_ZCC_LOCK 0
 #define PRAGMA_ZCC_ENABLE_TYPEID 1
-
-const POD_pair<const char*,size_t> pragma_relay_keywords[]
-	=	{	DICT_STRUCT("_ZCC_FP_CONTRACT_OFF"),
-			DICT_STRUCT("_ZCC_FP_CONTRACT_DEFAULT"),
-			DICT_STRUCT("_ZCC_FP_CONTRACT_ON"),
-			DICT_STRUCT("_ZCC_FENV_ACCESS_OFF"),
-			DICT_STRUCT("_ZCC_FENV_ACCESS_DEFAULT"),
-			DICT_STRUCT("_ZCC_FENV_ACCESS_ON"),
-			DICT_STRUCT("_ZCC_CX_LIMITED_RANGE_OFF"),
-			DICT_STRUCT("_ZCC_CX_LIMITED_RANGE_DEFAULT"),
-			DICT_STRUCT("_ZCC_CX_LIMITED_RANGE_ON"),
-			DICT_STRUCT("_ZCC_enable_typeid")
-		};
-
-static_assert(PRAGMA_RELAY_KEYWORDS_STRICT_UB==STATIC_SIZE(pragma_relay_keywords));		
 #undef DICT_STRUCT
 
 static void _init_weak_token(weak_token& dest, const Token<char>& x,const POD_triple<size_t,size_t,lex_flags>& pretoken)
@@ -1404,19 +1391,25 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 					if (PP::PRAGMA==directive_type)
 						{
 						const size_t critical_offset = valid_directives[directive_type].second+2;
-						const unsigned int pragma_code =
-						interpret_pragma(TokenList[i]->data()+critical_offset,TokenList[i]->size()-critical_offset,locked_macros);
-						switch(pragma_code)
-						{
-						default:
+#ifdef BUILD_Z_CPP
+						interpret_pragma(TokenList[i]->data() + critical_offset, TokenList[i]->size() - critical_offset, locked_macros);
 						TokenList.DeleteIdx(i);
-						if (0==i) goto Restart;
+						if (0 == i) goto Restart;
 						--i;
 						continue;
-						case RELAY_ZCC_ENABLE_TYPEID+1:
-							TokenList[i]->replace_once(0,TokenList[i]->size(),pragma_relay_keywords[pragma_code-1].first,pragma_relay_keywords[pragma_code-1].second);
+#else
+						switch(const unsigned int pragma_code = interpret_pragma(TokenList[i]->data() + critical_offset, TokenList[i]->size() - critical_offset, locked_macros))
+						{
+						case RELAY_ZCC_ENABLE_TYPEID + 1:
+							TokenList[i]->replace_once(0, TokenList[i]->size(), pragma_relay_keywords[pragma_code - 1].first, pragma_relay_keywords[pragma_code - 1].second);
+							continue;
+						default:
+							TokenList.DeleteIdx(i);
+							if (0==i) goto Restart;
+							--i;
 							continue;
 						}
+#endif
 						}
 					}
 				}
@@ -1662,15 +1655,17 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 						{	//! \test Pass_pragma_STDC.hpp
 						autovalarray_ptr_throws<char> pragma_string(lang.UnescapeStringLength(TokenList[i+2]->data()+1,TokenList[i+2]->size()-2));
 						lang.UnescapeString(pragma_string.c_array(),TokenList[i+2]->data()+1,TokenList[i+2]->size()-2);
-						const unsigned int pragma_code =
-						interpret_pragma(pragma_string.data(),pragma_string.size(),locked_macros);
-						switch(pragma_code)
+#ifdef BUILD_Z_CPP
+						interpret_pragma(pragma_string.data(), pragma_string.size(), locked_macros);
+#else
+						switch(const unsigned int pragma_code = interpret_pragma(pragma_string.data(), pragma_string.size(), locked_macros))
 						{
 						case RELAY_ZCC_ENABLE_TYPEID+1:
 							TokenList[i]->replace_once(0,TokenList[i]->size(),pragma_relay_keywords[pragma_code-1].first,pragma_relay_keywords[pragma_code-1].second);
 							TokenList.DeleteNSlotsAt(3,i+1);
 							continue;
 						}
+#endif
 						};
 					TokenList.DeleteNSlotsAt(4,i);
 					if (0==i) goto Restart;
@@ -2153,17 +2148,21 @@ CPreprocessor::interpret_pragma(const char* const x, size_t x_len, autovalarray_
 		{
 		if (1<pretokenized.size())
 			{
+#ifdef BUILD_ZCC
 			static_assert(RELAY_ZCC_ENABLE_TYPEID==STATIC_SIZE(pragma_STDC_on_off_switch)*STATIC_SIZE(pragma_STDC_keywords));
+#endif
 			const errr ZCC_pragma =  linear_find_lencached(x+pretokenized[1].first, pretokenized[1].second, pragma_ZCC_keywords, STATIC_SIZE(pragma_ZCC_keywords));
 			switch(ZCC_pragma)
 			{
+#ifdef BUILD_ZCC
 			// #pragma ZCC enable_typeid gets rewritten to the 
 			// reserved-to-the-implementation keyword 
 			// _ZCC_pragma_enable_typeid, which in turn turns off the syntax
 			// errors for typeid .  We use this convolution so that we don't
 			// instantly break other compilers inadvertently using our 
 			// #include <typeinfo>
-			case PRAGMA_ZCC_ENABLE_TYPEID: return STATIC_SIZE(pragma_STDC_on_off_switch)*STATIC_SIZE(pragma_STDC_keywords)+1;				
+			case PRAGMA_ZCC_ENABLE_TYPEID: return STATIC_SIZE(pragma_STDC_on_off_switch)*STATIC_SIZE(pragma_STDC_keywords)+1;
+#endif
 			case PRAGMA_ZCC_LOCK:
 				{	//! \test Error_undef_locked_macro.hpp
 				size_t j = pretokenized.size();
@@ -3312,6 +3311,7 @@ oneTokenExit:
 	return true;
 }
 
+// \todo? don't undef these when testing tokenize-flow preprocessing
 #undef PREPROCESSING_DIRECTIVE_FLAG
 #undef PACK_DIRECTIVE
 #undef UNPACK_DIRECTIVE
@@ -4194,6 +4194,7 @@ CPreprocessor::use_line_directive_and_discard(autovalarray_ptr<Token<char>* >& T
 	TokenList.DeleteIdx(i);
 }
 
+// \todo? don't undef these when testing tokenize-flow preprocessing
 #undef ULONG_BIT
 #undef INVALID_DIRECTIVE_FLAG
 
@@ -4222,8 +4223,10 @@ CPreprocessor::hard_locked_macro(const char* const x,const size_t x_len) const
 // Macro names beginning with __STDC_ are reserved for future standardization.
 //! \bug should have positive test suite for named __STDC_ macros
 	if (7<=x_len && !strncmp(x,"__STDC_",sizeof("__STDC_")-1)) return true;
+#ifndef BUILD_Z_CPP
 // Lock down our relay identifiers. to be safe
 	if (0<=linear_find_lencached(x,x_len,pragma_relay_keywords,STATIC_SIZE(pragma_relay_keywords))) return true;
+#endif
 // C++0x 17.4.3.2.2 simply prohibits all keywords as macros; prefer this to C++98.  C99/C0X is handled elsewhere, as it isn't so draconian.
 // follow C++0x when generalizing to non-standard languages, as that's more intuitive.
 	if (Lang::C!=lang_code && 0<=linear_find_lencached(x,x_len,lang.InvariantKeywords,lang.len_InvariantKeywords)) return true;
