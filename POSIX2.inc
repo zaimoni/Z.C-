@@ -24,9 +24,9 @@ CPreproc.cpp: CPreproc.cpp.in
 	if cmp -s CPreproc.cpp CPreproc.cpp.alt; then rm CPreproc.cpp.alt ; else mv CPreproc.cpp.alt CPreproc.cpp; fi
 	rm CPreproc.cpp.alt2
 	
-CPreproc_autogen_pp.cpp: CPreproc_autogen.cpp
-	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc_autogen.cpp CPreproc_autogen_pp.cpp.alt 
-	if cmp -s CPreproc_autogen_pp.cpp CPreproc_autogen_pp.cpp.alt; then rm CPreproc_autogen_pp.cpp.alt ; else mv CPreproc_autogen_pp.cpp.alt CPreproc_autogen_pp.cpp; fi
+#CPreproc_autogen_pp.cpp: CPreproc_autogen.cpp
+#	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc_autogen.cpp CPreproc_autogen_pp.cpp.alt 
+#	if cmp -s CPreproc_autogen_pp.cpp CPreproc_autogen_pp.cpp.alt; then rm CPreproc_autogen_pp.cpp.alt ; else mv CPreproc_autogen_pp.cpp.alt CPreproc_autogen_pp.cpp; fi
 
 #CSupport_pp.hpp: CSupport.hpp
 #	$(PYTHON) $(SELECTIVE_CUT) cpp CSupport.hpp CSupport_pp.hpp.alt 

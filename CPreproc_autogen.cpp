@@ -2,15 +2,12 @@
 // (C)2009,2010 Kenneth Boyd, license: MIT.txt
 // class CPreprocessor support for autogenerating headers for arbitrary machine targets.
 
-#/*cut-cpp*/
-#include "CPreproc.hpp"
-#/*cut-cpp*/
 #include "CPreproc.hpp"
 #include "CPUInfo.hpp"
 #include "errors.hpp"
 #include "Zaimoni.STL/POD.hpp"
 #include "Zaimoni.STL/LexParse/Token.hpp"
-#include "Zaimoni.STL/pure.C/format_util.h"
+#include "Zaimoni.STL/Pure.C/format_util.h"
 
 using virtual_machine::umaxint;
 
