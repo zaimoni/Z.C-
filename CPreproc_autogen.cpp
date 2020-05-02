@@ -5,7 +5,7 @@
 #/*cut-cpp*/
 #include "CPreproc.hpp"
 #/*cut-cpp*/
-#include "CPreproc_pp.hpp"
+#include "CPreproc.hpp"
 #include "CPUInfo.hpp"
 #include "errors.hpp"
 #include "Zaimoni.STL/POD.hpp"

@@ -1,7 +1,7 @@
 // CPreproc_pp.cpp
 // (C)2009-2012 Kenneth Boyd, license: MIT.txt
 
-#include "CPreproc_pp.hpp"
+#include "CPreproc.hpp"
 
 #include <limits.h>
 #include <time.h>

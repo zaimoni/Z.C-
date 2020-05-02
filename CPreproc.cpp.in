@@ -6,12 +6,7 @@
 #/*cut-nocpp*/
 // (C)2009-2012 Kenneth Boyd, license: MIT.txt
 
-#/*cut-cpp*/
 #include "CPreproc.hpp"
-#/*cut-cpp*/
-#/*cut-nocpp*/
-#include "CPreproc_pp.hpp"
-#/*cut-nocpp*/
 
 #include <limits.h>
 #include <time.h>

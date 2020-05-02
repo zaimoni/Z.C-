@@ -8,9 +8,9 @@ SUPPRESS_CUT = tools\suppress_cut.py
 
 # source code
 # touch causes unnecessary build noise here
-CPreproc_pp.hpp: CPreproc.hpp
-	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc.hpp CPreproc_pp.hpp.alt 
-	if cmp -s CPreproc_pp.hpp CPreproc_pp.hpp.alt; then rm CPreproc_pp.hpp.alt ; else mv CPreproc_pp.hpp.alt CPreproc_pp.hpp; fi
+#CPreproc_pp.hpp: CPreproc.hpp
+#	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc.hpp CPreproc_pp.hpp.alt 
+#	if cmp -s CPreproc_pp.hpp CPreproc_pp.hpp.alt; then rm CPreproc_pp.hpp.alt ; else mv CPreproc_pp.hpp.alt CPreproc_pp.hpp; fi
 
 CPreproc_pp.cpp: CPreproc.cpp.in
 	$(PYTHON) $(SELECTIVE_CUT) cpp CPreproc.cpp.in CPreproc_pp.cpp.alt2 
