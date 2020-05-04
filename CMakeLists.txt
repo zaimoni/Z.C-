@@ -30,13 +30,13 @@ add_executable(z_cpp z_cpp.cpp to_stdout.cpp errors.cpp langroute.cpp AtomicStri
 target_link_libraries(z_cpp z_langconf z_log_adapter z_stdio_log z_mutex z_format_util z_stdio_c z_memory)
 target_link_options(z_cpp PRIVATE /FORCE:MULTIPLE)	# for z_memory
 target_compile_definitions(z_cpp PUBLIC BUILD_Z_CPP)
-# add_dependencies(... AutoDetect)
+add_dependencies(z_cpp AutoDetect)
 
 add_executable(zcc zcc.cpp to_stdout.cpp errors.cpp langroute.cpp AtomicString.cpp str_aux.cpp lex_core.cpp filesystem.cpp uchar_blob.cpp unsigned_var_int.cpp CPUInfo.cpp struct_type.cpp type_system.cpp ParseTree.cpp type_spec.cpp CSupport.cpp C_PPNumCore.cpp C_PPDecimalInteger.cpp C_PPOctalInteger.cpp C_PPHexInteger.cpp C_PPDecimalFloat.cpp C_PPHexFloat.cpp unsigned_aux.cpp Trigraph.cpp Flat_UNI.cpp end_lc.cpp end_nl.cpp load_src.cpp CPreproc.cpp CPreproc_autogen.cpp ZParser.cpp)
 target_link_libraries(zcc z_langconf z_log_adapter z_stdio_log z_mutex z_format_util z_stdio_c z_memory)
 target_link_options(zcc PRIVATE /FORCE:MULTIPLE)	# for z_memory
 target_compile_definitions(zcc PUBLIC BUILD_ZCC)
-# add_dependencies(... AutoDetect)
+add_dependencies(zcc AutoDetect)
 
 add_custom_command(TARGET z_cpp POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different

@@ -4,7 +4,7 @@
 #include "Zaimoni.STL/Compiler.h"
 #include "Zaimoni.STL/POD.hpp"
 
-inline constexpr const POD_pair<const char*, size_t> pragma_relay_keywords[]
+inline constexpr const zaimoni::POD_pair<const char*, size_t> pragma_relay_keywords[]
 	= { DICT_STRUCT("_ZCC_FP_CONTRACT_OFF"),
 		DICT_STRUCT("_ZCC_FP_CONTRACT_DEFAULT"),
 		DICT_STRUCT("_ZCC_FP_CONTRACT_ON"),
