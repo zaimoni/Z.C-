@@ -32,17 +32,17 @@ SUPPRESS_CUT = tools\suppress_cut.py
 #	$(PYTHON) $(SELECTIVE_CUT) cpp CSupport.hpp CSupport_pp.hpp.alt 
 #	if cmp -s CSupport_pp.hpp CSupport_pp.hpp.alt; then rm CSupport_pp.hpp.alt; else mv CSupport_pp.hpp.alt CSupport_pp.hpp; fi
 
-CSupport_pp.cpp: CSupport.cpp.in
-	$(PYTHON) $(SELECTIVE_CUT) cpp CSupport.cpp.in CSupport_pp.cpp.alt2 
-	$(PYTHON) $(SUPPRESS_CUT) nocpp CSupport_pp.cpp.alt2 CSupport_pp.cpp.alt 
-	if cmp -s CSupport_pp.cpp CSupport_pp.cpp.alt; then rm CSupport_pp.cpp.alt ; else mv CSupport_pp.cpp.alt CSupport_pp.cpp; fi
-	rm CSupport_pp.cpp.alt2
+#CSupport_pp.cpp: CSupport.cpp.in
+#	$(PYTHON) $(SELECTIVE_CUT) cpp CSupport.cpp.in CSupport_pp.cpp.alt2 
+#	$(PYTHON) $(SUPPRESS_CUT) nocpp CSupport_pp.cpp.alt2 CSupport_pp.cpp.alt 
+#	if cmp -s CSupport_pp.cpp CSupport_pp.cpp.alt; then rm CSupport_pp.cpp.alt ; else mv CSupport_pp.cpp.alt CSupport_pp.cpp; fi
+#	rm CSupport_pp.cpp.alt2
 
-CSupport.cpp: CSupport.cpp.in
-	$(PYTHON) $(SUPPRESS_CUT) cpp CSupport.cpp.in CSupport.cpp.alt2 
-	$(PYTHON) $(SELECTIVE_CUT) nocpp CSupport.cpp.alt2 CSupport.cpp.alt 
-	if cmp -s CSupport.cpp CSupport.cpp.alt; then rm CSupport.cpp.alt ; else mv CSupport.cpp.alt CSupport.cpp; fi
-	rm CSupport.cpp.alt2
+#CSupport.cpp: CSupport.cpp.in
+#	$(PYTHON) $(SUPPRESS_CUT) cpp CSupport.cpp.in CSupport.cpp.alt2 
+#	$(PYTHON) $(SELECTIVE_CUT) nocpp CSupport.cpp.alt2 CSupport.cpp.alt 
+#	if cmp -s CSupport.cpp CSupport.cpp.alt; then rm CSupport.cpp.alt ; else mv CSupport.cpp.alt CSupport.cpp; fi
+#	rm CSupport.cpp.alt2
 
 #type_spec_pp.cpp: type_spec.cpp
 #	$(PYTHON) $(SELECTIVE_CUT) cpp type_spec.cpp type_spec_pp.cpp.alt 
