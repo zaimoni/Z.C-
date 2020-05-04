@@ -5234,7 +5234,7 @@ static bool CPP_literal_converts_to_integer(const parse_tree& src)
 //! \throw std::bad_alloc()
 static zaimoni::Loki::CheckReturnDisallow<0,parse_tree*>::value_type repurpose_inner_parentheses(parse_tree& src)
 {
-	if (1==src.size<0>() && is_naked_parentheses_pair(*src.data<0>()))
+	if (1==src.size<0>() && is_naked_parentheses_pair(src.front<0>()))
 		{
 		auto tmp = src.c_array<0>()->_args[0];
 		src.c_array<0>()->_args[0].NULLPtr();
@@ -5248,7 +5248,7 @@ static zaimoni::Loki::CheckReturnDisallow<0,parse_tree*>::value_type repurpose_i
 
 static void cancel_inner_parentheses(parse_tree& src)
 {
-	while(1==src.size<0>() && is_naked_parentheses_pair(*src.data<0>()))
+	while(1==src.size<0>() && is_naked_parentheses_pair(src.front<0>()))
 		{
 		auto tmp = src.c_array<0>()->_args[0];
 		src.c_array<0>()->_args[0].NULLPtr();
@@ -5270,7 +5270,7 @@ static void cancel_outermost_parentheses(parse_tree& src)
  * \param src target to inspect
  * 
  * \return true iff ( ... ) expression was recognized
- * \throw std::bad_alloc only if 1==src.size<0>() and src.type_code.pointer_power<src.data<0>()->type_code.pointer_power
+ * \throw std::bad_alloc only if 1==src.size<0>() and src.type_code.pointer_power<src.front<0>().type_code.pointer_power
  */
 static bool inspect_potential_paren_primary_expression(parse_tree& src)
 {
@@ -5298,7 +5298,7 @@ static bool inspect_potential_paren_primary_expression(parse_tree& src)
 				value_copy(src.type_code,src.front<0>().type_code);
 				src.flags &= parse_tree::RESERVED_MASK;	// just in case
 				src.flags |= PARSE_PRIMARY_EXPRESSION;
-				src.flags |= (PARSE_PAREN_PRIMARY_PASSTHROUGH & src.data<0>()->flags);
+				src.flags |= (PARSE_PAREN_PRIMARY_PASSTHROUGH & src.front<0>().flags);
 				return true;
 				}
 #ifndef BUILD_Z_CPP
@@ -5354,7 +5354,7 @@ static bool suppress_naked_brackets_and_braces(parse_tree& src,const char* const
 	return false;
 }
 
-// \throw std::bad_alloc only if src.data<0>()[i-1].type_code.pointer_power<src.data<0>()[i-1].data<0>()->type_code.pointer_power
+// \throw std::bad_alloc only if src.data<0>()[i-1].type_code.pointer_power<src.data<0>()[i-1].front<0>().type_code.pointer_power
 static bool terse_locate_array_deref(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
@@ -5370,7 +5370,7 @@ static bool terse_locate_array_deref(parse_tree& src, size_t& i)
 
 	assert(1<=i);
 	if (   1==src.data<0>()[i].size<0>()
-		&& (PARSE_EXPRESSION & src.data<0>()[i].data<0>()->flags))
+		&& (PARSE_EXPRESSION & src.data<0>()[i].front<0>().flags))
 		{	// array dereference operator; put preceding argument src.data<0>()[i-1] in src.data<0>()[i].data<1>()[0]
 		inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]);
 		if (PARSE_POSTFIX_EXPRESSION & src.data<0>()[i-1].flags)
@@ -5432,8 +5432,8 @@ static void C_array_easy_syntax_check(parse_tree& src,const type_system& types)
 {
 	if (parse_tree::INVALID & src.flags) return;	// cannot optimize to valid
 
-	const size_t effective_pointer_power_prefix = src.data<1>()->type_code.pointer_power;
-	const size_t effective_pointer_power_infix = src.data<0>()->type_code.pointer_power;
+	const size_t effective_pointer_power_prefix = src.front<1>().type_code.pointer_power;
+	const size_t effective_pointer_power_infix = src.front<0>().type_code.pointer_power;
 	if (0<effective_pointer_power_prefix)
 		{
 		if (0<effective_pointer_power_infix)
@@ -5442,14 +5442,14 @@ static void C_array_easy_syntax_check(parse_tree& src,const type_system& types)
 			simple_error(src,"array dereference of pointer by pointer (C99 6.5.2.1p1; C++98 5.2.1p1,13.3.1.2p1)");
 			return;
 			}
-		else if (converts_to_integerlike(src.data<0>()->type_code.base_type_index ARG_TYPES))
-			ZAIMONI_PASSTHROUGH_ASSERT(src.data<1>()->type_code.dereference(src.type_code));
+		else if (converts_to_integerlike(src.front<0>().type_code.base_type_index ARG_TYPES))
+			ZAIMONI_PASSTHROUGH_ASSERT(src.front<1>().type_code.dereference(src.type_code));
 		else{	// not testable from preprocessor yet (need floating-point literals as extension)
 			src.flags |= parse_tree::INVALID;
 			message_header(src.index_tokens[0]);
 			INC_INFORM(ERR_STR);
 			INC_INFORM("array dereference of pointer by ");
-			INFORM(types.name(src.data<0>()->type_code.base_type_index));
+			INFORM(types.name(src.front<0>().type_code.base_type_index));
 			INFORM(" (C99 6.5.2.1p1; C++98 5.2.1p1,13.5.5p1)");
 			zcc_errors.inc_error();
 			return;
@@ -5457,15 +5457,15 @@ static void C_array_easy_syntax_check(parse_tree& src,const type_system& types)
 		}
 	else if (0<effective_pointer_power_infix)
 		{
-		if (converts_to_integerlike(src.data<1>()->type_code.base_type_index ARG_TYPES))
-			ZAIMONI_PASSTHROUGH_ASSERT(src.data<0>()->type_code.dereference(src.type_code));
+		if (converts_to_integerlike(src.front<1>().type_code.base_type_index ARG_TYPES))
+			ZAIMONI_PASSTHROUGH_ASSERT(src.front<0>().type_code.dereference(src.type_code));
 		else{	// autofails in C
 				// not testable from preprocessor yet (need floating-point literals, would be extension regardless)
 			src.flags |= parse_tree::INVALID;
 			message_header(src.index_tokens[0]);
 			INC_INFORM(ERR_STR);
 			INC_INFORM("array dereference of pointer by ");
-			INFORM(types.name(src.data<1>()->type_code.base_type_index));
+			INFORM(types.name(src.front<1>().type_code.base_type_index));
 			INFORM(" (C99 6.5.2.1p1; C++98 5.2.1p1,13.5.5p1)");
 			zcc_errors.inc_error();
 			return;
@@ -5479,9 +5479,9 @@ static void C_array_easy_syntax_check(parse_tree& src,const type_system& types)
 			message_header(src.index_tokens[0]);
 			INC_INFORM(ERR_STR);
 			INC_INFORM("array dereference of ");
-			INC_INFORM(types.name(src.data<1>()->type_code.base_type_index));
+			INC_INFORM(types.name(src.front<1>().type_code.base_type_index));
 			INC_INFORM(" by ");
-			INFORM(types.name(src.data<0>()->type_code.base_type_index));
+			INFORM(types.name(src.front<0>().type_code.base_type_index));
 			INFORM(" (C99 6.5.2.1p1; C++98 5.2.1p1,13.5.5p1)");
 			zcc_errors.inc_error();
 			}
@@ -5746,7 +5746,7 @@ static bool _C99_literal_converts_to_bool(const parse_tree& src, bool& is_true S
 
 static bool C99_literal_converts_to_bool(const parse_tree& src, bool& is_true SIG_CONST_TYPES)
 {	// deal with -1 et. al.
-	if (is_C99_unary_operator_expression<'-'>(src) && src.data<2>()->is_atomic()) return _C99_literal_converts_to_bool(*src.data<2>(),is_true ARG_TYPES);
+	if (is_C99_unary_operator_expression<'-'>(src) && src.front<2>().is_atomic()) return _C99_literal_converts_to_bool(src.front<2>(),is_true ARG_TYPES);
 
 	if (!src.is_atomic()) return false;
 	return _C99_literal_converts_to_bool(src,is_true ARG_TYPES);
@@ -5755,7 +5755,7 @@ static bool C99_literal_converts_to_bool(const parse_tree& src, bool& is_true SI
 static bool CPP_literal_converts_to_bool(const parse_tree& src, bool& is_true SIG_CONST_TYPES)
 {
 	// deal with -1 et. al.
-	if (is_C99_unary_operator_expression<'-'>(src) && src.data<2>()->is_atomic()) return CPP_literal_converts_to_bool(*src.data<2>(),is_true ARG_TYPES);
+	if (is_C99_unary_operator_expression<'-'>(src) && src.front<2>().is_atomic()) return CPP_literal_converts_to_bool(src.front<2>(),is_true ARG_TYPES);
 
 	if (!src.is_atomic()) return false;
 	if (_C99_literal_converts_to_bool(src,is_true ARG_TYPES)) return true;
@@ -5879,7 +5879,7 @@ static parse_tree decimal_literal(const char* src,const parse_tree& loc_src,cons
 }
 
 //! usually want to use value_copy rather than MoveInto before this (easier to be ACID)
-//! \throw std::bad_alloc only if dest.type_code.pointer_power<dest.data<2>()->type_code.pointer_power 
+//! \throw std::bad_alloc only if dest.type_code.pointer_power<dest.front<2>().type_code.pointer_power 
 static void force_unary_positive_literal(parse_tree& dest,const parse_tree& src SIG_CONST_TYPES)
 {
 	assert(0==dest.size<0>());
@@ -5891,8 +5891,8 @@ static void force_unary_positive_literal(parse_tree& dest,const parse_tree& src 
 	dest.core_flag_update();
 	dest.flags |= PARSE_STRICT_UNARY_EXPRESSION;
 	dest.subtype = C99_UNARY_SUBTYPE_PLUS;
-	if (converts_to_arithmeticlike(dest.data<2>()->type_code ARG_TYPES))
-		value_copy(dest.type_code,dest.data<2>()->type_code);	//! \bug doesn't work for enumerators
+	if (converts_to_arithmeticlike(dest.front<2>().type_code ARG_TYPES))
+		value_copy(dest.type_code,dest.front<2>().type_code);	//! \bug doesn't work for enumerators
 	assert(dest.index_tokens[0].src_filename);
 	assert(is_C99_unary_operator_expression<'+'>(dest));
 }
@@ -5908,8 +5908,8 @@ static void force_unary_negative_token(parse_tree& dest,parse_tree* src,const pa
 	dest.core_flag_update();
 	dest.flags |= PARSE_STRICT_UNARY_EXPRESSION;
 	dest.subtype = C99_UNARY_SUBTYPE_NEG;
-	if (converts_to_arithmeticlike(dest.data<2>()->type_code ARG_TYPES))
-		value_copy(dest.type_code,dest.data<2>()->type_code);	//! \bug doesn't work for enumerators
+	if (converts_to_arithmeticlike(dest.front<2>().type_code ARG_TYPES))
+		value_copy(dest.type_code,dest.front<2>().type_code);	//! \bug doesn't work for enumerators
 	// do not handle type here: C++ operator overloading risk
 	assert(dest.index_tokens[0].src_filename);
 	assert(is_C99_unary_operator_expression<'-'>(dest));
@@ -6076,7 +6076,7 @@ static void C_unary_plusminus_easy_syntax_check(parse_tree& src,const type_syste
 	// can type if an (C++0X unscoped) enumerator
 	if (is_noticed_enumerator(src.front<2>(),types))
 		{
-		const type_system::enumerator_info* const tmp2 = types.get_enumerator(src.front<2>()->index_tokens[0].token.first);
+		const type_system::enumerator_info* const tmp2 = types.get_enumerator(src.front<2>().index_tokens[0].token.first);
 		assert(tmp2);
 		src.type_code.set_type(tmp2->second.first.first);
 		}
@@ -6130,7 +6130,7 @@ static void CPP_unary_plusminus_easy_syntax_check(parse_tree& src,const type_sys
 	// 2) if inner +/- is applied to a raw pointer, error out and change type to 0
 	if (C99_UNARY_SUBTYPE_PLUS==src.subtype)
 		{
-		if (0<src.data<2>()->type_code.pointer_power)
+		if (0<src.front<2>().type_code.pointer_power)
 			// C++98 5.3.1p6: pointer type allowed for unary +, not for unary - (C99 errors)
 			//! \test default/Pass_if_control27.hpp
 			value_copy(src.type_code, src.front<2>().type_code);
@@ -6953,7 +6953,7 @@ static size_t _CPP_failover_sizeof(parse_tree& src,const type_system& types)
 {
 	if (C_TYPE::WCHAR_T== src.front<2>().type_code.base_type_index)
 		return _eval_sizeof_core_type(unsigned_type_from_machine_type(target_machine->UNICODE_wchar_t()));
-	if (const enum_def* const tmp = types.get_enum_def(src.front<2>()->type_code.base_type_index))
+	if (const enum_def* const tmp = types.get_enum_def(src.front<2>().type_code.base_type_index))
 		{
 		if (0== src.front<2>().type_code.pointer_power && is_noticed_enumerator(src.front<2>(),types))
 			{
@@ -7592,7 +7592,7 @@ static bool eval_div_expression(parse_tree& src, const type_system& types, liter
 	const bool rhs_converted = intlike_literal_to_VM(rhs_int, src.front<2>() ARG_TYPES);
 	if (rhs_converted && rhs_int==1)
 		{	// __/1 |-> __
-		src.type_code.MoveInto(src.front<1>()->type_code);
+		src.type_code.MoveInto(src.front<1>().type_code);
 		src.eval_to_arg<1>(0);
 		return true;
 		};
@@ -7601,9 +7601,9 @@ static bool eval_div_expression(parse_tree& src, const type_system& types, liter
 	if (lhs_converted && rhs_converted)
 		{
 		const promote_aux old(src.type_code.base_type_index ARG_TYPES);
-		const promote_aux lhs(src.data<1>()->type_code.base_type_index ARG_TYPES);
+		const promote_aux lhs(src.front<1>().type_code.base_type_index ARG_TYPES);
 		assert(old.bitcount>=lhs.bitcount);
-		const promote_aux rhs(src.data<2>()->type_code.base_type_index ARG_TYPES);
+		const promote_aux rhs(src.front<2>().type_code.base_type_index ARG_TYPES);
 		assert(old.bitcount>=rhs.bitcount);
 
 		// handle sign-extension of lhs, rhs
@@ -7731,9 +7731,9 @@ static bool eval_mod_expression(parse_tree& src, const type_system& types, liter
 	if (lhs_converted && rhs_converted)
 		{
 		const promote_aux old(src.type_code.base_type_index ARG_TYPES);
-		const promote_aux lhs(src.data<1>()->type_code.base_type_index ARG_TYPES);
+		const promote_aux lhs(src.front<1>().type_code.base_type_index ARG_TYPES);
 		assert(old.bitcount>=lhs.bitcount);
-		const promote_aux rhs(src.data<2>()->type_code.base_type_index ARG_TYPES);
+		const promote_aux rhs(src.front<2>().type_code.base_type_index ARG_TYPES);
 		assert(old.bitcount>=rhs.bitcount);
 
 		// handle sign-extension of lhs, rhs
@@ -8391,7 +8391,7 @@ static void C_CPP_add_expression_easy_syntax_check(parse_tree& src,const type_sy
 
 	// pointers to void are disallowed; not testable from preprocessor
 	const bool exact_rhs_voidptr = 1==rhs_pointer && C_TYPE::VOID== src.front<2>().type_code.base_type_index;
-	if (1==lhs_pointer && C_TYPE::VOID== src.front<1>()->type_code.base_type_index)
+	if (1==lhs_pointer && C_TYPE::VOID== src.front<1>().type_code.base_type_index)
 		{
 		simple_error(src,exact_rhs_voidptr ? " uses void* arguments (C99 6.5.6p2,3; C++98 5.7p1,2)" : " uses void* left-hand argument (C99 6.5.6p2,3; C++98 5.7p1,2)");
 		return;
@@ -8595,7 +8595,7 @@ static bool binary_infix_failed_integer_arguments(parse_tree& src, const char* s
 	// hmm... 45-47, 48-50, 51-53, 54-56, 57-59
 	//! \todo need tests for float literal in place of int literal: << >> & ^ |
 	const bool rhs_integerlike = converts_to_integerlike(src.front<2>().type_code ARG_TYPES);
-	if (!converts_to_integerlike(src.front<1>()->type_code ARG_TYPES))
+	if (!converts_to_integerlike(src.front<1>().type_code ARG_TYPES))
 		{	// tests for string literal in place of integer literal
 			//! \test default/Error_if_control46.hpp, default/Error_if_control46.h
 			//! \test default/Error_if_control47.hpp, default/Error_if_control47.h
@@ -9146,7 +9146,7 @@ static bool eval_equality_expression(parse_tree& src, const type_system& types, 
 				{
 				if (!is_true)
 					{
-					if (src.front<1>()->type_code.decays_to_nonnull_pointer())
+					if (src.front<1>().type_code.decays_to_nonnull_pointer())
 						{	// string literal != NULL
 						//! \test default/Pass_if_nonzero.hpp, default/Pass_if_nonzero.h, 
 						//! \test default/Pass_if_zero.hpp, default/Pass_if_zero.h, 
@@ -10305,7 +10305,7 @@ static void C_conditional_op_easy_syntax_check(parse_tree& src,const type_system
 				simple_error(src," has incoherent type");
 				}
 			//! \todo test cases at preprocessor level
-			else if (0== src.front<0>()->type_code.pointer_power && is_innate_definite_type(src.front<0>().type_code.base_type_index) && is_innate_definite_type(src.front<2>().type_code.base_type_index))
+			else if (0== src.front<0>().type_code.pointer_power && is_innate_definite_type(src.front<0>().type_code.base_type_index) && is_innate_definite_type(src.front<2>().type_code.base_type_index))
 				// standard arithmetic conversions
 				src.type_code.set_type(arithmetic_reconcile(src.front<0>().type_code.base_type_index, src.front<2>().type_code.base_type_index ARG_TYPES));
 			//! \todo --do-what-i-mean can handle elementary integer types with same indirection as well
@@ -10344,7 +10344,7 @@ static void CPP_conditional_op_easy_syntax_check(parse_tree& src,const type_syst
 	// \todo change target for const/volatile/restricted pointers
 	// NOTE: result is an lvalue if both are lvalues of identical type (C++98 5.16p4)
 	// NOTE: throw expressions play nice (they always have the type of the other half)
-	switch(cmp(src.data<0>()->type_code.pointer_power,src.data<2>()->type_code.pointer_power))
+	switch(cmp(src.front<0>().type_code.pointer_power, src.front<2>().type_code.pointer_power))
 	{
 	case 1:	{	// LHS has more guaranteed indirectability than RHS
 			if (C_TYPE::NOT_VOID== src.front<2>().type_code.base_type_index)
@@ -10826,9 +10826,9 @@ void record_qualifier(parse_tree* x, unsigned char qualify)
 	assert(PARSE_TYPE & x->flags);
 tail_recurse:
 	x->type_code.q_vector.back() |= qualify;
-	if (is_naked_parentheses_pair(*x) && 1==x->size<0>() && (PARSE_TYPE & x->data<0>()->flags))
+	if (is_naked_parentheses_pair(*x) && 1==x->size<0>() && (PARSE_TYPE & x->front<0>().flags))
 		{	// discard nested parentheses
-		while(is_naked_parentheses_pair(*x->data<0>()) && 1==x->data<0>()->size<0>() && (PARSE_TYPE & x->data<0>()->data<0>()->flags))
+		while(is_naked_parentheses_pair(x->front<0>()) && 1==x->front<0>().size<0>() && (PARSE_TYPE & x->front<0>().front<0>().flags))
 			x->c_array<0>()->eval_to_arg<0>(0);
 		// tail-recurse
 		x = x->c_array<0>();
@@ -11738,29 +11738,6 @@ static bool eval_conditional_operator(parse_tree& src,const type_system& types,
 		}
 	return false;
 }
-
-#if 0
-static bool cancel_addressof_deref_operators(parse_tree& src)
-{
-	assert(is_C99_unary_operator_expression(src));
-	if ('&'==*src.index_tokens[0].token.first)
-		{	// strip off &*, and remove lvalue-ness of target
-		if (is_C99_unary_operator_expression<'*'>(*src.data<2>()) && 0<src.data<2>()->data<2>()->type_code.pointer_power)
-			{
-			parse_tree tmp;
-			src.c_array<2>()->c_array<2>()->OverwriteInto(tmp);
-			tmp.type_code.traits &= ~type_spec::lvalue;
-			tmp.MoveInto(src);
-			}
-#if 0
-		if (is_array_deref(*src.data<2>()))
-			{	//! \todo convert &(___[...]) to (__+...)
-			}
-#endif
-		};
-	return false;
-}
-#endif
 
 //! \throw std::bad_alloc
 static bool C99_EvalParseTree(parse_tree& src,const type_system& types)

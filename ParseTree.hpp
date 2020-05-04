@@ -48,6 +48,13 @@ struct parse_tree
     // other parsing assistance
     static const char* active_namespace;	// for C++ and similar languages 
     
+	parse_tree() = default;
+	~parse_tree() = default;
+	parse_tree(const parse_tree& src) = default;
+	parse_tree(parse_tree&& src) = delete;
+	parse_tree& parse_tree::operator=(const parse_tree & src) = default;
+	parse_tree& parse_tree::operator=(parse_tree&& src) = delete;
+
 	void MoveInto(parse_tree& dest);
 	void OverwriteInto(parse_tree& dest);
 
