@@ -162,17 +162,17 @@ void parse_tree::clear()
 
 static void _destroy(zaimoni::POD_autoarray_ptr<parse_tree*>& target)
 {
-	if (!target.empty())
-		{
+	if (!target.empty()) {
 		size_t i = target.size();
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-		do	target.c_array()[--i]->destroy();
-#else
-		do	target.c_array()[--i].destroy();
-#endif
-		while(0<i);
+		do  {
+			if (decltype(auto) x = target.c_array()[--i]) {
+				x->destroy();
+				zaimoni::_single_flush(x);
+				x = 0;
+			}
+		} while (0 < i);
 		free(target.release());
-		}
+	}
 }
 
 void parse_tree::destroy()
@@ -197,107 +197,74 @@ void parse_tree::core_flag_update()
 	flags &= RESERVED_MASK;	// just in case
 	while(0<i)
 		{
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-		if (!(CONSTANT_EXPRESSION & data<0>()[--i]->flags)) is_constant = false;
-		if (INVALID & data<0>()[i]->flags) is_invalid = true;
-#else
-		if (!(CONSTANT_EXPRESSION & data<0>()[--i].flags)) is_constant = false;
-		if (INVALID & data<0>()[i].flags) is_invalid = true;
-#endif
+		if (decltype(auto) x = data<0>()[--i]) {
+			if (!(CONSTANT_EXPRESSION & x->flags)) is_constant = false;
+			if (INVALID & x->flags) is_invalid = true;
+		} else is_invalid = true;
 		};
 	i = size<1>();
 	while(0<i)
 		{
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-		if (!(CONSTANT_EXPRESSION & data<1>()[--i]->flags)) is_constant = false;
-		if (INVALID & data<1>()[i]->flags) is_invalid = true;
-#else
-		if (!(CONSTANT_EXPRESSION & data<1>()[--i].flags)) is_constant = false;
-		if (INVALID & data<1>()[i].flags) is_invalid = true;
-#endif
+		if (decltype(auto) x = data<1>()[--i]) {
+			if (!(CONSTANT_EXPRESSION & x->flags)) is_constant = false;
+			if (INVALID & x->flags) is_invalid = true;
+		}
+		else is_invalid = true;
 		};
 	i = size<2>();
 	while(0<i)
 		{
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-		if (!(CONSTANT_EXPRESSION & data<2>()[--i]->flags)) is_constant = false;
-		if (INVALID & data<2>()[i]->flags) is_invalid = true;
-#else
-		if (!(CONSTANT_EXPRESSION & data<2>()[--i].flags)) is_constant = false;
-		if (INVALID & data<2>()[i].flags) is_invalid = true;
-#endif
+		if (decltype(auto) x = data<2>()[--i]) {
+			if (!(CONSTANT_EXPRESSION & x->flags)) is_constant = false;
+			if (INVALID & x->flags) is_invalid = true;
+		}
+		else is_invalid = true;
 		};
 	flags |= CONSTANT_EXPRESSION*is_constant+INVALID*is_invalid;
 }
 
-bool
-parse_tree::collapse_matched_pair(parse_tree& src, const zaimoni::POD_pair<size_t,size_t>& target)
+bool parse_tree::collapse_matched_pair(parse_tree& src, const zaimoni::POD_pair<size_t,size_t>& target)
 {
 	const size_t zap_span = target.second-target.first-1;
-#if ACTIVATE_PARSE_TREE_C_ARRAY
 	std::unique_ptr<parse_tree> tmp(zaimoni::_new_buffer_nonNULL_throws<parse_tree>(1));
-#else
-	parse_tree tmp;
-	tmp.clear();
-#endif
 	// we actually are wrapping tokens
 	if (0<zap_span)
 		{
-#if ACTIVATE_PARSE_TREE_C_ARRAY
 		if (!tmp->resize<0>(zap_span)) return false;
-		memmove(tmp->c_array<0>(), src.data<0>() + target.first + 1, (zap_span) * sizeof(decltype(src.data<0>())));
-#else
-		if (!tmp.resize<0>(zap_span)) return false;
-		memmove(tmp.c_array<0>(),src.data<0>()+target.first+1,(zap_span)*sizeof(parse_tree));
-#endif
+		std::remove_reference_t<decltype(*(tmp->c_array<0>()))> test;
+		static_assert(std::is_pod_v<std::remove_reference_t<decltype(*(tmp->c_array<0>()))> >);
+		const auto m_src = src.c_array<0>() + target.first + 1;
+		memmove(tmp->c_array<0>(), m_src, (zap_span) * sizeof(decltype(src.data<0>())));
+		std::fill_n(m_src, zap_span, nullptr);
 		}
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-	tmp->index_tokens[0] = src.c_array<0>()[target.first]->index_tokens[0];
-	tmp->index_tokens[1] = src.c_array<0>()[target.second]->index_tokens[0];
-	tmp->grab_index_token_location_from<0, 0>(*src.c_array<0>()[target.first]);
-	tmp->grab_index_token_location_from<1, 0>(*src.c_array<0>()[target.second]);
+	{
+	decltype(auto) src_1 = src.c_array<0>()[target.first];
+	decltype(auto) src_2 = src.c_array<0>()[target.second];
+
+	tmp->index_tokens[0] = src_1->index_tokens[0];
+	tmp->index_tokens[1] = src_2->index_tokens[0];
+	tmp->grab_index_token_location_from<0, 0>(*src_1);
+	tmp->grab_index_token_location_from<1, 0>(*src_2);
 	// ownership transfer
-	if (src.data<0>()[target.first]->own_index_token<0>())
+	if (src_1->own_index_token<0>())
 		{
 		tmp->control_index_token<0>(true);
-		src.c_array<0>()[target.first]->control_index_token<0>(false);
+		src_1->control_index_token<0>(false);
 		};
-	if (src.data<0>()[target.second]->own_index_token<0>())
+	if (src_2->own_index_token<0>())
 		{
 		tmp->control_index_token<1>(true);
-		src.c_array<0>()[target.second]->control_index_token<0>(false);
+		src_2->control_index_token<0>(false);
 		};
-#else
-	tmp.index_tokens[0] = src.c_array<0>()[target.first].index_tokens[0];
-	tmp.index_tokens[1] = src.c_array<0>()[target.second].index_tokens[0];
-	tmp.grab_index_token_location_from<0,0>(src.c_array<0>()[target.first]);
-	tmp.grab_index_token_location_from<1,0>(src.c_array<0>()[target.second]);
-	// ownership transfer
-	if (src.data<0>()[target.first].own_index_token<0>())
-		{
-		tmp.control_index_token<0>(true);
-		src.c_array<0>()[target.first].control_index_token<0>(false);
-		};
-	if (src.data<0>()[target.second].own_index_token<0>())
-		{
-		tmp.control_index_token<1>(true);
-		src.c_array<0>()[target.second].control_index_token<0>(false);
-		};
-#endif
+	}
 	size_t i = zap_span+1;
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-	do	src.c_array<0>()[target.first + 1 + --i]->clear();
-	while (0 < i);
-#else
-	do	src.c_array<0>()[target.first+1+ --i].clear();
-	while(0<i);
-#endif
 	src.DeleteNSlotsAt<0>(zap_span+1,target.first+1);
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-	src.c_array<0>()[target.first] = tmp.release();
-#else
-	src.c_array<0>()[target.first] = tmp;
-#endif
+	{
+	decltype(auto) dest = src.c_array<0>()[target.first];
+	dest->destroy();
+	FREE(dest);
+	dest = tmp.release();
+	}
 #ifdef IRRATIONAL_CAUTION
 	assert(src.syntax_ok());
 	assert(!src.self_entangled());
