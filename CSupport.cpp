@@ -4794,12 +4794,12 @@ _find_intlike_literal(const parse_tree* src SIG_CONST_TYPES)
 		if 		(is_C99_unary_operator_expression<'-'>(*ret.first))
 			{
 			ret.second = !ret.second;
-			ret.first = ret.first->data<2>();
+			ret.first = *ret.first->data<2>();
 			assert(ret.first);
 			}
 		else if (is_C99_unary_operator_expression<'+'>(*ret.first))
 			{
-			ret.first = ret.first->data<2>();
+			ret.first = *ret.first->data<2>();
 			assert(ret.first);
 			}
 		else

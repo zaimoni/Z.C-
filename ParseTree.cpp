@@ -6,6 +6,7 @@
 #include "str_aux.h"
 
 #include <memory>
+#include <stdexcept>
 
 using namespace zaimoni;
 
@@ -263,6 +264,18 @@ bool weak_token::CopyInto(weak_token& dest, bool owns) const
 	return owns;
 }
 
+void value_copy(parse_tree** const dest, const parse_tree* const * const src, size_t ub)
+{
+	assert(dest);
+	assert(src);
+	while (0 < ub) {
+		if (auto stage = src[--ub]) {
+			dest[ub] = zaimoni::_new_buffer_nonNULL_throws<parse_tree>(1);
+			value_copy(*dest[ub], *stage);
+		} else throw std::logic_error("null copy");
+	}
+}
+
 // ACID; throws std::bad_alloc on failure
 void value_copy(parse_tree& dest, const parse_tree& src)
 {	// favor ACID
@@ -273,19 +286,19 @@ void value_copy(parse_tree& dest, const parse_tree& src)
 		{
 		size_t i = src.size<0>();
 		if (!tmp.resize<0>(i)) throw std::bad_alloc();
-		zaimoni::autotransform_n<void (*)(parse_tree&,const parse_tree&)>(tmp.c_array<0>(),src.data<0>(),i,value_copy);
+		value_copy(tmp.c_array<0>(), src.data<0>(), i);
 		};
 	if (!src.empty<1>())
 		{
 		size_t i = src.size<1>();
 		if (!tmp.resize<1>(i)) throw std::bad_alloc();
-		zaimoni::autotransform_n<void (*)(parse_tree&,const parse_tree&)>(tmp.c_array<1>(),src.data<1>(),i,value_copy);
+		value_copy(tmp.c_array<1>(), src.data<1>(), i);
 		}
 	if (!src.empty<2>())
 		{
 		size_t i = src.size<2>();
 		if (!tmp.resize<2>(i)) throw std::bad_alloc();
-		zaimoni::autotransform_n<void (*)(parse_tree&,const parse_tree&)>(tmp.c_array<2>(),src.data<2>(),i,value_copy);
+		value_copy(tmp.c_array<2>(), src.data<2>(), i);
 		}
 	// would like a value_copy for weak_token
 	tmp.control_index_token<0>(src.index_tokens[0].CopyInto(tmp.index_tokens[0], src.own_index_token<0>()));
@@ -319,15 +332,10 @@ void parse_tree::OverwriteInto(parse_tree& dest)
 
 void parse_tree::_eval_to_arg(size_t arg_idx, size_t i)
 {
-#if ACTIVATE_PARSE_TREE_C_ARRAY
 	parse_tree& staging = *c_array(arg_idx)[i];
 	parse_tree tmp = staging;
 	staging.clear();	// \todo redundant?
-#else
-	parse_tree tmp = data(arg_idx)[i];
-	c_array(arg_idx)[i].clear();
-#endif
-	destroy();
+	destroy();	// reference dies here
 	*this = tmp;
 #ifdef IRRATIONAL_CAUTION
 	assert(syntax_ok());
