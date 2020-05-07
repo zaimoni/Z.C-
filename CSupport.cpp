@@ -5234,28 +5234,33 @@ static bool CPP_literal_converts_to_integer(const parse_tree& src)
 //! \throw std::bad_alloc()
 static zaimoni::Loki::CheckReturnDisallow<0,parse_tree*>::value_type repurpose_inner_parentheses(parse_tree& src)
 {
-	if (1==src.size<0>() && is_naked_parentheses_pair(src.front<0>()))
-		{
-		auto tmp = src.c_array<0>()->_args[0];
-		src.c_array<0>()->_args[0].NULLPtr();
-		src.c_array<0>()->destroy();
-		parse_tree* const tmp2 = src.c_array<0>();
-		src._args[0] = tmp;
-		return tmp2;
-		};
+	if (1 == src.size<0>()) {
+		parse_tree& extract_from = src.front<0>();
+		if (is_naked_parentheses_pair(extract_from)) {
+			auto tmp = extract_from._args[0];
+			extract_from._args[0].NULLPtr();
+			extract_from.destroy();
+			parse_tree* const tmp2 = src.c_array<0>()[0];
+			src.c_array<0>()[0] = 0;
+			src.resize<0>(0);	// reference should have gone invalid
+			src._args[0] = tmp;
+			return tmp2;
+		}
+	}
 	return _new_buffer_nonNULL_throws<parse_tree>(1);
 }
 
 static void cancel_inner_parentheses(parse_tree& src)
 {
-	while(1==src.size<0>() && is_naked_parentheses_pair(src.front<0>()))
-		{
-		auto tmp = src.c_array<0>()->_args[0];
-		src.c_array<0>()->_args[0].NULLPtr();
-		src.c_array<0>()->destroy();
-		free(src.c_array<0>());
+	while (1 == src.size<0>()) {
+		parse_tree& extract_from = src.front<0>();
+		if (!is_naked_parentheses_pair(extract_from)) return;
+		auto tmp = extract_from._args[0];
+		extract_from._args[0].NULLPtr();
+		extract_from.destroy();
+		src.resize<0>(0);	// reference goes invalid
 		src._args[0] = tmp;
-		}
+	}
 }
 
 static void cancel_outermost_parentheses(parse_tree& src)
@@ -11151,16 +11156,13 @@ static void CPP_notice_scope_glue(parse_tree& src)
 				size_t j = 1;
 				do	strncat(tmp,src.data<0>()[i+j].index_tokens[0].token.first,src.data<0>()[i+j].index_tokens[0].token.second);
 				while(forward_span>= ++j);
-				const char* tmp2 = is_string_registered(tmp);
-				if (!tmp2)
-					{
-					src.c_array<0>()[i].grab_index_token_from_str_literal<0>(tmp,C_TESTFLAG_IDENTIFIER);	// well...not really, but it'll substitute for one
-					src.c_array<0>()[i].control_index_token<0>(true);
-					}
-				else{
+				if (const char* tmp2 = is_string_registered(tmp)) {
 					free(tmp);
-					src.c_array<0>()[i].grab_index_token_from_str_literal<0>(tmp2,C_TESTFLAG_IDENTIFIER);	// well...not really, but it'll substitute for one
-					};
+					src.c_array<0>()[i].grab_index_token_from_str_literal<0>(tmp2, C_TESTFLAG_IDENTIFIER);	// well...not really, but it'll substitute for one
+				} else {
+					src.c_array<0>()[i].grab_index_token_from_str_literal<0>(tmp, C_TESTFLAG_IDENTIFIER);	// well...not really, but it'll substitute for one
+					src.c_array<0>()[i].control_index_token<0>(true);
+				}
 				j = 1;
 				do	src.c_array<0>()[i+j].destroy();
 				while(forward_span>= ++j);

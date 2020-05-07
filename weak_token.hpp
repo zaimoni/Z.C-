@@ -21,6 +21,8 @@ struct weak_token
 	weak_token(weak_token&& src) = delete;
 	weak_token& operator=(const weak_token & src) = default;
 	weak_token& operator=(weak_token&& src) = delete;
+
+	bool CopyInto(weak_token& dest, bool owns) const;	// cf. ParseTree.cpp
 };
 
 static_assert(std::is_pod_v<weak_token>);

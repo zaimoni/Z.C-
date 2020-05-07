@@ -200,6 +200,20 @@ struct parse_tree
 		static_assert(STATIC_SIZE(index_tokens)>i);
 		(flags &= ~((zaimoni::lex_flags)(1)<<i)) |= ((zaimoni::lex_flags)(have_it)<<i);
 		}
+	template<size_t i> bool yield_index_token()
+		{
+		static_assert(STATIC_SIZE(index_tokens)>i);
+		bool ret = own_index_token<i>();
+		control_index_token<i>(false);
+		return ret;
+		}
+	template<size_t dest_i, size_t src_i> void take_weak_token(parse_tree& src)
+		{
+		index_tokens[dest_i] = src.index_tokens[src_i];
+		grab_index_token_location_from<dest_i, src_i>(src);
+		control_index_token<dest_i>(src.yield_index_token<src_i>()); // ownership transfer
+		}
+
 	bool resize(size_t arg_idx,size_t n)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);

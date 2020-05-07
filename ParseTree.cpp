@@ -175,6 +175,7 @@ static void _destroy(zaimoni::POD_autoarray_ptr<parse_tree*>& target)
 	}
 }
 
+// source code locations must survive: some users need to retain that when rewriting
 void parse_tree::destroy()
 {
 	_destroy(_args[2]);
@@ -237,26 +238,9 @@ bool parse_tree::collapse_matched_pair(parse_tree& src, const zaimoni::POD_pair<
 		memmove(tmp->c_array<0>(), m_src, (zap_span) * sizeof(decltype(src.data<0>())));
 		std::fill_n(m_src, zap_span, nullptr);
 		}
-	{
-	decltype(auto) src_1 = src.c_array<0>()[target.first];
-	decltype(auto) src_2 = src.c_array<0>()[target.second];
+	tmp->take_weak_token<0, 0>(*src.c_array<0>()[target.first]);
+	tmp->take_weak_token<1, 0>(*src.c_array<0>()[target.second]);
 
-	tmp->index_tokens[0] = src_1->index_tokens[0];
-	tmp->index_tokens[1] = src_2->index_tokens[0];
-	tmp->grab_index_token_location_from<0, 0>(*src_1);
-	tmp->grab_index_token_location_from<1, 0>(*src_2);
-	// ownership transfer
-	if (src_1->own_index_token<0>())
-		{
-		tmp->control_index_token<0>(true);
-		src_1->control_index_token<0>(false);
-		};
-	if (src_2->own_index_token<0>())
-		{
-		tmp->control_index_token<1>(true);
-		src_2->control_index_token<0>(false);
-		};
-	}
 	size_t i = zap_span+1;
 	src.DeleteNSlotsAt<0>(zap_span+1,target.first+1);
 	{
@@ -270,6 +254,13 @@ bool parse_tree::collapse_matched_pair(parse_tree& src, const zaimoni::POD_pair<
 	assert(!src.self_entangled());
 #endif
 	return true;
+}
+
+bool weak_token::CopyInto(weak_token& dest, bool owns) const
+{
+	memmove(&dest, this, sizeof(weak_token));
+	if (owns) dest.token.first = C_make_string(token.first, token.second);
+	return owns;
 }
 
 // ACID; throws std::bad_alloc on failure
@@ -297,24 +288,12 @@ void value_copy(parse_tree& dest, const parse_tree& src)
 		zaimoni::autotransform_n<void (*)(parse_tree&,const parse_tree&)>(tmp.c_array<2>(),src.data<2>(),i,value_copy);
 		}
 	// would like a value_copy for weak_token
-	tmp.index_tokens[0] = src.index_tokens[0];
-	tmp.index_tokens[1] = src.index_tokens[1];
-	if (src.own_index_token<0>())
-		{
-		tmp.index_tokens[0].token.first = C_make_string(src.index_tokens[0].token.first,src.index_tokens[0].token.second);
-		tmp.control_index_token<0>(true);
-		};
-	if (src.own_index_token<1>())
-		{
-		tmp.index_tokens[1].token.first = C_make_string(src.index_tokens[1].token.first,src.index_tokens[1].token.second);
-		tmp.control_index_token<1>(true);
-		};
+	tmp.control_index_token<0>(src.index_tokens[0].CopyInto(tmp.index_tokens[0], src.own_index_token<0>()));
+	tmp.control_index_token<1>(src.index_tokens[1].CopyInto(tmp.index_tokens[1], src.own_index_token<1>()));
 	tmp.flags = src.flags;
 	tmp.subtype = src.subtype;
 
-	dest.destroy();
-	dest = tmp;
-	tmp.clear();
+	tmp.MoveInto(dest);
 #ifdef IRRATIONAL_CAUTION
 	assert(dest.syntax_ok());
 	assert(!dest.self_entangled());
