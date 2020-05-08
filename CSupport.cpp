@@ -5130,14 +5130,15 @@ static bool _match_pairs(parse_tree& src)
 	size_t i = 0;
 	//! \todo optimize this loop
 	do	{
-		if (src.data<0>()[i].index_tokens[1].token.first) continue;
-		if 		(token_is_char<')'>(src.data<0>()[i].index_tokens[0].token))
+		const parse_tree& anchor = *src.data<0>()[i];
+		if (anchor.index_tokens[1].token.first) continue;
+		if 		(token_is_char<')'>(anchor.index_tokens[0].token))
 			{
 			assert(0<paren_idx);
 			assert(0==bracket_idx || bracket_stack[bracket_idx-1]<paren_stack[paren_idx-1]);
 			assert(0==brace_idx || brace_stack[brace_idx-1]<paren_stack[paren_idx-1]);
 			const POD_pair<size_t,size_t> target = {paren_stack[--paren_idx],i};
-			if (!parse_tree::collapse_matched_pair(src,target)) throw std::bad_alloc();
+			if (!parse_tree::collapse_matched_pair(src,target)) throw std::bad_alloc();	// reference dies
 			i = paren_stack[paren_idx];
 			// do not suppress inner parentheses here, this only works for known expressions
 			if (0==paren_idx && 1<src.size<0>()-i)
@@ -5148,13 +5149,13 @@ static bool _match_pairs(parse_tree& src)
 				paren_stack.Shrink(depth_parens.first);
 				}
 			}
-		else if (token_is_char<']'>(src.data<0>()[i].index_tokens[0].token))
+		else if (token_is_char<']'>(anchor.index_tokens[0].token))
 			{
 			assert(0<bracket_idx);
 			assert(0==paren_idx || paren_stack[paren_idx-1]<bracket_stack[bracket_idx-1]);
 			assert(0==brace_idx || brace_stack[brace_idx-1]<bracket_stack[bracket_idx-1]);
 			const POD_pair<size_t,size_t> target = {bracket_stack[--bracket_idx],i};
-			if (!parse_tree::collapse_matched_pair(src,target)) throw std::bad_alloc();
+			if (!parse_tree::collapse_matched_pair(src,target)) throw std::bad_alloc();	// reference dies
 			i = bracket_stack[bracket_idx];
 			// do not suppress inner parentheses here, this only works for known expressions
 			if (0==bracket_idx && 1<src.size<0>()-i)
@@ -5165,13 +5166,13 @@ static bool _match_pairs(parse_tree& src)
 				bracket_stack.Shrink(depth_brackets.first);
 				}
 			}
-		else if (token_is_char<'}'>(src.data<0>()[i].index_tokens[0].token))
+		else if (token_is_char<'}'>(anchor.index_tokens[0].token))
 			{
 			assert(0<brace_idx);
 			assert(0==paren_idx || paren_stack[paren_idx-1]<brace_stack[brace_idx-1]);
 			assert(0==bracket_idx || bracket_stack[bracket_idx-1]<brace_stack[brace_idx-1]);
 			const POD_pair<size_t,size_t> target = {brace_stack[--brace_idx],i};
-			if (!parse_tree::collapse_matched_pair(src,target)) throw std::bad_alloc();
+			if (!parse_tree::collapse_matched_pair(src,target)) throw std::bad_alloc();	// reference dies
 			i = brace_stack[brace_idx];
 			if (0==brace_idx && 1<src.size<0>()-i)
 				{
@@ -5181,32 +5182,32 @@ static bool _match_pairs(parse_tree& src)
 				brace_stack.Shrink(depth_braces.first);
 				}
 			}
-		else if (token_is_char<'('>(src.data<0>()[i].index_tokens[0].token))
+		else if (token_is_char<'('>(anchor.index_tokens[0].token))
 			{
 			assert(paren_stack.size()>paren_idx);
 			paren_stack[paren_idx++] = i;
 			}
-		else if (token_is_char<'['>(src.data<0>()[i].index_tokens[0].token))
+		else if (token_is_char<'['>(anchor.index_tokens[0].token))
 			{
 			assert(bracket_stack.size()>bracket_idx);
 			bracket_stack[bracket_idx++] = i;
 			}
-		else if (token_is_char<'{'>(src.data<0>()[i].index_tokens[0].token))
+		else if (token_is_char<'{'>(anchor.index_tokens[0].token))
 			{
 			assert(brace_stack.size()>brace_idx);
 			brace_stack[brace_idx++] = i;
 			}
 		// introduces sequence points; this causes errors if caught in brackets or parentheses
 		// cannot test within preprocessor expression (trigger is intercepted earlier)
-		else if (token_is_char<';'>(src.data<0>()[i].index_tokens[0].token))
+		else if (token_is_char<';'>(anchor.index_tokens[0].token))
 			{
 			if (0<paren_idx || 0<bracket_idx)
 				{
-				const size_t nearest_break = (paren_idx<bracket_idx) ? bracket_idx : paren_idx;
-				message_header(src.data<0>()[i].index_tokens[0]);
+				const parse_tree& nearest_break = *src.data<0>()[(paren_idx < bracket_idx) ? bracket_idx : paren_idx];
+				message_header(anchor.index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INC_INFORM(" ; breaks intended balancing of ");
-				INFORM(src.data<0>()[nearest_break].index_tokens[0].token.first[0]);
+				INFORM(nearest_break.index_tokens[0].token.first[0]);
 				zcc_errors.inc_error();
 				}
 			};
