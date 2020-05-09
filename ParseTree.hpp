@@ -58,7 +58,6 @@ struct parse_tree
 	void MoveInto(parse_tree& dest);
 	void OverwriteInto(parse_tree& dest);
 
-#if ACTIVATE_PARSE_TREE_C_ARRAY
 	parse_tree** c_array(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
@@ -79,7 +78,6 @@ struct parse_tree
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].data();
 		}
-#endif
 	size_t size(size_t arg_idx) const
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
@@ -237,11 +235,7 @@ struct parse_tree
 		assert(size<arg_idx>()-i>=n);
 		assert(0<n);
 		size_t idx = n;
-#if ACTIVATE_PARSE_TREE_C_ARRAY
 		do	c_array<arg_idx>()[i + --idx]->destroy();
-#else
-		do	c_array<arg_idx>()[i+ --idx].destroy();
-#endif
 		while(0<idx);
 		_args[arg_idx].DeleteNSlotsAt(n,i);
 		}
@@ -249,11 +243,7 @@ struct parse_tree
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		assert(size<arg_idx>()>i);
-#if ACTIVATE_PARSE_TREE_C_ARRAY
 		c_array<arg_idx>()[i]->destroy();
-#else
-		c_array<arg_idx>()[i].destroy();
-#endif
 		_args[arg_idx].DeleteIdx(i);
 		}
 	template<size_t dest_idx> void DestroyNAtAndRotateTo(size_t n,size_t i,const size_t actual_size)

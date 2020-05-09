@@ -348,12 +348,19 @@ bool parse_tree::_resize(const size_t arg_idx,size_t n)
 {
 	assert(STATIC_SIZE(_args)>arg_idx);
 	const size_t old_size = size(arg_idx);
+	if (old_size > n) {
+		size_t i = old_size;
+		if constexpr (std::is_trivially_destructible_v<parse_tree>) {
+			while (n < old_size) {
+				_args[arg_idx][n]->destroy();
+				FREE_AND_NULL(_args[arg_idx][n++]);
+			}
+		} else {
+			while (n < old_size) DELETE_AND_NULL(_args[arg_idx][n++]);
+		}
+	}
 	if (!_args[arg_idx].Resize(n)) return false;
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-	while (old_size < n) c_array(arg_idx)[--n]->clear();
-#else
-	while(old_size<n) c_array(arg_idx)[--n].clear();
-#endif
+	while (old_size < n) _args[arg_idx][--n] = zaimoni::_new_buffer_nonNULL_throws<parse_tree>(1);
 	return true;
 }
 
@@ -370,13 +377,9 @@ void INC_INFORM(const parse_tree& src)
 	while(src.size<1>()>i)
 		{
 		if (sp) INC_INFORM(' ');
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-		sp = !(src.data<1>()[i]->flags & parse_tree::GOOD_LINE_BREAK);
-		INC_INFORM(*src.data<1>()[i++]);
-#else
-		sp = !(src.data<1>()[i].flags & parse_tree::GOOD_LINE_BREAK);
-		INC_INFORM(src.data<1>()[i++]);
-#endif
+		const parse_tree& anchor = *src.data<1>()[i++];
+		sp = !(anchor.flags & parse_tree::GOOD_LINE_BREAK);
+		INC_INFORM(anchor);
 		}
 	if (need_parens)
 		{
@@ -401,13 +404,9 @@ void INC_INFORM(const parse_tree& src)
 	while(src.size<0>()>i)
 		{
 		if (sp) INC_INFORM(' ');
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-		sp = !(src.data<0>()[i]->flags & parse_tree::GOOD_LINE_BREAK);
-		INC_INFORM(*src.data<0>()[i++]);
-#else
-		sp = !(src.data<0>()[i].flags & parse_tree::GOOD_LINE_BREAK);
-		INC_INFORM(src.data<0>()[i++]);
-#endif
+		const parse_tree& anchor = *src.data<0>()[i++];
+		sp = !(anchor.flags & parse_tree::GOOD_LINE_BREAK);
+		INC_INFORM(anchor);
 		}
 	if (need_parens)
 		{
@@ -432,13 +431,9 @@ void INC_INFORM(const parse_tree& src)
 	while(src.size<2>()>i)
 		{
 		if (sp) INC_INFORM(' ');
-#if ACTIVATE_PARSE_TREE_C_ARRAY
-		sp = !(src.data<2>()[i]->flags & parse_tree::GOOD_LINE_BREAK);
-		INC_INFORM(*src.data<2>()[i++]);
-#else
-		sp = !(src.data<2>()[i].flags & parse_tree::GOOD_LINE_BREAK);
-		INC_INFORM(src.data<2>()[i++]);
-#endif
+		const parse_tree& anchor = *src.data<2>()[i++];
+		sp = !(anchor.flags & parse_tree::GOOD_LINE_BREAK);
+		INC_INFORM(anchor);
 		}
 	if (need_parens) INC_INFORM(')');
 	if (src.flags & parse_tree::GOOD_LINE_BREAK) INC_INFORM('\n');
@@ -453,14 +448,13 @@ parse_tree_class::parse_tree_class(const parse_tree& src,size_t begin,size_t end
 	assert(end<=src.size(dest_idx));
 	this->clear();
 	if (begin>=end) return;
-	const size_t i = end-begin;
-#if ACTIVATE_PARSE_TREE_C_ARRAY
+	size_t i = end-begin;
 	if (1 == i) value_copy(*this, *src.data(dest_idx)[begin]);
-#else
-	if (1==i) value_copy(*this,src.data(dest_idx)[begin]);
-#endif
 	else{
 		if (!resize(dest_idx,i)) throw std::bad_alloc();
-		zaimoni::autotransform_n<void (*)(parse_tree&,const parse_tree&)>(c_array(dest_idx),src.data(dest_idx)+begin,i,value_copy);
+		do {
+			--i;
+			value_copy(*c_array(dest_idx)[i], *src.data(dest_idx)[begin + i]);
+		} while (0 < i);
 		}	
 }
