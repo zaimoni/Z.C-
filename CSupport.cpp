@@ -3479,16 +3479,17 @@ static void C99_notice_primary_type(parse_tree& src)
 			// handle allowed sequences of type-qualifiers (do need second pass later)
 			bool have_warned_about_Complex = false;
 			do	{
+				parse_tree& pivot = *src.c_array<0>()[i];
 				switch(invariant_decl_scanner[0])
 				{
 				case C99_CPP_CHAR_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					static_assert(1==C_TYPE::SCHAR-C_TYPE::CHAR);
 					static_assert(2==C_TYPE::UCHAR-C_TYPE::CHAR);
 					set_C_canonical_type_representation(src,i,C_TYPE::CHAR+optional_keyword_choice(src,i,invariant_decl_scanner,C99_CPP_SIGNED_IDX,C99_CPP_UNSIGNED_IDX));
 					break;
 				case C99_CPP_SHORT_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					// short and signed short are the same type
 					static_assert(1==C_TYPE::USHRT-C_TYPE::SHRT);
 					set_C_canonical_type_representation(src,i,C_TYPE::SHRT+(2==optional_keyword_choice(src,i,invariant_decl_scanner,C99_CPP_SIGNED_IDX,C99_CPP_UNSIGNED_IDX)));
@@ -3496,7 +3497,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					optional_keyword(src,i,invariant_decl_scanner,C99_CPP_INT_IDX);
 					break;
 				case C99_CPP_INT_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					{
 					int tmp = optional_keyword_choice(src,i,invariant_decl_scanner,C99_CPP_SIGNED_IDX,C99_CPP_UNSIGNED_IDX);
 					// XXX have to account for short
@@ -3520,7 +3521,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					}
 					break;
 				case C99_CPP_LONG_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					if (optional_keyword(src,i,invariant_decl_scanner,C99_CPP_DOUBLE_IDX))
 						{
 						static_assert(3==C_TYPE::LDOUBLE__COMPLEX-C_TYPE::LDOUBLE);
@@ -3535,19 +3536,19 @@ static void C99_notice_primary_type(parse_tree& src)
 					optional_keyword(src,i,invariant_decl_scanner,C99_CPP_INT_IDX);
 					break;
 				case C99_CPP_FLOAT_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					static_assert(3==C_TYPE::FLOAT__COMPLEX-C_TYPE::FLOAT);
 					set_C_canonical_type_representation(src,i,C_TYPE::FLOAT+3*optional_keyword(src,i,invariant_decl_scanner,C99_CPP_COMPLEX_IDX));
 					break;
 				case C99_CPP_DOUBLE_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					static_assert(1==C_TYPE::LDOUBLE-C_TYPE::DOUBLE);
 					static_assert(3==C_TYPE::DOUBLE__COMPLEX-C_TYPE::DOUBLE);
 					static_assert(4==C_TYPE::LDOUBLE__COMPLEX-C_TYPE::DOUBLE);
 					set_C_canonical_type_representation(src,i,C_TYPE::DOUBLE+optional_keyword(src,i,invariant_decl_scanner,C99_CPP_LONG_IDX)+3*optional_keyword(src,i,invariant_decl_scanner,C99_CPP_COMPLEX_IDX));
 					break;
 				case C99_CPP_SIGNED_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					if (optional_keyword(src,i,invariant_decl_scanner,C99_CPP_CHAR_IDX))
 						{
 						set_C_canonical_type_representation(src,i,C_TYPE::SCHAR);
@@ -3564,7 +3565,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					optional_keyword(src,i,invariant_decl_scanner,C99_CPP_INT_IDX);
 					break;
 				case C99_CPP_UNSIGNED_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					if (optional_keyword(src,i,invariant_decl_scanner,C99_CPP_CHAR_IDX))
 						{
 						set_C_canonical_type_representation(src,i,C_TYPE::UCHAR);
@@ -3586,7 +3587,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					case 0:
 						if (!have_warned_about_Complex)
 							{
-							message_header(src.data<0>()[i].index_tokens[0]);
+							message_header(pivot.index_tokens[0]);
 							INC_INFORM(ERR_STR);
 							INFORM("type-specifier-sequence has _Complex without either float or double (C99 6.7.3p4)");
 							zcc_errors.inc_error();
@@ -3596,11 +3597,11 @@ static void C99_notice_primary_type(parse_tree& src)
 						src.DeleteIdx<0>(i--);
 						break;
 					case 1:
-						src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+						pivot.flags |= PARSE_PRIMARY_TYPE;
 						set_C_canonical_type_representation(src,i,C_TYPE::FLOAT__COMPLEX);
 						break;
 					case 2:
-						src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+						pivot.flags |= PARSE_PRIMARY_TYPE;
 						static_assert(1==C_TYPE::LDOUBLE__COMPLEX-C_TYPE::DOUBLE__COMPLEX);
 						set_C_canonical_type_representation(src,i,C_TYPE::DOUBLE__COMPLEX+optional_keyword(src,i,invariant_decl_scanner,C99_CPP_LONG_IDX));
 //						break;						
@@ -3665,19 +3666,21 @@ static void CPP_notice_primary_type(parse_tree& src)
 			size_t offset = 0;
 
 			// C++0X 7.5: intercept linkage specifications here, warn if discarding (must accept "C" and "C++")
-			if (C99_CPP_EXTERN_IDX==invariant_decl_scanner[0] && 1<src.size<0>()-i && (C_TESTFLAG_STRING_LITERAL & src.data<0>()[i+1].flags))
+			if (C99_CPP_EXTERN_IDX==invariant_decl_scanner[0] && 1<src.size<0>()-i)
 				{	//! \todo should accept escape codes here as well
-				if (strcmp(src.data<0>()[i+1].index_tokens[0].token.first,"\"C\"") && strcmp(src.data<0>()[i+1].index_tokens[0].token.first,"\"C++\""))
+				if (const parse_tree& pivot = *src.data<0>()[i + 1]; C_TESTFLAG_STRING_LITERAL & pivot.flags) {
+					if (strcmp(pivot.index_tokens[0].token.first, "\"C\"") && strcmp(pivot.index_tokens[0].token.first, "\"C++\""))
 					{	//! \bug need test case
-					message_header(src.data<0>()[i+1].index_tokens[0]);
-					INC_INFORM(WARN_STR);
-					INFORM("discarding unrecognized linkage (only C, C++ required: C++0X 7.5p2)");
-					if (bool_options[boolopt::warnings_are_errors])
-						zcc_errors.inc_error();
-					src.DeleteIdx<0>(i+1);
+						message_header(pivot.index_tokens[0]);
+						INC_INFORM(WARN_STR);
+						INFORM("discarding unrecognized linkage (only C, C++ required: C++0X 7.5p2)");
+						if (bool_options[boolopt::warnings_are_errors])
+							zcc_errors.inc_error();
+						src.DeleteIdx<0>(i + 1);
 					}
-				else
-					using_linkage = true;
+					else
+						using_linkage = true;
+				}
 				}
 			
 			while(src.size<0>()>i+ ++offset+using_linkage)
@@ -3796,16 +3799,17 @@ static void CPP_notice_primary_type(parse_tree& src)
 			// handle allowed sequences of type-qualifiers (do need second pass later)
 			bool have_warned_about_Complex = false;
 			do	{
+				parse_tree& pivot = *src.c_array<0>()[i];
 				switch(invariant_decl_scanner[0])
 				{
 				case C99_CPP_CHAR_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					static_assert(1==C_TYPE::SCHAR-C_TYPE::CHAR);
 					static_assert(2==C_TYPE::UCHAR-C_TYPE::CHAR);
 					set_C_canonical_type_representation(src,i,C_TYPE::CHAR+optional_keyword_choice(src,i,invariant_decl_scanner,C99_CPP_SIGNED_IDX,C99_CPP_UNSIGNED_IDX));
 					break;
 				case C99_CPP_SHORT_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					// short and signed short are the same type
 					static_assert(1==C_TYPE::USHRT-C_TYPE::SHRT);
 					set_C_canonical_type_representation(src,i,C_TYPE::SHRT+(2==optional_keyword_choice(src,i,invariant_decl_scanner,C99_CPP_SIGNED_IDX,C99_CPP_UNSIGNED_IDX)));
@@ -3813,7 +3817,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					optional_keyword(src,i,invariant_decl_scanner,C99_CPP_INT_IDX);
 					break;
 				case C99_CPP_INT_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					{
 					int tmp = optional_keyword_choice(src,i,invariant_decl_scanner,C99_CPP_SIGNED_IDX,C99_CPP_UNSIGNED_IDX);
 					// XXX have to account for short
@@ -3837,7 +3841,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					}
 					break;
 				case C99_CPP_LONG_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					if (optional_keyword(src,i,invariant_decl_scanner,C99_CPP_DOUBLE_IDX))
 						{
 						static_assert(3==C_TYPE::LDOUBLE__COMPLEX-C_TYPE::LDOUBLE);
@@ -3852,19 +3856,19 @@ static void CPP_notice_primary_type(parse_tree& src)
 					optional_keyword(src,i,invariant_decl_scanner,C99_CPP_INT_IDX);
 					break;
 				case C99_CPP_FLOAT_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					static_assert(3==C_TYPE::FLOAT__COMPLEX-C_TYPE::FLOAT);
 					set_C_canonical_type_representation(src,i,C_TYPE::FLOAT+3*optional_keyword(src,i,invariant_decl_scanner,C99_CPP_COMPLEX_IDX));
 					break;
 				case C99_CPP_DOUBLE_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					static_assert(1==C_TYPE::LDOUBLE-C_TYPE::DOUBLE);
 					static_assert(3==C_TYPE::DOUBLE__COMPLEX-C_TYPE::DOUBLE);
 					static_assert(4==C_TYPE::LDOUBLE__COMPLEX-C_TYPE::DOUBLE);
 					set_C_canonical_type_representation(src,i,C_TYPE::DOUBLE+optional_keyword(src,i,invariant_decl_scanner,C99_CPP_LONG_IDX)+3*optional_keyword(src,i,invariant_decl_scanner,C99_CPP_COMPLEX_IDX));
 					break;
 				case C99_CPP_SIGNED_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					if (optional_keyword(src,i,invariant_decl_scanner,C99_CPP_CHAR_IDX))
 						{
 						set_C_canonical_type_representation(src,i,C_TYPE::SCHAR);
@@ -3881,7 +3885,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					optional_keyword(src,i,invariant_decl_scanner,C99_CPP_INT_IDX);
 					break;
 				case C99_CPP_UNSIGNED_IDX:
-					src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+					pivot.flags |= PARSE_PRIMARY_TYPE;
 					if (optional_keyword(src,i,invariant_decl_scanner,C99_CPP_CHAR_IDX))
 						{
 						set_C_canonical_type_representation(src,i,C_TYPE::UCHAR);
@@ -3903,7 +3907,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					case 0:
 						if (!have_warned_about_Complex)
 							{
-							message_header(src.data<0>()[i].index_tokens[0]);
+							message_header(pivot.index_tokens[0]);
 							INC_INFORM(ERR_STR);
 							INFORM("type-specifier-sequence has _Complex without either float or double (C99 6.7.3p4)");
 							zcc_errors.inc_error();
@@ -3913,11 +3917,11 @@ static void CPP_notice_primary_type(parse_tree& src)
 						src.DeleteIdx<0>(i--);
 						break;
 					case 1:
-						src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+						pivot.flags |= PARSE_PRIMARY_TYPE;
 						set_C_canonical_type_representation(src,i,C_TYPE::FLOAT__COMPLEX);
 						break;
 					case 2:
-						src.c_array<0>()[i].flags |= PARSE_PRIMARY_TYPE;
+						pivot.flags |= PARSE_PRIMARY_TYPE;
 						static_assert(1==C_TYPE::LDOUBLE__COMPLEX-C_TYPE::DOUBLE__COMPLEX);
 						set_C_canonical_type_representation(src,i,C_TYPE::DOUBLE__COMPLEX+optional_keyword(src,i,invariant_decl_scanner,C99_CPP_LONG_IDX));
 //						break;						
@@ -4499,8 +4503,8 @@ static void make_target_postfix_arg(parse_tree& src,size_t& offset,const size_t 
 		offset = 0;
 		tmp = _new_buffer_nonNULL_throws<parse_tree>(1);
 		}
-	src.c_array<0>()[j].OverwriteInto(*tmp);
-	src.c_array<0>()[i].fast_set_arg<2>(tmp);
+	src.c_array<0>()[j]->OverwriteInto(*tmp);
+	src.c_array<0>()[i]->template fast_set_arg<2>(tmp);
 }
 
 //! \throw std::bad_alloc()
@@ -4511,15 +4515,16 @@ static void C99_notice_struct_union_enum(parse_tree& src)
 	size_t offset = 0;
 	while(i+offset<src.size<0>())
 		{
-		const char* const tmp2 = robust_token_is_string<4>(src.data<0>()[i],"enum") ? "enum"
-							: robust_token_is_string<6>(src.data<0>()[i],"struct") ? "struct"
-							: robust_token_is_string<5>(src.data<0>()[i],"union") ? "union" : 0;
+		parse_tree& anchor = *src.c_array<0>()[i];
+		const char* const tmp2 = robust_token_is_string<4>(anchor,"enum") ? "enum"
+							: robust_token_is_string<6>(anchor,"struct") ? "struct"
+							: robust_token_is_string<5>(anchor,"union") ? "union" : 0;
 		if (tmp2)
 			{
 			if (1>=src.size<0>()-(i+offset))
 				{	// unterminated declaration
 					//! \test zcc/decl.C99/Error_enum_truncate1.h
-				message_header(src.data<0>()[i].index_tokens[0]);
+				message_header(anchor.index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INC_INFORM(tmp2);
 				INC_INFORM(" specifier cut off by end of scope (");
@@ -4530,17 +4535,18 @@ static void C99_notice_struct_union_enum(parse_tree& src)
 				offset += 1;
 				continue;
 				};
-			if (is_naked_brace_pair(src.data<0>()[i+1]))
+			parse_tree& pivot = *src.c_array<0>()[i + 1];
+			if (is_naked_brace_pair(pivot))
 				{	// anonymous: postfix arg {...}
 				make_target_postfix_arg(src,offset,i,i+1);
 				src.DestroyNAtAndRotateTo<0>(1,i+1,src.size<0>()-offset);
 				offset += 1;
-				assert(is_C99_anonymous_specifier(src.data<0>()[i],tmp2));
+				assert(is_C99_anonymous_specifier(anchor,tmp2));
 				continue;
 				};
-			if (!C99_looks_like_identifier(src.data<0>()[i+1]))
+			if (!C99_looks_like_identifier(pivot))
 				{	//! \test zcc/decl.C99/Error_enum_truncate2.h
-				message_header(src.data<0>()[i].index_tokens[0]);
+				message_header(anchor.index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INC_INFORM(tmp2);
 				INC_INFORM(" neither specifier nor definition (");
@@ -4551,29 +4557,29 @@ static void C99_notice_struct_union_enum(parse_tree& src)
 				offset += 1;
 				continue;
 				};
-			if (2<src.size<0>()-(i+offset) && is_naked_brace_pair(src.data<0>()[i+2]))
+			if (2<src.size<0>()-(i+offset) && is_naked_brace_pair(*src.data<0>()[i+2]))
 				{
 				make_target_postfix_arg(src,offset,i,i+2);
-				src.c_array<0>()[i].grab_index_token_from<1,0>(src.c_array<0>()[i+1]);
-				src.c_array<0>()[i].grab_index_token_location_from<1,0>(src.data<0>()[i+1]);
-				src.c_array<0>()[i+1].clear();
+				anchor.grab_index_token_from<1,0>(pivot);
+				anchor.grab_index_token_location_from<1,0>(pivot);
+				pivot.clear();
 				src.DestroyNAtAndRotateTo<0>(2,i+1,src.size<0>()-offset);
 				offset += 2;
-				assert(is_C99_named_specifier_definition(src.data<0>()[i],tmp2));
+				assert(is_C99_named_specifier_definition(anchor,tmp2));
 				continue;
 				};
-			src.c_array<0>()[i].grab_index_token_from<1,0>(src.c_array<0>()[i+1]);
-			src.c_array<0>()[i].grab_index_token_location_from<1,0>(src.data<0>()[i+1]);
-			src.c_array<0>()[i+1].clear();
+			anchor.grab_index_token_from<1,0>(pivot);
+			anchor.grab_index_token_location_from<1,0>(pivot);
+			pivot.clear();
 			src.DestroyNAtAndRotateTo<0>(1,i+1,src.size<0>()-offset);
 			offset += 1;
-			assert(is_C99_named_specifier(src.data<0>()[i],tmp2));
+			assert(is_C99_named_specifier(anchor,tmp2));
 			continue;
 			}
 		++i;
 		};
 	if (0<offset) src.DeleteNSlotsAt<0>(offset,src.size<0>()-offset);
-	std::for_each(src.begin<0>(),src.end<0>(),conditional_action<bool (*)(const parse_tree&),void (*)(parse_tree&)>(is_nonempty_naked_pair,C99_notice_struct_union_enum));
+	src.pointwise_exec<0>(conditional_action<bool (*)(const parse_tree&), void (*)(parse_tree&)>(is_nonempty_naked_pair, C99_notice_struct_union_enum));
 }
 
 //! \throw std::bad_alloc()
@@ -4584,16 +4590,17 @@ static void CPP_notice_class_struct_union_enum(parse_tree& src)
 	size_t offset = 0;
 	while(i+offset<src.size<0>())
 		{
-		const char* const tmp2 = robust_token_is_string<4>(src.data<0>()[i],"enum") ? "enum"
-							: robust_token_is_string<6>(src.data<0>()[i],"struct") ? "struct"
-							: robust_token_is_string<5>(src.data<0>()[i],"union") ? "union"
-							: robust_token_is_string<5>(src.data<0>()[i],"class") ? "class" : 0;
+		parse_tree& anchor = *src.c_array<0>()[i];
+		const char* const tmp2 = robust_token_is_string<4>(anchor,"enum") ? "enum"
+							: robust_token_is_string<6>(anchor,"struct") ? "struct"
+							: robust_token_is_string<5>(anchor,"union") ? "union"
+							: robust_token_is_string<5>(anchor,"class") ? "class" : 0;
 		if (tmp2)
 			{
 			if (1>=src.size<0>()-(i+offset))
 				{	// unterminated declaration
 					//! \test zcc/decl.C99/Error_enum_truncate1.h
-				message_header(src.data<0>()[i].index_tokens[0]);
+				message_header(anchor.index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INC_INFORM(tmp2);
 				INC_INFORM(" specifier cut off by end of scope (");
@@ -4604,17 +4611,18 @@ static void CPP_notice_class_struct_union_enum(parse_tree& src)
 				offset += 1;
 				continue;
 				};
-			if (is_naked_brace_pair(src.data<0>()[i+1]))
+			parse_tree& pivot = *src.c_array<0>()[i + 1];
+			if (is_naked_brace_pair(pivot))
 				{	// anonymous: postfix arg {...}
 				make_target_postfix_arg(src,offset,i,i+1);
 				src.DestroyNAtAndRotateTo<0>(1,i+1,src.size<0>()-offset);
 				offset += 1;
-				assert(is_C99_anonymous_specifier(src.data<0>()[i],tmp2));
+				assert(is_C99_anonymous_specifier(anchor,tmp2));
 				continue;
 				};
-			if (!CPP_looks_like_identifier(src.data<0>()[i+1]))
+			if (!CPP_looks_like_identifier(pivot))
 				{	//! \test zcc/decl.C99/Error_enum_truncate2.h
-				message_header(src.data<0>()[i].index_tokens[0]);
+				message_header(anchor.index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INC_INFORM(tmp2);
 				INC_INFORM(" neither specifier nor definition (");
@@ -4625,29 +4633,29 @@ static void CPP_notice_class_struct_union_enum(parse_tree& src)
 				offset += 1;
 				continue;
 				};
-			if (2<src.size<0>()-(i+offset) && is_naked_brace_pair(src.data<0>()[i+2]))
+			if (2<src.size<0>()-(i+offset) && is_naked_brace_pair(*src.data<0>()[i+2]))
 				{
 				make_target_postfix_arg(src,offset,i,i+2);
-				src.c_array<0>()[i].grab_index_token_from<1,0>(src.c_array<0>()[i+1]);
-				src.c_array<0>()[i].grab_index_token_location_from<1,0>(src.data<0>()[i+1]);
-				src.c_array<0>()[i+1].clear();
+				anchor.grab_index_token_from<1,0>(pivot);
+				anchor.grab_index_token_location_from<1,0>(pivot);
+				pivot.clear();
 				src.DestroyNAtAndRotateTo<0>(2,i+1,src.size<0>()-offset);
 				offset += 2;
-				assert(is_C99_named_specifier_definition(src.data<0>()[i],tmp2));
+				assert(is_C99_named_specifier_definition(anchor,tmp2));
 				continue;
 				};
-			src.c_array<0>()[i].grab_index_token_from<1,0>(src.c_array<0>()[i+1]);
-			src.c_array<0>()[i].grab_index_token_location_from<1,0>(src.data<0>()[i+1]);
-			src.c_array<0>()[i+1].clear();
+			anchor.grab_index_token_from<1,0>(pivot);
+			anchor.grab_index_token_location_from<1,0>(pivot);
+			pivot.clear();
 			src.DestroyNAtAndRotateTo<0>(1,i+1,src.size<0>()-offset);
 			offset += 1;
-			assert(is_C99_named_specifier(src.data<0>()[i],tmp2));
+			assert(is_C99_named_specifier(anchor,tmp2));
 			continue;
 			}
 		++i;
 		};
 	if (0<offset) src.DeleteNSlotsAt<0>(offset,src.size<0>()-offset);
-	std::for_each(src.begin<0>(),src.end<0>(),conditional_action<bool (*)(const parse_tree&),void (*)(parse_tree&)>(is_nonempty_naked_pair,CPP_notice_class_struct_union_enum));
+	src.pointwise_exec<0>(conditional_action<bool (*)(const parse_tree&), void (*)(parse_tree&)>(is_nonempty_naked_pair, CPP_notice_class_struct_union_enum));
 }
 #endif
 
@@ -4998,12 +5006,12 @@ static void _label_literals(parse_tree& src,const type_system& types)
 		bool want_first_slideup = false;
 		bool want_second_slidedown = false;
 		bool RAMfail = false;
-		if (C_TESTFLAG_STRING_LITERAL==src.data<0>()[str_span.first+1].index_tokens[0].flags)
+		if (parse_tree& anchor = *src.c_array<0>()[str_span.first + 1]; C_TESTFLAG_STRING_LITERAL== anchor.index_tokens[0].flags)
 			{
-			if (src.size<0>()<=str_span.second+2 || C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.first+2].index_tokens[0].flags)
+			if (src.size<0>()<=str_span.second+2 || C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.first+2]->index_tokens[0].flags)
 				{	// psuedo-concatenate
 					// that this is still a constant primary expression, as we are just pretending that the string concatenation went through
-				src.c_array<0>()[str_span.first]->grab_index_token_from<1, 0>(*src.c_array<0>()[str_span.first + 1]);
+				src.c_array<0>()[str_span.first]->grab_index_token_from<1, 0>(anchor);
 				src.DeleteIdx<0>(str_span.first+1);
 				if (1>=(str_count -= 2)) break;
 				str_span.first += 2;
@@ -5011,7 +5019,7 @@ static void _label_literals(parse_tree& src,const type_system& types)
 				}
 			else{	// more than two strings to psuedo-concatenate
 				POD_pair<size_t,size_t> scan = {str_span.first,str_span.first+2};
-				while(src.size<0>()>scan.second+1 && C_TESTFLAG_STRING_LITERAL==src.data<0>()[scan.second+1].index_tokens[0].flags) ++scan.second;
+				while(src.size<0>()>scan.second+1 && C_TESTFLAG_STRING_LITERAL==src.data<0>()[scan.second+1]->index_tokens[0].flags) ++scan.second;
 				if (parse_tree::collapse_matched_pair(src,scan))
 					src.c_array<0>()[scan.first]->flags |= (PARSE_PRIMARY_EXPRESSION | parse_tree::CONSTANT_EXPRESSION);
 				else
@@ -5023,12 +5031,12 @@ static void _label_literals(parse_tree& src,const type_system& types)
 			++str_span.first;
 			--str_count;
 			};
-		if (C_TESTFLAG_STRING_LITERAL==src.data<0>()[str_span.second-1].index_tokens[0].flags)
+		if (parse_tree& anchor = *src.c_array<0>()[str_span.second - 1]; C_TESTFLAG_STRING_LITERAL== anchor.index_tokens[0].flags)
 			{
-			if (2<=str_span.second || C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.second-2].index_tokens[0].flags)
+			if (2<=str_span.second || C_TESTFLAG_STRING_LITERAL!=src.data<0>()[str_span.second-2]->index_tokens[0].flags)
 				{	// psuedo-concatenate
 					// this is still a constant primary expression, as we are just pretending that the string concatenation went through
-				src.c_array<0>()[str_span.second - 1]->grab_index_token_from<1, 0>(*src.c_array<0>()[str_span.second]);
+				anchor.grab_index_token_from<1, 0>(*src.c_array<0>()[str_span.second]);
 				src.DeleteIdx<0>(str_span.second);
 				if (1>=(str_count -= 2)) break;
 				str_span.second -= 2;
@@ -5036,7 +5044,7 @@ static void _label_literals(parse_tree& src,const type_system& types)
 				}
 			else{	// more than two strings to psuedo-concatenate
 				POD_pair<size_t,size_t> scan = {str_span.second-2,str_span.second};
-				while(0<scan.first && C_TESTFLAG_STRING_LITERAL==src.data<0>()[scan.first-1].index_tokens[0].flags) --scan.first;
+				while(0<scan.first && C_TESTFLAG_STRING_LITERAL==src.data<0>()[scan.first-1]->index_tokens[0].flags) --scan.first;
 				if (parse_tree::collapse_matched_pair(src,scan))
 					src.c_array<0>()[scan.first]->flags |= (PARSE_PRIMARY_EXPRESSION | parse_tree::CONSTANT_EXPRESSION);
 					// note: as current item was already typed properly, do not need to update
@@ -5095,9 +5103,9 @@ static bool _this_vaguely_where_it_could_be_cplusplus(const parse_tree& src)
 		size_t i = src.size(j);
 		while(0<i)
 			{
-			if (robust_token_is_string<4>(src.data(j)[--i].index_tokens[0].token,"this"))
+			if (const weak_token& anchor = src.data(j)[--i]->index_tokens[0]; robust_token_is_string<4>(anchor.token,"this"))
 				{
-				message_header(src.data(j)[i].index_tokens[0]);
+				message_header(anchor);
 				INC_INFORM(ERR_STR);
 				INFORM("keyword this is allowed only within a non-static member function body or a constructor memory initializer (C++98 5.1p3)");
 				zcc_errors.inc_error();
@@ -5431,7 +5439,7 @@ static bool terse_locate_array_deref(parse_tree& src, size_t& i)
 			INC_INFORM("array dereference ");
 			INC_INFORM(src);
 			INC_INFORM(" has invalid postfix expression ");
-			INC_INFORM(src.data<0>()[i-1]);
+			INC_INFORM(*src.data<0>()[i-1]);
 			INFORM(" to dereference (C99 6.5.2.1p1)");
 			zcc_errors.inc_error();
 			};
@@ -5581,31 +5589,31 @@ static bool terse_locate_CPP0X_typeid(parse_tree& src, size_t& i, const type_sys
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	parse_tree& anchor = *src.c_array<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_string<6>(src.data<0>()[i].index_tokens[0].token,"typeid")
-		&& 1<src.size<0>()-i
-		&& is_naked_parentheses_pair(src.data<0>()[i+1]))
-		{
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if ((PARSE_EXPRESSION | PARSE_TYPE) & src.data<0>()[i+1].flags)
-			{
-			{
-			parse_tree* const tmp = repurpose_inner_parentheses(src.c_array<0>()[i+1]);	// RAM conservation
-			src.c_array<0>()[i+1].OverwriteInto(*tmp);
-			src.c_array<0>()[i].fast_set_arg<2>(tmp);
-			src.c_array<0>()[i].core_flag_update();
-			src.c_array<0>()[i].flags |= PARSE_STRICT_POSTFIX_EXPRESSION;
-			src.DeleteIdx<0>(i+1);
-			cancel_outermost_parentheses(src.c_array<0>()[i].c_array<2>()[0]);
-			}
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::TYPEINFO);
-			src.c_array<0>()[i].type_code.qualifier<0>() |= (type_spec::lvalue | type_spec::_const);
-			assert(is_CPP0X_typeid_expression(src.c_array<0>()[i]));
-			return true;			
+	if (token_is_string<6>(anchor.index_tokens[0].token,"typeid")
+		&& 1<src.size<0>()-i) {
+		if (parse_tree& pivot = *src.c_array<0>()[i + 1]; is_naked_parentheses_pair(pivot)) {
+			inspect_potential_paren_primary_expression(pivot);
+			if ((PARSE_EXPRESSION | PARSE_TYPE) & pivot.flags) {
+				{
+				parse_tree* const tmp = repurpose_inner_parentheses(pivot);	// RAM conservation
+				pivot.OverwriteInto(*tmp);
+				anchor.template fast_set_arg<2>(tmp);
+				anchor.core_flag_update();
+				anchor.flags |= PARSE_STRICT_POSTFIX_EXPRESSION;
+				src.DeleteIdx<0>(i + 1);
+				cancel_outermost_parentheses(anchor.front<2>());
+				}
+				anchor.type_code.set_type(C_TYPE::TYPEINFO);
+				anchor.type_code.qualifier<0>() |= (type_spec::lvalue | type_spec::_const);
+				assert(is_CPP0X_typeid_expression(anchor));
+				return true;
 			}
 		}
+	}
 	return false;
 }
 
@@ -5618,9 +5626,10 @@ static bool locate_CPP0X_typeid(parse_tree& src, size_t& i, const type_system& t
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
 
-	if (	!(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		&&	src.data<0>()[i].is_atomic()
-		&&	terse_locate_CPP0X_typeid(src,i,types))
+	const parse_tree& anchor = *src.data<0>()[i];
+	if ( !(PARSE_OBVIOUS & anchor.flags)
+		&& anchor.is_atomic()
+		&& terse_locate_CPP0X_typeid(src,i,types))
 		return true;
 	return false;
 }
@@ -5792,14 +5801,16 @@ static bool CPP_literal_converts_to_bool(const parse_tree& src, bool& is_true SI
 static void assemble_unary_postfix_arguments(parse_tree& src, const size_t i, const size_t _subtype)
 {
 	assert(1<src.size<0>()-i);
-	parse_tree* const tmp = repurpose_inner_parentheses(src.c_array<0>()[i+1]);	// RAM conservation
-	src.c_array<0>()[i+1].OverwriteInto(*tmp);
-	src.c_array<0>()[i].fast_set_arg<2>(tmp);
-	src.c_array<0>()[i].core_flag_update();
-	src.c_array<0>()[i].flags |= PARSE_STRICT_UNARY_EXPRESSION;
-	src.c_array<0>()[i].subtype = _subtype;
+	parse_tree& donor = *src.c_array<0>()[i + 1];
+	parse_tree* const tmp = repurpose_inner_parentheses(donor);	// RAM conservation
+	donor.OverwriteInto(*tmp);
+	parse_tree& anchor = *src.c_array<0>()[i];
+	anchor.fast_set_arg<2>(tmp);
+	anchor.core_flag_update();
+	anchor.flags |= PARSE_STRICT_UNARY_EXPRESSION;
+	anchor.subtype = _subtype;
 	src.DeleteIdx<0>(i+1);
-	cancel_outermost_parentheses(src.c_array<0>()[i].c_array<2>()[0]);
+	cancel_outermost_parentheses(anchor.front<2>());
 }
 
 // can't do much syntax-checking or immediate-evaluation here because of binary +/-
@@ -5901,7 +5912,7 @@ static void force_unary_positive_literal(parse_tree& dest,const parse_tree& src 
 	assert(1==dest.size<2>());
 	assert(!dest.index_tokens[1].token.first);
 	dest.grab_index_token_from_str_literal<0>("+",C_TESTFLAG_NONATOMIC_PP_OP_PUNC);
-	*dest.c_array<2>() = src;
+	dest.front<2>() = src;
 	dest.core_flag_update();
 	dest.flags |= PARSE_STRICT_UNARY_EXPRESSION;
 	dest.subtype = C99_UNARY_SUBTYPE_PLUS;
@@ -6128,6 +6139,7 @@ static void CPP_unary_plusminus_easy_syntax_check(parse_tree& src,const type_sys
 	assert((C99_UNARY_SUBTYPE_PLUS==src.subtype) ? is_C99_unary_operator_expression<'+'>(src) : is_C99_unary_operator_expression<'-'>(src));
 	
 	// can type if result is a primitive arithmetic type
+#ifndef BUILD_Z_CPP
 	// can type if an (C++0X unscoped) enumerator
 	if (is_noticed_enumerator(src.front<2>(),types))
 		{
@@ -6136,6 +6148,7 @@ static void CPP_unary_plusminus_easy_syntax_check(parse_tree& src,const type_sys
 		src.type_code.set_type(tmp2->second.first.first);
 		}
 	else
+#endif
 	if (converts_to_arithmeticlike(src.front<2>().type_code ARG_TYPES))
 		src.type_code.set_type(default_promote_type(src.front<2>().type_code.base_type_index ARG_TYPES));
 
@@ -6198,19 +6211,21 @@ static bool terse_locate_C99_deref(parse_tree& src, size_t& i,const type_system&
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_char<'*'>(src.data<0>()[i].index_tokens[0].token))
+	if (token_is_char<'*'>(anchor.index_tokens[0].token))
 		{
 		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (PARSE_CAST_EXPRESSION & src.data<0>()[i+1].flags)
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot))
+			C_deref_easy_syntax_check(pivot,types);
+		if (PARSE_CAST_EXPRESSION & pivot.flags)
 			{
 			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_DEREF);
-			assert(is_C99_unary_operator_expression<'*'>(src.data<0>()[i]));
+			assert(is_C99_unary_operator_expression<'*'>(anchor));
 			return true;
 			};
 		}
@@ -10761,7 +10776,7 @@ static bool CPP_CondenseParseTree(parse_tree& src,const type_system& types)
 	assert(1<src.size<0>());
 	const size_t starting_errors = zcc_errors.err_count();
 	_label_literals(src,types);
-	std::for_each(src.begin<0>(),src.end<0>(),_label_CPP_literal);	// intercepts: true, false, this
+	src.pointwise_exec<0>(_label_CPP_literal);	// intercepts: true, false, this
 	if (!_match_pairs(src)) return false;
 #ifndef BUILD_Z_CPP
 	// check that this is at least within a brace pair or a parentheses pair (it is actually required to be in a non-static member function, or constructor mem-initializer
@@ -11196,7 +11211,7 @@ static void CPP_notice_scope_glue(parse_tree& src)
 
 	// efficiency tuning: we have to have no empty slots at top level before recursing,
 	// to mitigate risk of dynamic memory allocation failure
-	std::for_each(src.begin<0>(),src.end<0>(),conditional_action<bool (*)(const parse_tree&),void (*)(parse_tree&)>(is_nonempty_naked_pair,CPP_notice_scope_glue));
+	src.pointwise_exec<0>(conditional_action<bool (*)(const parse_tree&), void (*)(parse_tree&)>(is_nonempty_naked_pair, CPP_notice_scope_glue));
 }
 
 static void CPP_handle_pragma_relay(parse_tree& src)
@@ -11319,7 +11334,7 @@ static void CPP_ContextFreeParse(parse_tree& src,const type_system& types)
 	assert(src.is_raw_list());
 	CPP_handle_pragma_relay(src);
 	_label_literals(src,types);
-	std::for_each(src.begin<0>(),src.end<0>(),_label_CPP_literal);	// intercepts: true, false, this
+	src.pointwise_exec<0>(_label_CPP_literal);	// intercepts: true, false, this
 	// handle core type specifiers
 	CPP_notice_primary_type(src);
 	CPP0X_condense_const_volatile_onto_type(src);
