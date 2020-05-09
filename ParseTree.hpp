@@ -275,6 +275,13 @@ struct parse_tree
 		return ret;
 	}
 
+	template<size_t dest_idx> void pointwise_exec(std::function<void(parse_tree&)> op)
+	{
+		static_assert(STATIC_SIZE(_args) > dest_idx);
+		size_t ub = size<dest_idx>();
+		while (0 < ub) op(*_args[dest_idx][--ub]);
+	}
+
 	bool is_atomic() const;
 	bool is_raw_list() const;
 	void clear();	// XXX should be constructor; good way to leak memory in other contexts

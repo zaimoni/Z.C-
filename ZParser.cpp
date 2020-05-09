@@ -132,7 +132,7 @@ bool ZParser::parse(autovalarray_ptr<Token<char>*>& TokenList,autovalarray_ptr<p
 				{	// only one token: grab the memory from Token and just do it
 				tmp_front.ltrim(pretokenized[0].first);
 				tmp_front.lslice(pretokenized[0].second);
-				parse_tree& tmp = ParsedList[0]->c_array<0>()[old_parsed_size];
+				parse_tree& tmp = *ParsedList[0]->c_array<0>()[old_parsed_size];
 				if (!init_parse_tree_from_token(tmp,tmp_front,pretokenized[0],lang))
 					{
 					tmp.index_tokens[0].token.first = tmp_front.release();
@@ -142,7 +142,7 @@ bool ZParser::parse(autovalarray_ptr<Token<char>*>& TokenList,autovalarray_ptr<p
 			else{
 				i = append_tokens;
 				do	{	// copy it
-					parse_tree& tmp = ParsedList[0]->c_array<0>()[old_parsed_size+ --i];
+					parse_tree& tmp = *ParsedList[0]->c_array<0>()[old_parsed_size+ --i];
 					POD_triple<size_t,size_t,lex_flags>& tmp3 = pretokenized[i];
 					if (!init_parse_tree_from_token(tmp,tmp_front,tmp3,lang))
 					    {
@@ -163,16 +163,19 @@ bool ZParser::parse(autovalarray_ptr<Token<char>*>& TokenList,autovalarray_ptr<p
 
 	// ok...now ready for LangConf (note that CSupport.hpp/CSupport.cpp may fork on whether z_cpp or zcc is being built
 	// 1) lexical absolute parsing: primary expressions and similar
-#ifndef ZAIMONI_FORCE_ISO
+#if 0
+//#ifndef ZAIMONI_FORCE_ISO
 	assert(ParsedList[0]->syntax_ok());
 #endif
 	lang.pp_support->ContextFreeParse(*ParsedList[0],types);
-#ifndef ZAIMONI_FORCE_ISO
+#if 0
+	//#ifndef ZAIMONI_FORCE_ISO
 	assert(ParsedList[0]->syntax_ok());
 #endif
 	die_on_parse_errors();
 	lang.pp_support->ContextParse(*ParsedList[0]);
-#ifndef ZAIMONI_FORCE_ISO
+#if 0
+//#ifndef ZAIMONI_FORCE_ISO
 	assert(ParsedList[0]->syntax_ok());
 #endif
 //	die_on_parse_errors();

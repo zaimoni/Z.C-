@@ -3239,7 +3239,7 @@ void set_C_canonical_type_representation(parse_tree& src,size_t i,size_t target_
 	| (1ULL<<C_TYPE::FLOAT) \
 	| (1ULL<<C_TYPE::DOUBLE))
 
-	parse_tree& tmp = src.c_array<0>()[i];
+	parse_tree& tmp = *src.c_array<0>()[i];
 	tmp.type_code.set_type(target_type);
 	//! \todo should use something informative in place of 0; identifier not fine
 	tmp.grab_index_token_from_str_literal<0>(C_atomic_types[target_type-1].first,C_ATOMIC_TYPE_IDENTIFIER_BITFLAG & (1ULL<<target_type) ? C_TESTFLAG_IDENTIFIER : 0);
@@ -3331,12 +3331,12 @@ static void C99_notice_primary_type_atomic(parse_tree& src)
 static void C99_notice_primary_type(parse_tree& src)
 {
 	assert(src.is_raw_list());
-	std::for_each(src.begin<0>(),src.end<0>(),C99_notice_primary_type_atomic);
+	src.pointwise_exec<0>(C99_notice_primary_type_atomic);
 
 	size_t i = 0;
 	kleene_star<STATIC_SIZE(C99_decl_specifier_list),size_t (*)(const char*)> invariant_decl_scanner(C99_invariant_decl_specifier);
 	do	{
-		if (src.data<0>()[i].is_atomic() && invariant_decl_scanner(src.data<0>()[i].index_tokens[0].token.first))
+		if (const parse_tree& anchor = *src.data<0>()[i]; anchor.is_atomic() && invariant_decl_scanner(anchor.index_tokens[0].token.first))
 			{
 			bool have_warned_about_register = false;
 			bool have_warned_about_static = false;
@@ -3349,13 +3349,14 @@ static void C99_notice_primary_type(parse_tree& src)
 			bool have_warned_about_restrict = false;
 
 			size_t offset = 0;
-			while(src.size<0>()>i+ ++offset && invariant_decl_scanner(src.data<0>()[i+offset].index_tokens[0].token.first))
+			while(src.size<0>()>i+ ++offset)
 				{	// C1X 6.7.1p2: at most one storage-class specifier, except _Thread_Local may stack with static or extern
+				if (const weak_token& add = src.data<0>()[i + offset]->index_tokens[0]; invariant_decl_scanner(add.token.first)) {
 				if (1<invariant_decl_scanner.count(C99_CPP_REGISTER_IDX))
 					{	//! \bug need test case
 					if (!have_warned_about_register)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated register storage class and continuing (C99 6.7.1p2)");
 						zcc_errors.inc_error();
@@ -3368,7 +3369,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Error_dup_static.h
 					if (!have_warned_about_static)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated static storage class and continuing (C99 6.7.1p2)");
 						zcc_errors.inc_error();
@@ -3381,7 +3382,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Error_dup_extern.h
 					if (!have_warned_about_extern)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated extern storage class and continuing (C99 6.7.1p2)");
 						zcc_errors.inc_error();
@@ -3394,7 +3395,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \bug need test case
 					if (!have_warned_about_thread_local)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated _Thread_Local storage class and continuing (C1X 6.7.1p2)");
 						zcc_errors.inc_error();
@@ -3407,7 +3408,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \bug need test case
 					if (!have_warned_about_auto)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated auto storage class and continuing (C99 6.7.1p2)");
 						zcc_errors.inc_error();
@@ -3420,7 +3421,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Error_dup_typedef.h
 					if (!have_warned_about_typedef)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated typedef storage class and continuing (C99 6.7.1p2)");
 						zcc_errors.inc_error();
@@ -3434,7 +3435,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Warn_dup_const.h
 					if (!have_warned_about_const)
 						{
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(WARN_STR);
 						INFORM("removing redundant const type qualifier (C99 6.7.3p4)");
 						if (bool_options[boolopt::warnings_are_errors])
@@ -3448,7 +3449,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Warn_dup_volatile.h
 					if (!have_warned_about_volatile)
 						{
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(WARN_STR);
 						INFORM("removing redundant volatile type qualifier (C99 6.7.3p4)");
 						if (bool_options[boolopt::warnings_are_errors])
@@ -3462,7 +3463,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					{	//! \bug need test case
 					if (!have_warned_about_restrict)
 						{
-						message_header(src.data<0>()[i+offset].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(WARN_STR);
 						INFORM("removing redundant restrict type qualifier (C99 6.7.3p4)");
 						if (bool_options[boolopt::warnings_are_errors])
@@ -3472,6 +3473,7 @@ static void C99_notice_primary_type(parse_tree& src)
 					src.DeleteIdx<0>(i+offset);
 					invariant_decl_scanner.DeleteIdx(offset--);					
 					}
+				} else break;
 				};
 
 			// handle allowed sequences of type-qualifiers (do need second pass later)
@@ -3644,12 +3646,12 @@ static void CPP_notice_primary_type_atomic(parse_tree& src)
 static void CPP_notice_primary_type(parse_tree& src)
 {
 	assert(src.is_raw_list());
-	std::for_each(src.begin<0>(),src.end<0>(),CPP_notice_primary_type_atomic);
+	src.pointwise_exec<0>(CPP_notice_primary_type_atomic);
 
 	size_t i = 0;
 	kleene_star<STATIC_SIZE(CPP0X_decl_specifier_list),size_t (*)(const char*)> invariant_decl_scanner(CPP0X_invariant_decl_specifier);
 	do	{
-		if (src.data<0>()[i].is_atomic() && invariant_decl_scanner(src.data<0>()[i].index_tokens[0].token.first))
+		if (const parse_tree& anchor = *src.data<0>()[i]; anchor.is_atomic() && invariant_decl_scanner(anchor.index_tokens[0].token.first))
 			{
 			bool have_warned_about_register = false;
 			bool have_warned_about_static = false;
@@ -3678,13 +3680,14 @@ static void CPP_notice_primary_type(parse_tree& src)
 					using_linkage = true;
 				}
 			
-			while(src.size<0>()>i+ ++offset+using_linkage && invariant_decl_scanner(src.data<0>()[i+offset+using_linkage].index_tokens[0].token.first))
+			while(src.size<0>()>i+ ++offset+using_linkage)
 				{	// C++0X 7.1.1p1: at most one storage-class specifier, except thread_local may stack with static or extern
+				if (const weak_token& add = src.data<0>()[i + offset + using_linkage]->index_tokens[0]; invariant_decl_scanner(add.token.first)) {
 				if (1<invariant_decl_scanner.count(C99_CPP_REGISTER_IDX))
 					{	//! \bug need test case
 					if (!have_warned_about_register)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated register storage class and continuing (C++0X 7.1.1p1)");
 						zcc_errors.inc_error();
@@ -3697,7 +3700,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Error_dup_static.hpp
 					if (!have_warned_about_static)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated static storage class and continuing (C++0X 7.1.1p1)");
 						zcc_errors.inc_error();
@@ -3710,7 +3713,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Error_dup_extern.hpp
 					if (!have_warned_about_extern)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated extern storage class and continuing (C++0X 7.1.1p1)");
 						zcc_errors.inc_error();
@@ -3723,7 +3726,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					{	//! \bug need test case
 					if (!have_warned_about_thread_local)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated thread_local storage class and continuing (C++0X 7.1.1p1)");
 						zcc_errors.inc_error();
@@ -3736,7 +3739,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					{	//! \bug need test case
 					if (!have_warned_about_mutable)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated mutable storage class and continuing (C++0X 7.1.1p1)");
 						zcc_errors.inc_error();
@@ -3749,7 +3752,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Error_dup_typedef.h
 					if (!have_warned_about_typedef)
 						{	//! \todo --do-what-i-mean should warn
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(ERR_STR);
 						INFORM("removing prohibited duplicated typedef specifier and continuing (C++0X 7.1.3p1)");
 						zcc_errors.inc_error();
@@ -3763,7 +3766,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Warn_dup_const.hpp
 					if (!have_warned_about_const)
 						{
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(WARN_STR);
 						INFORM("removing redundant const cv-qualifier (C++0X 7.1.6.1p1)");
 						if (bool_options[boolopt::warnings_are_errors])
@@ -3777,7 +3780,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					{	//! \test decl.C99/Warn_dup_volatile.hpp
 					if (!have_warned_about_volatile)
 						{
-						message_header(src.data<0>()[i+offset+using_linkage].index_tokens[0]);
+						message_header(add);
 						INC_INFORM(WARN_STR);
 						INFORM("removing redundant volatile cv-qualifier (C++0X 7.1.6.1p1)");
 						if (bool_options[boolopt::warnings_are_errors])
@@ -3787,6 +3790,7 @@ static void CPP_notice_primary_type(parse_tree& src)
 					src.DeleteIdx<0>(i+offset+using_linkage);
 					invariant_decl_scanner.DeleteIdx(offset--);					
 					}
+				} else break;
 				};
 
 			// handle allowed sequences of type-qualifiers (do need second pass later)
@@ -5522,7 +5526,7 @@ static void locate_C99_postfix_expression(parse_tree& src, size_t& i, const type
 		{
 		if (terse_locate_array_deref(src,i))
 			{
-			C_array_easy_syntax_check(anchor,types);
+			C_array_easy_syntax_check(*src.c_array<0>()[i],types);
 			return;
 			}
 #if 0
@@ -5644,20 +5648,21 @@ static void locate_CPP_postfix_expression(parse_tree& src, size_t& i, const type
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].empty<1>()
-		|| !src.data<0>()[i].empty<2>()) return;
+	const parse_tree& anchor = *src.data<0>()[i];
+	if (   (PARSE_OBVIOUS & anchor.flags)
+		|| !anchor.empty<1>()
+		|| !anchor.empty<2>()) return;
 
-	if (src.data<0>()[i].index_tokens[1].token.first)
+	if (anchor.index_tokens[1].token.first)
 		{
 		if (terse_locate_array_deref(src,i))
 			{	//! \todo handle operator [] overloading
-			C_array_easy_syntax_check(src.c_array<0>()[i],types);
+			C_array_easy_syntax_check(*src.c_array<0>()[i],types);
 			return;
 			}
 #if 0
-		else if (   token_is_char<'('>(src.data<0>()[i].index_tokens[0].token)
-				 && token_is_char<')'>(src.data<0>()[i].index_tokens[1].token))
+		else if (   token_is_char<'('>(anchor.index_tokens[0].token)
+				 && token_is_char<')'>(anchor.index_tokens[1].token))
 			{
 			if (1<=i)
 				{
@@ -5666,11 +5671,11 @@ static void locate_CPP_postfix_expression(parse_tree& src, size_t& i, const type
 #endif
 #ifndef BUILD_Z_CPP
 		}
-	else{	// if (NULL==src.data<0>()[i].index_tokens[1].token.first)
+	else{	// if (!anchor.index_tokens[1].token.first)
 		if (locate_CPP0X_typeid(src,i,types)) return;
 #endif
 #if 0
-		if (token_is_char<'.'>(src.data<0>()[i].index_tokens[0].token))
+		if (token_is_char<'.'>(anchor.index_tokens[0].token))
 			{
 			if (1<=i && 1<src.size<0>()-i)
 				{
@@ -5678,7 +5683,7 @@ static void locate_CPP_postfix_expression(parse_tree& src, size_t& i, const type
 			else{
 				}
 			}
-		else if (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"->"))
+		else if (token_is_string<2>(anchor.index_tokens[0].token,"->"))
 			{
 			if (1<=i && 1<src.size<0>()-i)
 				{
@@ -5686,31 +5691,31 @@ static void locate_CPP_postfix_expression(parse_tree& src, size_t& i, const type
 			else{
 				}
 			}
-		else if (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"++"))
+		else if (token_is_string<2>(anchor.index_tokens[0].token,"++"))
 			{
 			if (1<=i)
 				{
 				}
 			}
-		else if (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"--"))
+		else if (token_is_string<2>(anchor.index_tokens[0].token,"--"))
 			{
 			if (1<=i)
 				{
 				}
 			}
-		else if (token_is_string<12>(src.data<0>()[i].index_tokens[0].token,"dynamic_cast"))
+		else if (token_is_string<12>(anchor.index_tokens[0].token,"dynamic_cast"))
 			{
 			}
-		else if (token_is_string<11>(src.data<0>()[i].index_tokens[0].token,"static_cast"))
+		else if (token_is_string<11>(anchor.index_tokens[0].token,"static_cast"))
 			{
 			}
-		else if (token_is_string<16>(src.data<0>()[i].index_tokens[0].token,"reinterpret_cast"))
+		else if (token_is_string<16>(anchor.index_tokens[0].token,"reinterpret_cast"))
 			{
 			}
-		else if (token_is_string<10>(src.data<0>()[i].index_tokens[0].token,"const_cast"))
+		else if (token_is_string<10>(anchor.index_tokens[0].token,"const_cast"))
 			{
 			}
-		else if (token_is_string<6>(src.data<0>()[i].index_tokens[0].token,"typeid"))
+		else if (token_is_string<6>(anchor.index_tokens[0].token,"typeid"))
 			{
 			}
 #endif
