@@ -6237,19 +6237,20 @@ static bool terse_locate_CPP_deref(parse_tree& src, size_t& i,const type_system&
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_char<'*'>(src.data<0>()[i].index_tokens[0].token))
+	if (token_is_char<'*'>(anchor.index_tokens[0].token))
 		{
 		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (PARSE_CAST_EXPRESSION & src.data<0>()[i+1].flags)
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot)) C_deref_easy_syntax_check(pivot,types);
+		if (PARSE_CAST_EXPRESSION & pivot.flags)
 			{
 			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_DEREF);
-			assert(is_C99_unary_operator_expression<'*'>(src.data<0>()[i]));
+			assert(is_C99_unary_operator_expression<'*'>(anchor));
 			return true;
 			};
 		}
@@ -6261,19 +6262,20 @@ static bool terse_locate_C_logical_NOT(parse_tree& src, size_t& i,const type_sys
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_char<'!'>(src.data<0>()[i].index_tokens[0].token))
+	if (token_is_char<'!'>(anchor.index_tokens[0].token))
 		{
 		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (PARSE_CAST_EXPRESSION & src.data<0>()[i+1].flags)
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot)) C_deref_easy_syntax_check(pivot,types);
+		if (PARSE_CAST_EXPRESSION & pivot.flags)
 			{
 			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_NOT);
-			assert(is_C99_unary_operator_expression<'!'>(src.data<0>()[i]));
+			assert(is_C99_unary_operator_expression<'!'>(anchor));
 			return true;
 			};
 		}
@@ -6285,19 +6287,20 @@ static bool terse_locate_CPP_logical_NOT(parse_tree& src, size_t& i,const type_s
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_char<'!'>(src.data<0>()[i].index_tokens[0].token) || token_is_string<3>(src.data<0>()[i].index_tokens[0].token,"not"))
+	if (token_is_char<'!'>(anchor.index_tokens[0].token) || token_is_string<3>(anchor.index_tokens[0].token,"not"))
 		{
 		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (PARSE_CAST_EXPRESSION & src.data<0>()[i+1].flags)
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot)) C_deref_easy_syntax_check(pivot,types);
+		if (PARSE_CAST_EXPRESSION & pivot.flags)
 			{
 			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_NOT);
-			assert(is_CPP_logical_NOT_expression(src.data<0>()[i]));
+			assert(is_CPP_logical_NOT_expression(anchor));
 			return true;
 			};
 		}
