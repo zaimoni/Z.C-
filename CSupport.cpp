@@ -7063,33 +7063,33 @@ static bool locate_CPP_sizeof(parse_tree& src, size_t& i, const type_system& typ
 
 // handle our extension __zcc_linkage
 //! \throw std::bad_alloc
-static bool terse_locate_ZCC_linkage(parse_tree& src, size_t& i, const type_system& types)
+static bool terse_locate_ZCC_linkage(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	parse_tree& anchor = *src.c_array<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_string<13>(src.data<0>()[i].index_tokens[0].token,"__zcc_linkage"))
+	if (token_is_string<13>(anchor.index_tokens[0].token,"__zcc_linkage"))
 		{
 		assert(1<src.size<0>()-i);
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (   src.data<0>()[i+1].is_atomic()
-			&& C_TESTFLAG_IDENTIFIER==src.data<0>()[i+1].index_tokens[0].flags)
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot)) C_deref_easy_syntax_check(pivot,types);
+		if (pivot.is_atomic() && C_TESTFLAG_IDENTIFIER== pivot.index_tokens[0].flags)
 			{
 			assemble_unary_postfix_arguments(src,i,ZCC_UNARY_SUBTYPE_LINKAGE);
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::INT);	//! \todo would be nice to range-limit this
-			assert(is_ZCC_linkage_expression(src.c_array<0>()[i]));
+			anchor.type_code.set_type(C_TYPE::INT);	//! \todo would be nice to range-limit this
+			assert(is_ZCC_linkage_expression(anchor));
 			return true;			
 			}
 		// we don't actually know how to evaluate these -- it could get messy
-		if (is_naked_parentheses_pair(src.data<0>()[i+1]))
+		if (is_naked_parentheses_pair(pivot))
 			{
 			assemble_unary_postfix_arguments(src,i,ZCC_UNARY_SUBTYPE_LINKAGE);
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::INT);	//! \todo would be nice to range-limit this
-			assert(is_ZCC_linkage_expression(src.c_array<0>()[i]));
+			anchor.type_code.set_type(C_TYPE::INT);	//! \todo would be nice to range-limit this
+			assert(is_ZCC_linkage_expression(anchor));
 			return true;			
 			}
 		}
@@ -7155,34 +7155,34 @@ static void CPP_ZCC_linkage_easy_syntax_check(parse_tree& src,const type_system&
 }
 
 //! \throw std::bad_alloc()
-static bool locate_C99_ZCC_linkage(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_C99_ZCC_linkage(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
 
-	if (	!(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		&&	src.data<0>()[i].is_atomic()
-		&&	terse_locate_ZCC_linkage(src,i,types))
-		{
-		C99_ZCC_linkage_easy_syntax_check(src.c_array<0>()[i],types);
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if ( !(PARSE_OBVIOUS & anchor.flags)
+		&& anchor.is_atomic()
+		&& terse_locate_ZCC_linkage(src,i,types)) {
+		C99_ZCC_linkage_easy_syntax_check(anchor,types);
 		return true;
-		}
+	}
 	return false;
 }
 
 //! \throw std::bad_alloc()
-static bool locate_CPP_ZCC_linkage(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_CPP_ZCC_linkage(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
 
-	if (	!(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		&&	src.data<0>()[i].is_atomic()
-		&&	terse_locate_ZCC_linkage(src,i,types))
-		{
-		CPP_ZCC_linkage_easy_syntax_check(src.c_array<0>()[i],types);
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if ( !(PARSE_OBVIOUS & anchor.flags)
+		&& anchor.is_atomic()
+		&& terse_locate_ZCC_linkage(src,i,types)) {
+		CPP_ZCC_linkage_easy_syntax_check(anchor,types);
 		return true;
-		}
+	}
 	return false;
 }
 #endif
