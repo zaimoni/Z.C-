@@ -6805,25 +6805,27 @@ static bool locate_CPP_unary_plusminus(parse_tree& src, size_t& i, const type_sy
 #ifndef BUILD_Z_CPP
 // handle C++0X sizeof... elsewhere (context-free syntax checks should be fixed first, possibly consider sizeof... a psuedo-identifier)
 //! \throw std::bad_alloc
-static bool terse_locate_C99_CPP_sizeof(parse_tree& src, size_t& i, const type_system& types)
+static bool terse_locate_C99_CPP_sizeof(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	parse_tree& anchor = *src.c_array<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_string<6>(src.data<0>()[i].index_tokens[0].token,"sizeof"))
+	if (token_is_string<6>(anchor.index_tokens[0].token,"sizeof"))
 		{
 		assert(1<src.size<0>()-i);
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (   (PARSE_UNARY_EXPRESSION & src.data<0>()[i+1].flags)
-			|| (is_naked_parentheses_pair(src.data<0>()[i+1]) && (PARSE_TYPE & src.data<0>()[i+1].flags)))
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot))
+			C_deref_easy_syntax_check(pivot,types);
+		if (   (PARSE_UNARY_EXPRESSION & pivot.flags)
+			|| (is_naked_parentheses_pair(pivot) && (PARSE_TYPE & pivot.flags)))
 			{
 			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_SIZEOF);
-			src.c_array<0>()[i].type_code.set_type(unsigned_type_from_machine_type(target_machine->size_t_type()));
-			assert(is_C99_CPP_sizeof_expression(src.c_array<0>()[i]));
+			anchor.type_code.set_type(unsigned_type_from_machine_type(target_machine->size_t_type()));
+			assert(is_C99_CPP_sizeof_expression(anchor));
 			return true;			
 			}
 		}
@@ -7030,34 +7032,30 @@ static void CPP_sizeof_easy_syntax_check(parse_tree& src,const type_system& type
 }
 
 //! \throw std::bad_alloc()
-static bool locate_C99_sizeof(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_C99_sizeof(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
 
-	if (	!(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		&&	src.data<0>()[i].is_atomic()
-		&&	terse_locate_C99_CPP_sizeof(src,i,types))
-		{
-		C99_sizeof_easy_syntax_check(src.c_array<0>()[i],types);
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if (!(PARSE_OBVIOUS & anchor.flags) && anchor.is_atomic() && terse_locate_C99_CPP_sizeof(src,i,types)) {
+		C99_sizeof_easy_syntax_check(anchor,types);
 		return true;
-		}
+	}
 	return false;
 }
 
 //! \throw std::bad_alloc()
-static bool locate_CPP_sizeof(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_CPP_sizeof(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
 
-	if (	!(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		&&	src.data<0>()[i].is_atomic()
-		&&	terse_locate_C99_CPP_sizeof(src,i,types))
-		{
-		CPP_sizeof_easy_syntax_check(src.c_array<0>()[i],types);
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if (!(PARSE_OBVIOUS & anchor.flags) && anchor.is_atomic() && terse_locate_C99_CPP_sizeof(src,i,types)) {
+		CPP_sizeof_easy_syntax_check(anchor,types);
 		return true;
-		}
+	}
 	return false;
 }
 
