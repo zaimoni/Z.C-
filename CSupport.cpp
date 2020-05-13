@@ -6702,76 +6702,78 @@ static bool terse_locate_C99_unary_plusminus(parse_tree& src, size_t& i, const t
 }
 
 //! \throw std::bad_alloc()
-static bool terse_locate_CPP_unary_plusminus(parse_tree& src, size_t& i, const type_system& types)
+static bool terse_locate_CPP_unary_plusminus(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	parse_tree& anchor = *src.c_array<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	const size_t unary_subtype 	= (token_is_char<'-'>(src.data<0>()[i].index_tokens[0].token)) ? C99_UNARY_SUBTYPE_NEG
-								: (token_is_char<'+'>(src.data<0>()[i].index_tokens[0].token)) ? C99_UNARY_SUBTYPE_PLUS : 0;
+	const size_t unary_subtype 	= (token_is_char<'-'>(anchor.index_tokens[0].token)) ? C99_UNARY_SUBTYPE_NEG
+								: (token_is_char<'+'>(anchor.index_tokens[0].token)) ? C99_UNARY_SUBTYPE_PLUS : 0;
 	if (unary_subtype)
 		{
 		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (PARSE_CAST_EXPRESSION & src.data<0>()[i+1].flags)
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot)) C_deref_easy_syntax_check(pivot,types);
+		if (PARSE_CAST_EXPRESSION & pivot.flags)
 			{
 			assemble_unary_postfix_arguments(src,i,unary_subtype);
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::NOT_VOID);	// defer to later
+			anchor.type_code.set_type(C_TYPE::NOT_VOID);	// defer to later
+			const decltype(src.data<0>()[i - 1]->index_tokens[0].token)* before_token = (0 < i) ? &src.data<0>()[i - 1]->index_tokens[0].token : 0;
 			if (   0==i	// unless no predecessor possible
 				// operators also work
-			    || robust_token_is_char<'~'>(src.data<0>()[i-1].index_tokens[0].token) 
-			    || robust_token_is_string<5>(src.data<0>()[i-1].index_tokens[0].token,"compl") 
-			    || robust_token_is_char<'!'>(src.data<0>()[i-1].index_tokens[0].token) 
-			    || robust_token_is_string<3>(src.data<0>()[i-1].index_tokens[0].token,"not") 
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"++") 
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"--") 
-			    || robust_token_is_char<'*'>(src.data<0>()[i-1].index_tokens[0].token) 
-			    || robust_token_is_char<'/'>(src.data<0>()[i-1].index_tokens[0].token) 
-			    || robust_token_is_char<'%'>(src.data<0>()[i-1].index_tokens[0].token) 
-			    || robust_token_is_char<'+'>(src.data<0>()[i-1].index_tokens[0].token) 
-			    || robust_token_is_char<'-'>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"<<") 
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,">>")
-			    || robust_token_is_char<'<'>(src.data<0>()[i-1].index_tokens[0].token) 
-			    || robust_token_is_char<'>'>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"<=")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,">=")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"==")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"!=")
-			    || robust_token_is_string<6>(src.data<0>()[i-1].index_tokens[0].token,"not_eq")
-			    || robust_token_is_char<'&'>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_string<6>(src.data<0>()[i-1].index_tokens[0].token,"bitand")
-			    || robust_token_is_char<'^'>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_string<3>(src.data<0>()[i-1].index_tokens[0].token,"xor")
-			    || robust_token_is_char<'|'>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_string<5>(src.data<0>()[i-1].index_tokens[0].token,"bitor")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"&&")
-			    || robust_token_is_string<3>(src.data<0>()[i-1].index_tokens[0].token,"and")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"||")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"or")
-			    || robust_token_is_char<'?'>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_char<':'>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_char<'='>(src.data<0>()[i-1].index_tokens[0].token)
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"*=")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"/=")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"%=")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"+=")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"-=")
-			    || robust_token_is_string<3>(src.data<0>()[i-1].index_tokens[0].token,"<<=")
-			    || robust_token_is_string<3>(src.data<0>()[i-1].index_tokens[0].token,">>=")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"&=")
-			    || robust_token_is_string<6>(src.data<0>()[i-1].index_tokens[0].token,"and_eq")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"^=")
-			    || robust_token_is_string<6>(src.data<0>()[i-1].index_tokens[0].token,"xor_eq")
-			    || robust_token_is_string<2>(src.data<0>()[i-1].index_tokens[0].token,"|=")
-			    || robust_token_is_string<5>(src.data<0>()[i-1].index_tokens[0].token,"or_eq")
-			    || robust_token_is_char<','>(src.data<0>()[i-1].index_tokens[0].token)) 
-				CPP_unary_plusminus_easy_syntax_check(src.c_array<0>()[i],types);
-			assert((C99_UNARY_SUBTYPE_PLUS==unary_subtype) ? is_C99_unary_operator_expression<'+'>(src.data<0>()[i]) : is_C99_unary_operator_expression<'-'>(src.data<0>()[i]));
+			    || robust_token_is_char<'~'>(*before_token)
+			    || robust_token_is_string<5>(*before_token,"compl")
+			    || robust_token_is_char<'!'>(*before_token)
+			    || robust_token_is_string<3>(*before_token,"not")
+			    || robust_token_is_string<2>(*before_token,"++")
+			    || robust_token_is_string<2>(*before_token,"--")
+			    || robust_token_is_char<'*'>(*before_token)
+			    || robust_token_is_char<'/'>(*before_token)
+			    || robust_token_is_char<'%'>(*before_token)
+			    || robust_token_is_char<'+'>(*before_token)
+			    || robust_token_is_char<'-'>(*before_token)
+			    || robust_token_is_string<2>(*before_token,"<<")
+			    || robust_token_is_string<2>(*before_token,">>")
+			    || robust_token_is_char<'<'>(*before_token)
+			    || robust_token_is_char<'>'>(*before_token)
+			    || robust_token_is_string<2>(*before_token,"<=")
+			    || robust_token_is_string<2>(*before_token,">=")
+			    || robust_token_is_string<2>(*before_token,"==")
+			    || robust_token_is_string<2>(*before_token,"!=")
+			    || robust_token_is_string<6>(*before_token,"not_eq")
+			    || robust_token_is_char<'&'>(*before_token)
+			    || robust_token_is_string<6>(*before_token,"bitand")
+			    || robust_token_is_char<'^'>(*before_token)
+			    || robust_token_is_string<3>(*before_token,"xor")
+			    || robust_token_is_char<'|'>(*before_token)
+			    || robust_token_is_string<5>(*before_token,"bitor")
+			    || robust_token_is_string<2>(*before_token,"&&")
+			    || robust_token_is_string<3>(*before_token,"and")
+			    || robust_token_is_string<2>(*before_token,"||")
+			    || robust_token_is_string<2>(*before_token,"or")
+			    || robust_token_is_char<'?'>(*before_token)
+			    || robust_token_is_char<':'>(*before_token)
+			    || robust_token_is_char<'='>(*before_token)
+			    || robust_token_is_string<2>(*before_token,"*=")
+			    || robust_token_is_string<2>(*before_token,"/=")
+			    || robust_token_is_string<2>(*before_token,"%=")
+			    || robust_token_is_string<2>(*before_token,"+=")
+			    || robust_token_is_string<2>(*before_token,"-=")
+			    || robust_token_is_string<3>(*before_token,"<<=")
+			    || robust_token_is_string<3>(*before_token,">>=")
+			    || robust_token_is_string<2>(*before_token,"&=")
+			    || robust_token_is_string<6>(*before_token,"and_eq")
+			    || robust_token_is_string<2>(*before_token,"^=")
+			    || robust_token_is_string<6>(*before_token,"xor_eq")
+			    || robust_token_is_string<2>(*before_token,"|=")
+			    || robust_token_is_string<5>(*before_token,"or_eq")
+			    || robust_token_is_char<','>(*before_token))
+				CPP_unary_plusminus_easy_syntax_check(anchor,types);
+			assert((C99_UNARY_SUBTYPE_PLUS==unary_subtype) ? is_C99_unary_operator_expression<'+'>(anchor) : is_C99_unary_operator_expression<'-'>(anchor));
 			return true;
 			};
 		}
@@ -6791,13 +6793,12 @@ static bool locate_C99_unary_plusminus(parse_tree& src, size_t& i, const type_sy
 }
 
 //! \throw std::bad_alloc()
-static bool locate_CPP_unary_plusminus(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_CPP_unary_plusminus(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return false;
+	const parse_tree& anchor = *src.data<0>()[i];
+	if ((PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return false;
 
 	return terse_locate_CPP_unary_plusminus(src,i,types);
 }
@@ -7288,9 +7289,8 @@ static void locate_CPP_unary_expression(parse_tree& src, size_t& i, const type_s
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (	(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		||	!src.data<0>()[i].is_atomic())
-		return;
+	const parse_tree& anchor = *src.data<0>()[i];
+	if ((PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_CPP_deref(src,i,types)) return;
 	if (locate_CPP_logical_NOT(src,i,types)) return;
