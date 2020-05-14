@@ -6450,23 +6450,24 @@ static bool terse_locate_C99_bitwise_complement(parse_tree& src, size_t& i, cons
 }
 
 //! \throw std::bad_alloc()
-static bool terse_locate_CPP_bitwise_complement(parse_tree& src, size_t& i, const type_system& types)
+static bool terse_locate_CPP_bitwise_complement(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_char<'~'>(src.data<0>()[i].index_tokens[0].token) || token_is_string<5>(src.data<0>()[i].index_tokens[0].token,"compl"))
+	if (token_is_char<'~'>(anchor.index_tokens[0].token) || token_is_string<5>(anchor.index_tokens[0].token,"compl"))
 		{
 		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i+1]))
-			C_deref_easy_syntax_check(src.c_array<0>()[i+1],types);
-		if (PARSE_CAST_EXPRESSION & src.data<0>()[i+1].flags)
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot)) C_deref_easy_syntax_check(pivot,types);
+		if (PARSE_CAST_EXPRESSION & pivot.flags)
 			{
 			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_COMPL);
-			assert(is_CPP_bitwise_complement_expression(src.data<0>()[i]));
+			assert(is_CPP_bitwise_complement_expression(anchor));
 			return true;
 			};
 		}
@@ -6620,16 +6621,15 @@ static bool locate_C99_bitwise_complement(parse_tree& src, size_t& i, const type
 }
 
 //! \throw std::bad_alloc()
-static bool locate_CPP_bitwise_complement(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_CPP_bitwise_complement(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
+	parse_tree& anchor = *src.c_array<0>()[i];
 
-	if (	!(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		&&	src.data<0>()[i].is_atomic()
-		&&	terse_locate_CPP_bitwise_complement(src,i,types))
+	if (!(PARSE_OBVIOUS & anchor.flags) && anchor.is_atomic() && terse_locate_CPP_bitwise_complement(src,i,types))
 		{	//! \todo handle overloading
-		CPP_bitwise_complement_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_bitwise_complement_easy_syntax_check(anchor,types);
 		return true;
 		}
 	return false;
