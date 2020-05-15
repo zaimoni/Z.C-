@@ -7327,23 +7327,23 @@ static void assemble_binary_infix_arguments(parse_tree& src, size_t& i, const le
 {
 	assert(1<=i && 2<=src.size<0>()-i);
 	{
-	parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
+	parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
 	zaimoni::autoval_ptr<parse_tree> tmp;
-	tmp = repurpose_inner_parentheses(tmp_c_array[0]);	// RAM conservation
-	parse_tree* const tmp2 = repurpose_inner_parentheses(tmp_c_array[2]);	// RAM conservation
-	tmp_c_array[0].OverwriteInto(*tmp);
-	tmp_c_array[2].OverwriteInto(*tmp2);
-	tmp_c_array[1].fast_set_arg<1>(tmp.release());
-	tmp_c_array[1].fast_set_arg<2>(tmp2);
-	tmp_c_array[1].core_flag_update();
-	tmp_c_array[1].flags |= _flags;
+	tmp = repurpose_inner_parentheses(*tmp_c_array[0]);	// RAM conservation
+	parse_tree* const tmp2 = repurpose_inner_parentheses(*tmp_c_array[2]);	// RAM conservation
+	tmp_c_array[0]->OverwriteInto(*tmp);
+	tmp_c_array[2]->OverwriteInto(*tmp2);
+	tmp_c_array[1]->fast_set_arg<1>(tmp.release());
+	tmp_c_array[1]->fast_set_arg<2>(tmp2);
+	tmp_c_array[1]->core_flag_update();
+	tmp_c_array[1]->flags |= _flags;
 	}
 	src.DeleteIdx<0>(i+1);
 	src.DeleteIdx<0>(--i);
 
-	parse_tree& tmp = src.c_array<0>()[i];
-	cancel_outermost_parentheses(tmp.c_array<1>()[0]);
-	cancel_outermost_parentheses(tmp.c_array<2>()[0]);
+	parse_tree& anchor = *src.c_array<0>()[i];
+	cancel_outermost_parentheses(anchor.front<1>());
+	cancel_outermost_parentheses(anchor.front<2>());
 }
 
 //! \throw std::bad_alloc()
@@ -7351,16 +7351,16 @@ static void merge_binary_infix_argument(parse_tree& src, size_t& i, const lex_fl
 {
 	assert(1<=i);
  	{
-	parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-	parse_tree* const tmp = repurpose_inner_parentheses(tmp_c_array[0]);	// RAM conservation
-	tmp_c_array[0].OverwriteInto(*tmp);
+	parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+	parse_tree* const tmp = repurpose_inner_parentheses(*tmp_c_array[0]);	// RAM conservation
+	tmp_c_array[0]->OverwriteInto(*tmp);
 
-	tmp_c_array[1].fast_set_arg<1>(tmp);
-	tmp_c_array[1].core_flag_update();
-	tmp_c_array[1].flags |= _flags;
+	tmp_c_array[1]->fast_set_arg<1>(tmp);
+	tmp_c_array[1]->core_flag_update();
+	tmp_c_array[1]->flags |= _flags;
 	}
 	src.DeleteIdx<0>(--i);
-	cancel_outermost_parentheses(src.c_array<0>()[i].c_array<1>()[0]);
+	cancel_outermost_parentheses(src.c_array<0>()[i]->front<1>());
 }
 
 //! \throw std::bad_alloc()
