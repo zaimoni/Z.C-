@@ -6207,33 +6207,7 @@ static void C_deref_easy_syntax_check(parse_tree& src,const type_system& types)
 // no eval_deref because of &* cancellation
 // defer syntax check to after resolution of multiply-*, so no C/C++ fork
 //! \throw std::bad_alloc()
-static bool terse_locate_C99_deref(parse_tree& src, size_t& i,const type_system& types)
-{
-	assert(!src.empty<0>());
-	assert(i<src.size<0>());
-	const parse_tree& anchor = *src.data<0>()[i];
-	assert(!(PARSE_OBVIOUS & anchor.flags));
-	assert(anchor.is_atomic());
-
-	if (token_is_char<'*'>(anchor.index_tokens[0].token))
-		{
-		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
-		parse_tree& pivot = *src.c_array<0>()[i + 1];
-		inspect_potential_paren_primary_expression(pivot);
-		if (is_C99_unary_operator_expression<'*'>(pivot))
-			C_deref_easy_syntax_check(pivot,types);
-		if (PARSE_CAST_EXPRESSION & pivot.flags)
-			{
-			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_DEREF);
-			assert(is_C99_unary_operator_expression<'*'>(anchor));
-			return true;
-			};
-		}
-	return false;
-}
-
-//! \throw std::bad_alloc()
-static bool terse_locate_CPP_deref(parse_tree& src, size_t& i,const type_system& types)
+static bool terse_locate_C99_deref(parse_tree& src, const size_t i,const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
@@ -6258,7 +6232,32 @@ static bool terse_locate_CPP_deref(parse_tree& src, size_t& i,const type_system&
 }
 
 //! \throw std::bad_alloc()
-static bool terse_locate_C_logical_NOT(parse_tree& src, size_t& i,const type_system& types)
+static bool terse_locate_CPP_deref(parse_tree& src, const size_t i,const type_system& types)
+{
+	assert(!src.empty<0>());
+	assert(i<src.size<0>());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
+
+	if (token_is_char<'*'>(anchor.index_tokens[0].token))
+		{
+		assert(1<src.size<0>()-i);	// should be intercepted at context-free check
+		parse_tree& pivot = *src.c_array<0>()[i + 1];
+		inspect_potential_paren_primary_expression(pivot);
+		if (is_C99_unary_operator_expression<'*'>(pivot)) C_deref_easy_syntax_check(pivot,types);
+		if (PARSE_CAST_EXPRESSION & pivot.flags)
+			{
+			assemble_unary_postfix_arguments(src,i,C99_UNARY_SUBTYPE_DEREF);
+			assert(is_C99_unary_operator_expression<'*'>(anchor));
+			return true;
+			};
+		}
+	return false;
+}
+
+//! \throw std::bad_alloc()
+static bool terse_locate_C_logical_NOT(parse_tree& src, const size_t i,const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
@@ -6283,7 +6282,7 @@ static bool terse_locate_C_logical_NOT(parse_tree& src, size_t& i,const type_sys
 }
 
 //! \throw std::bad_alloc()
-static bool terse_locate_CPP_logical_NOT(parse_tree& src, size_t& i,const type_system& types)
+static bool terse_locate_CPP_logical_NOT(parse_tree& src, const size_t i,const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
@@ -6364,32 +6363,34 @@ static void CPP_logical_NOT_easy_syntax_check(parse_tree& src,const type_system&
 }
 
 //! \throw std::bad_alloc()
-static bool locate_C99_logical_NOT(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_C99_logical_NOT(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	parse_tree& anchor = *src.c_array<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
 	if (terse_locate_C_logical_NOT(src,i,types))
 		{
-		C_logical_NOT_easy_syntax_check(src.c_array<0>()[i],types);
+		C_logical_NOT_easy_syntax_check(anchor,types);
 		return true;
 		}
 	return false;
 }
 
 //! \throw std::bad_alloc()
-static bool locate_CPP_logical_NOT(parse_tree& src, size_t& i, const type_system& types)
+static bool locate_CPP_logical_NOT(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	parse_tree& anchor = *src.c_array<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
 	if (terse_locate_CPP_logical_NOT(src,i,types))
 		{	//! \todo handle operator overloading
-		CPP_logical_NOT_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_logical_NOT_easy_syntax_check(anchor,types);
 		return true;
 		}
 	return false;
@@ -6636,7 +6637,7 @@ static bool locate_CPP_bitwise_complement(parse_tree& src, const size_t i, const
 }
 
 //! \throw std::bad_alloc()
-static bool terse_locate_C99_unary_plusminus(parse_tree& src, const size_t, const type_system& types)
+static bool terse_locate_C99_unary_plusminus(parse_tree& src, const size_t i, const type_system& types)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
@@ -7209,9 +7210,8 @@ static void locate_C99_unary_expression(parse_tree& src, size_t& i, const type_s
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (	(PARSE_OBVIOUS & src.data<0>()[i].flags)
-		||	!src.data<0>()[i].is_atomic())
-		return;
+	const parse_tree& anchor = *src.data<0>()[i];
+	if ((PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_C99_deref(src,i,types)) return;
 	if (locate_C99_logical_NOT(src,i,types)) return;
