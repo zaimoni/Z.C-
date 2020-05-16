@@ -7368,34 +7368,36 @@ static bool terse_C99_augment_mult_expression(parse_tree& src, size_t& i, const 
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i]))
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if (is_C99_unary_operator_expression<'*'>(anchor))
 		{
-		if (1<=i && (PARSE_MULT_EXPRESSION & src.data<0>()[i-1].flags))
+		if (1 <= i) {
+			parse_tree& pivot = *src.c_array<0>()[i - 1];
+			if (PARSE_MULT_EXPRESSION & pivot.flags)
 			{	// check for unary +/- with type NOT_VOID
 				// if found, split out the +/- into slot i and adjust i up before proceeding
-			if (   is_C99_unary_operator_expression<'+'>(src.data<0>()[i-1])
-				|| is_C99_unary_operator_expression<'-'>(src.data<0>()[i-1]))
-				{
-				if (src.data<0>()[i-1].type_code.is_type<C_TYPE::NOT_VOID>())
-					{
-					src._args[0].insertNSlotsAt(1,i);
-					src.c_array<0>()[i].clear();
-					src.c_array<0>()[i-1].front<2>().MoveInto(src.c_array<0>()[i]);
-					src.c_array<0>()[i-1].DeleteIdx<2>(0);
-					src.c_array<0>()[i-1].type_code.base_type_index = 0;
-					++i;
-					assert(PARSE_MULT_EXPRESSION & src.data<0>()[i-1].flags);
-					assert(is_C99_unary_operator_expression<'*'>(src.data<0>()[i]));
+				if (is_C99_unary_operator_expression<'+'>(pivot) || is_C99_unary_operator_expression<'-'>(pivot)) {
+					if (pivot.type_code.is_type<C_TYPE::NOT_VOID>()) {
+						src._args[0].insertNSlotsAt(1, i);
+						src.c_array<0>()[i].clear();
+						pivot.front<2>().MoveInto(src.c_array<0>()[i]);
+						pivot.DeleteIdx<2>(0);
+						pivot.type_code.base_type_index = 0;
+						++i;
+						assert(PARSE_MULT_EXPRESSION & src.data<0>()[i - 1]->flags);
+						assert(is_C99_unary_operator_expression<'*'>(*src.data<0>()[i]));
 					}
 				}
-			merge_binary_infix_argument(src,i,PARSE_STRICT_MULT_EXPRESSION);
-			assert(is_C99_mult_operator_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_C99_mult_operator_expression(src.data<0>()[i]));
-			return true;
-			};
+				merge_binary_infix_argument(src, i, PARSE_STRICT_MULT_EXPRESSION);
+				parse_tree& bin_op = *src.c_array<0>()[i];
+				assert(is_C99_mult_operator_expression(bin_op));
+				bin_op.type_code.set_type(0);	// handle type inference later
+				assert(is_C99_mult_operator_expression(bin_op));
+				return true;
+			}
+		}
 		// run syntax-checks against unary *
-		C_deref_easy_syntax_check(src.c_array<0>()[i],types);
+		C_deref_easy_syntax_check(anchor,types);
 		}
 	return false;
 }
@@ -7405,35 +7407,37 @@ static bool terse_CPP_augment_mult_expression(parse_tree& src, size_t& i, const 
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (is_C99_unary_operator_expression<'*'>(src.data<0>()[i]))
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if (is_C99_unary_operator_expression<'*'>(anchor))
 		{
-		if (1<=i && (inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]),(PARSE_MULT_EXPRESSION & src.data<0>()[i-1].flags)))
+		if (1 <= i) {
+			parse_tree& pivot = *src.c_array<0>()[i - 1];
+			if (inspect_potential_paren_primary_expression(pivot), (PARSE_MULT_EXPRESSION & pivot.flags))
 			{	// check for unary +/- with type NOT_VOID
 				// if found, split out the +/- into slot i and adjust i up before proceeding
-			if (   is_C99_unary_operator_expression<'+'>(src.data<0>()[i-1])
-				|| is_C99_unary_operator_expression<'-'>(src.data<0>()[i-1]))
-				{
-				if (src.data<0>()[i-1].type_code.is_type<C_TYPE::NOT_VOID>())
-					{
-					src._args[0].insertNSlotsAt(1,i);
-					src.c_array<0>()[i].clear();
-					src.c_array<0>()[i-1].front<2>().MoveInto(src.c_array<0>()[i]);
-					src.c_array<0>()[i-1].DeleteIdx<2>(0);
-					src.c_array<0>()[i-1].type_code.base_type_index = 0;
-					++i;
-					assert(PARSE_MULT_EXPRESSION & src.data<0>()[i-1].flags);
-					assert(is_C99_unary_operator_expression<'*'>(src.data<0>()[i]));
+				if (is_C99_unary_operator_expression<'+'>(pivot) || is_C99_unary_operator_expression<'-'>(pivot)) {
+					if (pivot.type_code.is_type<C_TYPE::NOT_VOID>()) {
+						src._args[0].insertNSlotsAt(1, i);
+						src.c_array<0>()[i].clear();
+						pivot.front<2>().MoveInto(src.c_array<0>()[i]);
+						pivot.DeleteIdx<2>(0);
+						pivot.type_code.base_type_index = 0;
+						++i;
+						assert(PARSE_MULT_EXPRESSION & src.data<0>()[i - 1].flags);
+						assert(is_C99_unary_operator_expression<'*'>(src.data<0>()[i]));
 					}
 				}
-			merge_binary_infix_argument(src,i,PARSE_STRICT_MULT_EXPRESSION);
-			assert(is_C99_mult_operator_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_C99_mult_operator_expression(src.data<0>()[i]));
-			return true;
+				merge_binary_infix_argument(src, i, PARSE_STRICT_MULT_EXPRESSION);
+				parse_tree& bin_op = *src.c_array<0>()[i];
+				assert(is_C99_mult_operator_expression(bin_op));
+				bin_op.type_code.set_type(0);	// handle type inference later
+				assert(is_C99_mult_operator_expression(bin_op));
+				return true;
 			};
+		}
 		// run syntax-checks against unary *
 		//! \todo handle operator overloading
-		C_deref_easy_syntax_check(src.c_array<0>()[i],types);
+		C_deref_easy_syntax_check(anchor,types);
 		}
 	return false;
 }
@@ -7443,29 +7447,27 @@ static bool terse_locate_mult_expression(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	const size_t mult_subtype 	= (token_is_char<'/'>(src.data<0>()[i].index_tokens[0].token)) ? C99_MULT_SUBTYPE_DIV
-								: (token_is_char<'%'>(src.data<0>()[i].index_tokens[0].token)) ? C99_MULT_SUBTYPE_MOD
-								: (token_is_char<'*'>(src.data<0>()[i].index_tokens[0].token)) ? C99_MULT_SUBTYPE_MULT : 0;
+	const size_t mult_subtype 	= (token_is_char<'/'>(anchor.index_tokens[0].token)) ? C99_MULT_SUBTYPE_DIV
+								: (token_is_char<'%'>(anchor.index_tokens[0].token)) ? C99_MULT_SUBTYPE_MOD
+								: (token_is_char<'*'>(anchor.index_tokens[0].token)) ? C99_MULT_SUBTYPE_MULT : 0;
 	if (mult_subtype)
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if ((PARSE_MULT_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_PM_EXPRESSION & tmp_c_array[2].flags))
+		parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if ((PARSE_MULT_EXPRESSION & tmp_c_array[0]->flags) && (PARSE_PM_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_MULT_EXPRESSION);	// tmp_c_array goes invalid here
-			assert(is_C99_mult_operator_expression(src.data<0>()[i]));
-			{
-			parse_tree& tmp = src.c_array<0>()[i];
-			tmp.subtype = mult_subtype;
-			tmp.type_code.set_type(0);	// handle type inference later
-			}
-			assert(is_C99_mult_operator_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_mult_operator_expression(bin_op));
+			bin_op.subtype = mult_subtype;
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_mult_operator_expression(bin_op));
 			return true;
 			}
 		}
@@ -7949,26 +7951,23 @@ static void locate_C99_mult_expression(parse_tree& src, size_t& i, const type_sy
 
 	if (terse_C99_augment_mult_expression(src,i,types))
 		{
-		C_mult_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		C_mult_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 		// reconstitute raw +- from terse_C99_augment_mult_expression into unary +-
-		if (0<i)
-			{	// synchronize with locate_C99_unary_plusminus
-			if (const size_t unary_subtype 	= token_is_char<'-'>(src.data<0>()[i-1].index_tokens[0].token) ? C99_UNARY_SUBTYPE_NEG
-									: token_is_char<'+'>(src.data<0>()[i-1].index_tokens[0].token) ? C99_UNARY_SUBTYPE_PLUS : 0)
+		if (0<i) {	// synchronize with locate_C99_unary_plusminus
+			parse_tree& bin_op = *src.c_array<0>()[i - 1];
+			if (const size_t unary_subtype = token_is_char<'-'>(bin_op.index_tokens[0].token) ? C99_UNARY_SUBTYPE_NEG
+			                               : token_is_char<'+'>(bin_op.index_tokens[0].token) ? C99_UNARY_SUBTYPE_PLUS : 0)
 				{
-				assemble_unary_postfix_arguments(src,i-1,unary_subtype);	// doesn't work: reference to temporary
-				src.c_array<0>()[i-1].type_code.set_type(C_TYPE::NOT_VOID);	// defer to later
-				assert((C99_UNARY_SUBTYPE_PLUS==unary_subtype) ? is_C99_unary_operator_expression<'+'>(src.data<0>()[i-1]) : is_C99_unary_operator_expression<'-'>(src.data<0>()[i-1]));
+				assemble_unary_postfix_arguments(src,i-1,unary_subtype);
+				bin_op.type_code.set_type(C_TYPE::NOT_VOID);	// defer to later
+				assert((C99_UNARY_SUBTYPE_PLUS==unary_subtype) ? is_C99_unary_operator_expression<'+'>(bin_op) : is_C99_unary_operator_expression<'-'>(bin_op));
 				};
-			}
+		}
 		return;
 		}
 
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
-
-	if (terse_locate_mult_expression(src,i)) C_mult_expression_easy_syntax_check(src.c_array<0>()[i],types);
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
+	if (terse_locate_mult_expression(src,i)) C_mult_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -7986,28 +7985,27 @@ static void locate_CPP_mult_expression(parse_tree& src, size_t& i, const type_sy
 
 	if (terse_CPP_augment_mult_expression(src,i,types))
 		{	//! \todo handle operator overloading
-		CPP_mult_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_mult_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 		// reconstitute raw +- from terse_CPP_augment_mult_expression into unary +-
 		if (0<i)
 			{	// synchronize with locate_CPP_unary_plusminus
-			if (const size_t unary_subtype 	= token_is_char<'-'>(src.data<0>()[i-1].index_tokens[0].token) ? C99_UNARY_SUBTYPE_NEG
-									: token_is_char<'+'>(src.data<0>()[i-1].index_tokens[0].token) ? C99_UNARY_SUBTYPE_PLUS : 0)
+			parse_tree& bin_op = *src.c_array<0>()[i - 1];
+			if (const size_t unary_subtype 	= token_is_char<'-'>(bin_op.index_tokens[0].token) ? C99_UNARY_SUBTYPE_NEG
+			                                : token_is_char<'+'>(bin_op.index_tokens[0].token) ? C99_UNARY_SUBTYPE_PLUS : 0)
 				{
 				assemble_unary_postfix_arguments(src,i-1,unary_subtype);
-				src.c_array<0>()[i-1].type_code.set_type(C_TYPE::NOT_VOID);	// defer to later
-				assert((C99_UNARY_SUBTYPE_PLUS==unary_subtype) ? is_C99_unary_operator_expression<'+'>(src.data<0>()[i-1]) : is_C99_unary_operator_expression<'-'>(src.data<0>()[i-1]));
+				bin_op.type_code.set_type(C_TYPE::NOT_VOID);	// defer to later
+				assert((C99_UNARY_SUBTYPE_PLUS==unary_subtype) ? is_C99_unary_operator_expression<'+'>(bin_op) : is_C99_unary_operator_expression<'-'>(bin_op));
 				};
 			}
 		return;
 		}
 
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_mult_expression(src,i))
 		//! \todo handle operator overloading
-		CPP_mult_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_mult_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 // Law of Demeter conversion is object-size neutral [Dec. 9 2009], so don't do it
@@ -8057,18 +8055,20 @@ static bool terse_C99_augment_add_expression(parse_tree& src, size_t& i, const t
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (is_C99_unary_operator_expression<'+'>(src.data<0>()[i]) || is_C99_unary_operator_expression<'-'>(src.data<0>()[i]))
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if (is_C99_unary_operator_expression<'+'>(anchor) || is_C99_unary_operator_expression<'-'>(anchor))
 		{
 		if (1<=i && (inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]),(PARSE_ADD_EXPRESSION & src.data<0>()[i-1].flags)))
 			{
 			merge_binary_infix_argument(src,i,PARSE_STRICT_ADD_EXPRESSION);
-			assert(is_C99_add_operator_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_C99_add_operator_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_add_operator_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_add_operator_expression(bin_op));
 			return true;
 			};
 		// run syntax-checks against unary + or unary -
-		C_unary_plusminus_easy_syntax_check(src.c_array<0>()[i],types);
+		C_unary_plusminus_easy_syntax_check(anchor,types);
 		}
 	return false;
 }
@@ -8078,18 +8078,20 @@ static bool terse_CPP_augment_add_expression(parse_tree& src, size_t& i, const t
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (is_C99_unary_operator_expression<'+'>(src.data<0>()[i]) || is_C99_unary_operator_expression<'-'>(src.data<0>()[i]))
+	parse_tree& anchor = *src.c_array<0>()[i];
+	if (is_C99_unary_operator_expression<'+'>(anchor) || is_C99_unary_operator_expression<'-'>(anchor))
 		{
 		if (1<=i && (inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]),(PARSE_ADD_EXPRESSION & src.data<0>()[i-1].flags)))
 			{
 			merge_binary_infix_argument(src,i,PARSE_STRICT_ADD_EXPRESSION);
-			assert(is_C99_add_operator_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_C99_add_operator_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_add_operator_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_add_operator_expression(bin_op));
 			return true;
 			};
 		// run syntax-checks against unary + or unary -
-		CPP_unary_plusminus_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_unary_plusminus_easy_syntax_check(anchor,types);
 		}
 	return false;
 }
