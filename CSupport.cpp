@@ -8056,20 +8056,20 @@ static bool terse_C99_augment_add_expression(parse_tree& src, size_t& i, const t
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
 	parse_tree& anchor = *src.c_array<0>()[i];
-	if (is_C99_unary_operator_expression<'+'>(anchor) || is_C99_unary_operator_expression<'-'>(anchor))
-		{
-		if (1<=i && (inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]),(PARSE_ADD_EXPRESSION & src.data<0>()[i-1].flags)))
-			{
-			merge_binary_infix_argument(src,i,PARSE_STRICT_ADD_EXPRESSION);
-			parse_tree& bin_op = *src.c_array<0>()[i];
-			assert(is_C99_add_operator_expression(bin_op));
-			bin_op.type_code.set_type(0);	// handle type inference later
-			assert(is_C99_add_operator_expression(bin_op));
-			return true;
+	if (is_C99_unary_operator_expression<'+'>(anchor) || is_C99_unary_operator_expression<'-'>(anchor)) {
+		if (1 <= i) {
+			if (parse_tree& pivot = *src.c_array<0>()[i - 1]; inspect_potential_paren_primary_expression(pivot), (PARSE_ADD_EXPRESSION & pivot.flags)) {
+				merge_binary_infix_argument(src, i, PARSE_STRICT_ADD_EXPRESSION);
+				parse_tree& bin_op = *src.c_array<0>()[i];
+				assert(is_C99_add_operator_expression(bin_op));
+				bin_op.type_code.set_type(0);	// handle type inference later
+				assert(is_C99_add_operator_expression(bin_op));
+				return true;
 			};
+		}
 		// run syntax-checks against unary + or unary -
 		C_unary_plusminus_easy_syntax_check(anchor,types);
-		}
+	}
 	return false;
 }
 
@@ -8079,20 +8079,20 @@ static bool terse_CPP_augment_add_expression(parse_tree& src, size_t& i, const t
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
 	parse_tree& anchor = *src.c_array<0>()[i];
-	if (is_C99_unary_operator_expression<'+'>(anchor) || is_C99_unary_operator_expression<'-'>(anchor))
-		{
-		if (1<=i && (inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]),(PARSE_ADD_EXPRESSION & src.data<0>()[i-1].flags)))
-			{
-			merge_binary_infix_argument(src,i,PARSE_STRICT_ADD_EXPRESSION);
-			parse_tree& bin_op = *src.c_array<0>()[i];
-			assert(is_C99_add_operator_expression(bin_op));
-			bin_op.type_code.set_type(0);	// handle type inference later
-			assert(is_C99_add_operator_expression(bin_op));
-			return true;
+	if (is_C99_unary_operator_expression<'+'>(anchor) || is_C99_unary_operator_expression<'-'>(anchor)) {
+		if (1 <= i) {
+			if (parse_tree& pivot = *src.c_array<0>()[i - 1]; inspect_potential_paren_primary_expression(pivot), (PARSE_ADD_EXPRESSION & pivot.flags)) {
+				merge_binary_infix_argument(src, i, PARSE_STRICT_ADD_EXPRESSION);
+				parse_tree& bin_op = *src.c_array<0>()[i];
+				assert(is_C99_add_operator_expression(bin_op));
+				bin_op.type_code.set_type(0);	// handle type inference later
+				assert(is_C99_add_operator_expression(bin_op));
+				return true;
 			};
+		}
 		// run syntax-checks against unary + or unary -
 		CPP_unary_plusminus_easy_syntax_check(anchor,types);
-		}
+	}
 	return false;
 }
 
@@ -8101,26 +8101,27 @@ static bool terse_locate_add_expression(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	const size_t add_subtype 	= (token_is_char<'+'>(src.data<0>()[i].index_tokens[0].token)) ? C99_ADD_SUBTYPE_PLUS
-								: (token_is_char<'-'>(src.data<0>()[i].index_tokens[0].token)) ? C99_ADD_SUBTYPE_MINUS : 0;
+	const size_t add_subtype 	= (token_is_char<'+'>(anchor.index_tokens[0].token)) ? C99_ADD_SUBTYPE_PLUS
+								: (token_is_char<'-'>(anchor.index_tokens[0].token)) ? C99_ADD_SUBTYPE_MINUS : 0;
 	if (add_subtype)
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_ADD_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_MULT_EXPRESSION & tmp_c_array[2].flags))
+		parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_ADD_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_MULT_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_ADD_EXPRESSION);	// tmp_c_array goes invalid here
-			assert(is_C99_add_operator_expression(src.data<0>()[i]));
-			parse_tree& tmp = src.c_array<0>()[i];
-			tmp.subtype = add_subtype;
-			tmp.type_code.set_type(0);	// handle type inference later
-			assert(is_C99_add_operator_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_add_operator_expression(bin_op));
+			bin_op.subtype = add_subtype;
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_add_operator_expression(bin_op));
 			return true;
 			}
 		}
@@ -8147,13 +8148,13 @@ static bool eval_add_expression(parse_tree& src, const type_system& types, liter
 			assert(converts_to_arithmeticlike(src.front<1>().type_code.base_type_index ARG_TYPES));
 			assert(converts_to_arithmeticlike(src.front<2>().type_code.base_type_index ARG_TYPES));
 			bool is_true = false;
-			if 		(literal_converts_to_bool(*src.data<1>(),is_true ARG_TYPES) && !is_true)
+			if 		(literal_converts_to_bool(src.front<1>(),is_true ARG_TYPES) && !is_true)
 				{	// 0 + __ |-> __
 				src.type_code.MoveInto(src.front<2>().type_code);
 				src.eval_to_arg<2>(0);
 				return true;
 				}
-			else if (literal_converts_to_bool(*src.data<2>(),is_true ARG_TYPES) && !is_true)
+			else if (literal_converts_to_bool(src.front<2>(),is_true ARG_TYPES) && !is_true)
 				{	// __ + 0 |-> __
 				src.type_code.MoveInto(src.front<1>().type_code);
 				src.eval_to_arg<1>(0);
@@ -8581,16 +8582,14 @@ static void locate_C99_add_expression(parse_tree& src, size_t& i, const type_sys
 
 	if (terse_C99_augment_add_expression(src,i,types))
 		{
-		C_CPP_add_expression_easy_syntax_check(src.c_array<0>()[i],types,C99_literal_converts_to_bool,C99_intlike_literal_to_VM);
+		C_CPP_add_expression_easy_syntax_check(*src.c_array<0>()[i],types,C99_literal_converts_to_bool,C99_intlike_literal_to_VM);
 		return;
 		}
 
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_add_expression(src,i))
-		C_CPP_add_expression_easy_syntax_check(src.c_array<0>()[i],types,C99_literal_converts_to_bool,C99_intlike_literal_to_VM);
+		C_CPP_add_expression_easy_syntax_check(*src.c_array<0>()[i],types,C99_literal_converts_to_bool,C99_intlike_literal_to_VM);
 }
 
 /*
@@ -8606,17 +8605,15 @@ static void locate_CPP_add_expression(parse_tree& src, size_t& i, const type_sys
 
 	if (terse_CPP_augment_add_expression(src,i,types))
 		{	//! \todo handle operator overloading
-		C_CPP_add_expression_easy_syntax_check(src.c_array<0>()[i],types,CPP_literal_converts_to_bool,CPP_intlike_literal_to_VM);
+		C_CPP_add_expression_easy_syntax_check(*src.c_array<0>()[i],types,CPP_literal_converts_to_bool,CPP_intlike_literal_to_VM);
 		return;
 		}
 
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_add_expression(src,i))
 		//! \todo handle operator overloading
-		C_CPP_add_expression_easy_syntax_check(src.c_array<0>()[i],types,CPP_literal_converts_to_bool,CPP_intlike_literal_to_VM);
+		C_CPP_add_expression_easy_syntax_check(*src.c_array<0>()[i],types,CPP_literal_converts_to_bool,CPP_intlike_literal_to_VM);
 }
 
 static bool binary_infix_failed_integer_arguments(parse_tree& src, const char* standard SIG_CONST_TYPES)
@@ -8672,26 +8669,27 @@ static bool terse_locate_shift_expression(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	const size_t shift_subtype 	= (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"<<")) ? C99_SHIFT_SUBTYPE_LEFT
-								: (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,">>")) ? C99_SHIFT_SUBTYPE_RIGHT : 0;
+	const size_t shift_subtype 	= (token_is_string<2>(anchor.index_tokens[0].token,"<<")) ? C99_SHIFT_SUBTYPE_LEFT
+								: (token_is_string<2>(anchor.index_tokens[0].token,">>")) ? C99_SHIFT_SUBTYPE_RIGHT : 0;
 	if (shift_subtype)
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_SHIFT_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_ADD_EXPRESSION & tmp_c_array[2].flags))
+		parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_SHIFT_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_ADD_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_SHIFT_EXPRESSION);	// tmp_c_array goes invalid here
-			assert(is_C99_shift_expression(src.data<0>()[i]));
-			parse_tree& tmp = src.c_array<0>()[i];
-			tmp.subtype = shift_subtype;
-			tmp.type_code.set_type(0);	// handle type inference later
-			assert(is_C99_shift_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_shift_expression(bin_op));
+			bin_op.subtype = shift_subtype;
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_shift_expression(bin_op));
 			return true;
 			}
 		}
@@ -8729,7 +8727,7 @@ static bool eval_shift(parse_tree& src, const type_system& types, literal_conver
 		};
 
 	umaxint rhs_int;
-	if (intlike_literal_to_VM(rhs_int,*src.data<2>() ARG_TYPES))
+	if (intlike_literal_to_VM(rhs_int,src.front<2>() ARG_TYPES))
 		{
 		const virtual_machine::std_int_enum machine_type = machine_type_from_type_index(src.type_code.base_type_index);
 		const bool undefined_behavior = target_machine->C_bit(machine_type)<=rhs_int;
