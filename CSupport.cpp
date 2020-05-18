@@ -8821,12 +8821,9 @@ static void locate_C99_shift_expression(parse_tree& src, size_t& i, const type_s
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
-	if (terse_locate_shift_expression(src,i))
-		C_shift_expression_easy_syntax_check(src.c_array<0>()[i],types);
+	if (terse_locate_shift_expression(src,i)) C_shift_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -8840,13 +8837,11 @@ static void locate_CPP_shift_expression(parse_tree& src, size_t& i, const type_s
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_shift_expression(src,i))
 		//! \todo handle overloading
-		CPP_shift_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_shift_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 //! \throw std::bad_alloc
@@ -8854,28 +8849,29 @@ static bool terse_locate_relation_expression(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	const size_t rel_subtype 	= (token_is_char<'<'>(src.data<0>()[i].index_tokens[0].token)) ? C99_RELATION_SUBTYPE_LT
-								: (token_is_char<'>'>(src.data<0>()[i].index_tokens[0].token)) ? C99_RELATION_SUBTYPE_GT
-								: (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"<=")) ? C99_RELATION_SUBTYPE_LTE
-								: (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,">=")) ? C99_RELATION_SUBTYPE_GTE : 0;
+	const size_t rel_subtype 	= (token_is_char<'<'>(anchor.index_tokens[0].token)) ? C99_RELATION_SUBTYPE_LT
+								: (token_is_char<'>'>(anchor.index_tokens[0].token)) ? C99_RELATION_SUBTYPE_GT
+								: (token_is_string<2>(anchor.index_tokens[0].token,"<=")) ? C99_RELATION_SUBTYPE_LTE
+								: (token_is_string<2>(anchor.index_tokens[0].token,">=")) ? C99_RELATION_SUBTYPE_GTE : 0;
 	if (rel_subtype)
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_SHIFT_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_ADD_EXPRESSION & tmp_c_array[2].flags))
+		parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_SHIFT_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_ADD_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_RELATIONAL_EXPRESSION);	// tmp_c_array goes invalid here
-			assert(is_C99_relation_expression(src.data<0>()[i]));
-			parse_tree& tmp = src.c_array<0>()[i];
-			tmp.subtype = rel_subtype;
-			tmp.type_code.set_type(C_TYPE::BOOL);
-			assert(is_C99_relation_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_relation_expression(bin_op));
+			bin_op.subtype = rel_subtype;
+			bin_op.type_code.set_type(C_TYPE::BOOL);
+			assert(is_C99_relation_expression(bin_op));
 			return true;
 			}
 		}
@@ -9017,12 +9013,10 @@ static void locate_C99_relation_expression(parse_tree& src, size_t& i, const typ
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_relation_expression(src,i))
-		C_relation_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		C_relation_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -9038,13 +9032,11 @@ static void locate_CPP_relation_expression(parse_tree& src, size_t& i, const typ
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_relation_expression(src,i))
 		//! \todo handle overloading
-		CPP_relation_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_relation_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 //! \throw std::bad_alloc
@@ -9052,26 +9044,27 @@ static bool terse_locate_C99_equality_expression(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	const size_t eq_subtype = (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"==")) ? C99_EQUALITY_SUBTYPE_EQ
-							: (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"!=")) ? C99_EQUALITY_SUBTYPE_NEQ : 0;
+	const size_t eq_subtype = (token_is_string<2>(anchor.index_tokens[0].token,"==")) ? C99_EQUALITY_SUBTYPE_EQ
+							: (token_is_string<2>(anchor.index_tokens[0].token,"!=")) ? C99_EQUALITY_SUBTYPE_NEQ : 0;
 	if (eq_subtype)
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_EQUALITY_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_RELATIONAL_EXPRESSION & tmp_c_array[2].flags))
+		parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_EQUALITY_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_RELATIONAL_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_EQUALITY_EXPRESSION);	// tmp_c_array becomes invalid here
-			assert(is_C99_equality_expression(src.data<0>()[i]));
-			parse_tree& tmp = src.c_array<0>()[i];
-			tmp.subtype = eq_subtype;
-			tmp.type_code.set_type(C_TYPE::BOOL);
-			assert(is_C99_equality_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_equality_expression(bin_op));
+			bin_op.subtype = eq_subtype;
+			bin_op.type_code.set_type(C_TYPE::BOOL);
+			assert(is_C99_equality_expression(bin_op));
 			return true;
 			}
 		}
@@ -9083,27 +9076,28 @@ static bool terse_locate_CPP_equality_expression(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	const size_t eq_subtype = (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"==")) ? C99_EQUALITY_SUBTYPE_EQ
-							: (		token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"!=")
-							   ||	token_is_string<6>(src.data<0>()[i].index_tokens[0].token,"not_eq")) ? C99_EQUALITY_SUBTYPE_NEQ : 0;
+	const size_t eq_subtype = (token_is_string<2>(anchor.index_tokens[0].token,"==")) ? C99_EQUALITY_SUBTYPE_EQ
+							: (		token_is_string<2>(anchor.index_tokens[0].token,"!=")
+							   ||	token_is_string<6>(anchor.index_tokens[0].token,"not_eq")) ? C99_EQUALITY_SUBTYPE_NEQ : 0;
 	if (eq_subtype)
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_EQUALITY_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_RELATIONAL_EXPRESSION & tmp_c_array[2].flags))
+		parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_EQUALITY_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_RELATIONAL_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_EQUALITY_EXPRESSION);	// tmp_c_array becomes invalid here
-			assert(is_CPP_equality_expression(src.data<0>()[i]));
-			parse_tree& tmp = src.c_array<0>()[i];
-			tmp.subtype = eq_subtype;
-			tmp.type_code.set_type(C_TYPE::BOOL);
-			assert(is_CPP_equality_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_CPP_equality_expression(bin_op));
+			bin_op.subtype = eq_subtype;
+			bin_op.type_code.set_type(C_TYPE::BOOL);
+			assert(is_CPP_equality_expression(bin_op));
 			return true;
 			}
 		}
@@ -9276,12 +9270,10 @@ static void locate_C99_equality_expression(parse_tree& src, size_t& i, const typ
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_C99_equality_expression(src,i))
-		C_equality_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		C_equality_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -9295,13 +9287,11 @@ static void locate_CPP_equality_expression(parse_tree& src, size_t& i, const typ
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_CPP_equality_expression(src,i))
 		//! \todo handle operator overloading
-		CPP_equality_expression_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_equality_expression_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 //! \throw std::bad_alloc
