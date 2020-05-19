@@ -1270,25 +1270,25 @@ POD_pair<size_t,size_t> balanced_character_count<'{','}'>(const weak_token* toke
 	return depth;
 }
 
-static POD_pair<size_t,size_t>
-_balanced_character_count(const parse_tree* tokenlist,size_t tokenlist_len,const char l_match,const char r_match)
+static POD_pair<size_t, size_t>
+_balanced_character_count(const parse_tree* const * tokenlist, size_t tokenlist_len, const char l_match, const char r_match)
 {
 	assert(tokenlist);
-	assert(0<tokenlist_len);
-	POD_pair<size_t,size_t> depth = {0, 0};
-	const parse_tree* const iter_end = tokenlist+tokenlist_len;
-	const parse_tree* iter = tokenlist;
-	do	if (1==iter->index_tokens[0].token.second && !iter->index_tokens[1].token.first)
+	assert(0 < tokenlist_len);
+	POD_pair<size_t, size_t> depth = { 0, 0 };
+	const parse_tree* const * const iter_end = tokenlist + tokenlist_len;
+	const parse_tree* const * iter = tokenlist;
+	do	if (const auto& anchor = (*iter)->index_tokens[0].token; 1 == anchor.second && !(*iter)->index_tokens[1].token.first)
 			{
-			if 		(l_match==iter->index_tokens[0].token.first[0]) ++depth.first;
-			else if (r_match==iter->index_tokens[0].token.first[0]) ++depth.second;
+			if      (l_match == anchor.first[0]) ++depth.first;
+			else if (r_match == anchor.first[0]) ++depth.second;
 			}
-	while(++iter!=iter_end);
+	while (++iter != iter_end);
 	return depth;
 }
 
 template<char l_match,char r_match>
-inline static POD_pair<size_t,size_t> balanced_character_count(const parse_tree* tokenlist,size_t tokenlist_len)
+static POD_pair<size_t,size_t> balanced_character_count(const parse_tree* const * tokenlist,size_t tokenlist_len)
 {
 	assert(tokenlist);
 	assert(0<tokenlist_len);
@@ -1296,34 +1296,36 @@ inline static POD_pair<size_t,size_t> balanced_character_count(const parse_tree*
 }
 
 template<>
-POD_pair<size_t,size_t> balanced_character_count<'[',']'>(const parse_tree* tokenlist,size_t tokenlist_len)
+POD_pair<size_t,size_t> balanced_character_count<'[',']'>(const parse_tree* const * tokenlist,size_t tokenlist_len)
 {
 	assert(tokenlist);
 	assert(0<tokenlist_len);
 	POD_pair<size_t,size_t> depth = {0, 0};
-	const parse_tree* const iter_end = tokenlist+tokenlist_len;
-	const parse_tree* iter = tokenlist;
-	do	if (!iter->index_tokens[1].token.first)
+	const parse_tree* const * const iter_end = tokenlist+tokenlist_len;
+	const parse_tree* const * iter = tokenlist;
+	do	if (!(*iter)->index_tokens[1].token.first)
 			{
-			if 		(detect_C_left_bracket_op(iter->index_tokens[0].token.first,iter->index_tokens[0].token.second)) ++depth.first;
-			else if (detect_C_right_bracket_op(iter->index_tokens[0].token.first,iter->index_tokens[0].token.second)) ++depth.second;
+			const auto& anchor = (*iter)->index_tokens[0].token;
+			if 		(detect_C_left_bracket_op(anchor.first, anchor.second)) ++depth.first;
+			else if (detect_C_right_bracket_op(anchor.first, anchor.second)) ++depth.second;
 			}
 	while(++iter!=iter_end);
 	return depth;
 }
 
 template<>
-POD_pair<size_t,size_t> balanced_character_count<'{','}'>(const parse_tree* tokenlist,size_t tokenlist_len)
+POD_pair<size_t,size_t> balanced_character_count<'{','}'>(const parse_tree* const * tokenlist,size_t tokenlist_len)
 {
 	assert(tokenlist);
 	assert(0<tokenlist_len);
 	POD_pair<size_t,size_t> depth = {0, 0};
-	const parse_tree* const iter_end = tokenlist+tokenlist_len;
-	const parse_tree* iter = tokenlist;
-	do	if (!iter->index_tokens[1].token.first)
+	const parse_tree* const * const iter_end = tokenlist+tokenlist_len;
+	const parse_tree* const * iter = tokenlist;
+	do	if (!(*iter)->index_tokens[1].token.first)
 			{
-			if 		(detect_C_left_brace_op(iter->index_tokens[0].token.first,iter->index_tokens[0].token.second)) ++depth.first;
-			else if (detect_C_right_brace_op(iter->index_tokens[0].token.first,iter->index_tokens[0].token.second)) ++depth.second;
+			const auto& anchor = (*iter)->index_tokens[0].token;
+			if 		(detect_C_left_brace_op(anchor.first, anchor.second)) ++depth.first;
+			else if (detect_C_right_brace_op(anchor.first, anchor.second)) ++depth.second;
 			}
 	while(++iter!=iter_end);
 	return depth;
@@ -9299,23 +9301,24 @@ static bool terse_locate_C99_bitwise_AND(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
 	//! \todo deal with unary & parses
-	parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-	if (token_is_char<'&'>(tmp_c_array[1].index_tokens[0].token))
+	parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+	if (token_is_char<'&'>(tmp_c_array[1]->index_tokens[0].token))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_BITAND_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_EQUALITY_EXPRESSION & tmp_c_array[2].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_BITAND_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_EQUALITY_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_BITAND_EXPRESSION);	// tmp_c_array becomes invalid here
-			assert(is_C99_bitwise_AND_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_C99_bitwise_AND_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_bitwise_AND_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_bitwise_AND_expression(bin_op));
 			return true;
 			}
 		}
@@ -9326,21 +9329,23 @@ static bool terse_locate_CPP_bitwise_AND(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	if (token_is_char<'&'>(src.data<0>()[i].index_tokens[0].token) || token_is_string<6>(src.data<0>()[i].index_tokens[0].token,"bitand"))
+	parse_tree** const tmp_c_array = src.c_array<0>() + (i - 1);
+	if (token_is_char<'&'>(tmp_c_array[1]->index_tokens[0].token) || token_is_string<6>(tmp_c_array[1]->index_tokens[0].token,"bitand"))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]);
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (	(PARSE_BITAND_EXPRESSION & src.data<0>()[i-1].flags)
-			&&	(PARSE_EQUALITY_EXPRESSION & src.data<0>()[i+1].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (   (PARSE_BITAND_EXPRESSION & tmp_c_array[0]->flags)
+			&& (PARSE_EQUALITY_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_BITAND_EXPRESSION);
-			assert(is_CPP_bitwise_AND_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_CPP_bitwise_AND_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_CPP_bitwise_AND_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_CPP_bitwise_AND_expression(bin_op));
 			return true;
 			}
 		}
@@ -9466,12 +9471,10 @@ static void locate_C99_bitwise_AND(parse_tree& src, size_t& i, const type_system
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_C99_bitwise_AND(src,i))
-		C_bitwise_AND_easy_syntax_check(src.c_array<0>()[i],types);
+		C_bitwise_AND_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -9484,35 +9487,34 @@ static void locate_CPP_bitwise_AND(parse_tree& src, size_t& i, const type_system
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_CPP_bitwise_AND(src,i))
 		//! \todo handle overloading
-		CPP_bitwise_AND_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_bitwise_AND_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 static bool terse_locate_C99_bitwise_XOR(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-	if (token_is_char<'^'>(tmp_c_array[1].index_tokens[0].token))
+	parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+	if (token_is_char<'^'>(tmp_c_array[1]->index_tokens[0].token))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_BITXOR_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_BITAND_EXPRESSION & tmp_c_array[2].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_BITXOR_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_BITAND_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_BITXOR_EXPRESSION);	// tmp_c_array becomes invalid here
-			assert(is_C99_bitwise_XOR_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_C99_bitwise_XOR_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_bitwise_XOR_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_bitwise_XOR_expression(bin_op));
 			return true;
 			}
 		}
@@ -9523,21 +9525,23 @@ static bool terse_locate_CPP_bitwise_XOR(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	if (token_is_char<'^'>(src.data<0>()[i].index_tokens[0].token) || token_is_string<3>(src.data<0>()[i].index_tokens[0].token,"xor"))
+	parse_tree** const tmp_c_array = src.c_array<0>() + (i - 1);
+	if (token_is_char<'^'>(tmp_c_array[1]->index_tokens[0].token) || token_is_string<3>(tmp_c_array[1]->index_tokens[0].token,"xor"))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]);
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (	(PARSE_BITXOR_EXPRESSION & src.data<0>()[i-1].flags)
-			&&	(PARSE_BITAND_EXPRESSION & src.data<0>()[i+1].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_BITXOR_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_BITAND_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_BITXOR_EXPRESSION);
-			assert(is_CPP_bitwise_XOR_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_CPP_bitwise_XOR_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_CPP_bitwise_XOR_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_CPP_bitwise_XOR_expression(bin_op));
 			return true;
 			}
 		}
@@ -9649,11 +9653,9 @@ static void locate_C99_bitwise_XOR(parse_tree& src, size_t& i, const type_system
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
-	if (terse_locate_C99_bitwise_XOR(src,i)) C_bitwise_XOR_easy_syntax_check(src.c_array<0>()[i],types);
+	if (terse_locate_C99_bitwise_XOR(src,i)) C_bitwise_XOR_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -9666,35 +9668,34 @@ static void locate_CPP_bitwise_XOR(parse_tree& src, size_t& i, const type_system
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_CPP_bitwise_XOR(src,i))
 		//! \todo handle operator overloading
-		CPP_bitwise_XOR_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_bitwise_XOR_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 static bool terse_locate_C99_bitwise_OR(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-	if (token_is_char<'|'>(tmp_c_array[1].index_tokens[0].token))
+	parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+	if (token_is_char<'|'>(tmp_c_array[1]->index_tokens[0].token))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_BITOR_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_BITXOR_EXPRESSION & tmp_c_array[2].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_BITOR_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_BITXOR_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_BITOR_EXPRESSION);	// tmp_c_array becomes invalid here
-			assert(is_C99_bitwise_OR_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_C99_bitwise_OR_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_bitwise_OR_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_C99_bitwise_OR_expression(bin_op));
 			return true;
 			}
 		}
@@ -9705,21 +9706,23 @@ static bool terse_locate_CPP_bitwise_OR(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	if (token_is_char<'|'>(src.data<0>()[i].index_tokens[0].token) || token_is_string<5>(src.data<0>()[i].index_tokens[0].token,"bitor"))
+	parse_tree** const tmp_c_array = src.c_array<0>() + (i - 1);
+	if (token_is_char<'|'>(tmp_c_array[1]->index_tokens[0].token) || token_is_string<5>(tmp_c_array[1]->index_tokens[0].token,"bitor"))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]);
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (	(PARSE_BITOR_EXPRESSION & src.data<0>()[i-1].flags)
-			&&	(PARSE_BITXOR_EXPRESSION & src.data<0>()[i+1].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_BITOR_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_BITXOR_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_BITOR_EXPRESSION);
-			assert(is_CPP_bitwise_OR_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(0);	// handle type inference later
-			assert(is_CPP_bitwise_OR_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_CPP_bitwise_OR_expression(bin_op));
+			bin_op.type_code.set_type(0);	// handle type inference later
+			assert(is_CPP_bitwise_OR_expression(bin_op));
 			return true;
 			}
 		}
@@ -9751,7 +9754,7 @@ static bool eval_bitwise_OR(parse_tree& src, const type_system& types, literal_c
 			return true;
 			}
 		};
-	if (literal_converts_to_bool(*src.data<2>(),is_true ARG_TYPES))
+	if (literal_converts_to_bool(src.front<2>(),is_true ARG_TYPES))
 		{
 		if (!is_true)
 			{	// __ | 0
@@ -9852,12 +9855,9 @@ static void locate_C99_bitwise_OR(parse_tree& src, size_t& i, const type_system&
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
-	if (terse_locate_C99_bitwise_OR(src,i))
-		C_bitwise_OR_easy_syntax_check(src.c_array<0>()[i],types);
+	if (terse_locate_C99_bitwise_OR(src,i)) C_bitwise_OR_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -9870,13 +9870,11 @@ static void locate_CPP_bitwise_OR(parse_tree& src, size_t& i, const type_system&
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_CPP_bitwise_OR(src,i))
 		//! \todo handle overloading
-		CPP_bitwise_OR_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_bitwise_OR_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 static bool binary_infix_failed_boolean_arguments(parse_tree& src, const char* standard SIG_CONST_TYPES)
@@ -9904,22 +9902,23 @@ static bool terse_locate_C99_logical_AND(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-	if (token_is_string<2>(tmp_c_array[1].index_tokens[0].token,"&&"))
+	parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+	if (token_is_string<2>(tmp_c_array[1]->index_tokens[0].token,"&&"))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_LOGICAND_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_BITOR_EXPRESSION & tmp_c_array[2].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_LOGICAND_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_BITOR_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_LOGICAND_EXPRESSION);	// tmp_c_array becomes invalid here
-			assert(is_C99_logical_AND_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::BOOL);	// technically wrong, but range is correct
-			assert(is_C99_logical_AND_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_logical_AND_expression(bin_op));
+			bin_op.type_code.set_type(C_TYPE::BOOL);	// technically wrong, but range is correct
+			assert(is_C99_logical_AND_expression(bin_op));
 			return true;
 			}
 		}
@@ -9930,22 +9929,24 @@ static bool terse_locate_CPP_logical_AND(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	if (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"&&") || token_is_string<3>(src.data<0>()[i].index_tokens[0].token,"and"))
+	parse_tree** const tmp_c_array = src.c_array<0>() + (i - 1);
+	if (token_is_string<2>(tmp_c_array[1]->index_tokens[0].token,"&&") || token_is_string<3>(tmp_c_array[1]->index_tokens[0].token,"and"))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]);
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (	(PARSE_LOGICAND_EXPRESSION & src.data<0>()[i-1].flags)
-			&&	(PARSE_BITOR_EXPRESSION & src.data<0>()[i+1].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_LOGICAND_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_BITOR_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_LOGICAND_EXPRESSION);
-			assert(is_CPP_logical_AND_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_CPP_logical_AND_expression(bin_op));
 			//! \todo handle overloading
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::BOOL);
-			assert(is_CPP_logical_AND_expression(src.data<0>()[i]));
+			bin_op.type_code.set_type(C_TYPE::BOOL);
+			assert(is_CPP_logical_AND_expression(bin_op));
 			return true;
 			}
 		}
@@ -10018,12 +10019,9 @@ static void locate_C99_logical_AND(parse_tree& src, size_t& i, const type_system
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
-	if (terse_locate_C99_logical_AND(src,i))
-		C_logical_AND_easy_syntax_check(src.c_array<0>()[i],types);
+	if (terse_locate_C99_logical_AND(src,i)) C_logical_AND_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -10035,13 +10033,11 @@ static void locate_CPP_logical_AND(parse_tree& src, size_t& i, const type_system
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_CPP_logical_AND(src,i))
 		//! \todo check for operator overloading
-		CPP_logical_AND_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_logical_AND_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 static bool terse_locate_C99_logical_OR(parse_tree& src, size_t& i)
@@ -10161,12 +10157,9 @@ static void locate_C99_logical_OR(parse_tree& src, size_t& i, const type_system&
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
-	if (terse_locate_C99_logical_OR(src,i))
-		C_logical_OR_easy_syntax_check(src.c_array<0>()[i],types);
+	if (terse_locate_C99_logical_OR(src,i)) C_logical_OR_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 /*
@@ -10178,13 +10171,11 @@ static void locate_CPP_logical_OR(parse_tree& src, size_t& i, const type_system&
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
 	if (terse_locate_CPP_logical_OR(src,i))
 		//! \todo check for operator overloading
-		CPP_logical_OR_easy_syntax_check(src.c_array<0>()[i],types);
+		CPP_logical_OR_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 //! \throw std::bad_alloc
@@ -10449,12 +10440,9 @@ static void locate_C99_conditional_op(parse_tree& src, size_t& i, const type_sys
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
-	if (terse_locate_conditional_op(src,i))
-		C_conditional_op_easy_syntax_check(src.c_array<0>()[i],types);
+	if (terse_locate_conditional_op(src,i)) C_conditional_op_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 //! \throws std::bad_alloc
@@ -10462,12 +10450,9 @@ static void locate_CPP_conditional_op(parse_tree& src, size_t& i, const type_sys
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	if (   (PARSE_OBVIOUS & src.data<0>()[i].flags)
-		|| !src.data<0>()[i].is_atomic())
-		return;
+	if (const parse_tree& anchor = *src.data<0>()[i]; (PARSE_OBVIOUS & anchor.flags) || !anchor.is_atomic()) return;
 
-	if (terse_locate_conditional_op(src,i))
-		CPP_conditional_op_easy_syntax_check(src.c_array<0>()[i],types);
+	if (terse_locate_conditional_op(src,i)) CPP_conditional_op_easy_syntax_check(*src.c_array<0>()[i],types);
 }
 
 template<class T>
