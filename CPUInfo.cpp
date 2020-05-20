@@ -8,7 +8,27 @@ namespace virtual_machine {
 
 #define C_sizeof_char() 1
 
-void CPUInfo::_init()
+	// names of macro parameters match names of constructor variables
+	// target wchar_t is assumed to be an unsigned integral type
+	// we first try to choose the smallest type that can represent a 32-bit UNICODE point
+	// if that fails, we try to choose the smallest type that can represent plane 16
+	// align with std_in_enum above
+#define SELECT_TARGET_WCHAR_T(char_bit,sizeof_short,sizeof_int,sizeof_long,sizeof_long_long)	\
+	((32U<=char_bit) ? 1 :	\
+	(32<=char_bit*sizeof_short) ? 2 :	\
+	(32<=char_bit*sizeof_int) ? 3 :	\
+	(32<=char_bit*sizeof_long) ? 4 :	\
+	(32<=char_bit*sizeof_long_long) ? 5 :	\
+	(21U<=char_bit) ? 1+8 :	\
+	(21<=char_bit*sizeof_short) ? 2+8 :	\
+	(21<=char_bit*sizeof_int) ? 3+8 :	\
+	(21<=char_bit*sizeof_long) ? 4+8 :	\
+	(21<=char_bit*sizeof_long_long) ? 5+8 :	\
+	0)
+
+CPUInfo::CPUInfo(unsigned short _char_bit, unsigned short _sizeof_short, unsigned short _sizeof_int, unsigned short _sizeof_long, unsigned short _sizeof_long_long, signed_int_rep _signed_int_representation, bool _char_is_signed_char, std_int_enum _ptrdiff_type)
+: char_bit(_char_bit),sizeof_short(_sizeof_short),sizeof_int(_sizeof_int),sizeof_long(_sizeof_long),sizeof_long_long(_sizeof_long_long),
+  signed_int_representation(_signed_int_representation + 4 * _char_is_signed_char + 8 * SELECT_TARGET_WCHAR_T(char_bit, sizeof_short, sizeof_int, sizeof_long, sizeof_long_long) + 128 * _ptrdiff_type)
 {
 	unsigned_var_int tmp;
 
@@ -30,8 +50,10 @@ void CPUInfo::_init()
 
 	size_t i = 0;
 	do	(signed_maxima[i] = unsigned_maxima[i]) >>= 1;
-	while(std_int_long_long> ++i);
+	while (std_int_long_long > ++i);
 }
+
+#undef SELECT_TARGET_WCHAR_T
 
 bool CPUInfo::trap_int(const umaxint& src_int,std_int_enum machine_type) const
 {

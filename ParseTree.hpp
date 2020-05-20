@@ -266,11 +266,11 @@ struct parse_tree
 
 	template <typename R> R recursive_count(std::function<R(const parse_tree&)> count) const {
 		R ret = count(*this);
-		size_t i = src.size<0>();
+		size_t i = size<0>();
 		while (0 < i) ret += count(*data<0>()[--i]);
-		i = src.size<1>();
+		i = size<1>();
 		while (0 < i) ret += count(*data<1>()[--i]);
-		i = src.size<2>();
+		i = size<2>();
 		while (0 < i) ret += count(*data<2>()[--i]);
 		return ret;
 	}

@@ -45,30 +45,14 @@ struct promotion_info
 // leave this typedef, just in case we have to change this around again
 typedef unsigned_var_int umaxint;
 
-// names of macro parameters match names of constructor variables
-// target wchar_t is assumed to be an unsigned integral type
-// we first try to choose the smallest type that can represent a 32-bit UNICODE point
-// if that fails, we try to choose the smallest type that can represent plane 16
-// align with std_in_enum above
-#define SELECT_TARGET_WCHAR_T(char_bit,sizeof_short,sizeof_int,sizeof_long,sizeof_long_long)	\
-	((32U<=char_bit) ? 1 :	\
-	(32<=char_bit*sizeof_short) ? 2 :	\
-	(32<=char_bit*sizeof_int) ? 3 :	\
-	(32<=char_bit*sizeof_long) ? 4 :	\
-	(32<=char_bit*sizeof_long_long) ? 5 :	\
-	(21U<=char_bit) ? 1+8 :	\
-	(21<=char_bit*sizeof_short) ? 2+8 :	\
-	(21<=char_bit*sizeof_int) ? 3+8 :	\
-	(21<=char_bit*sizeof_long) ? 4+8 :	\
-	(21<=char_bit*sizeof_long_long) ? 5+8 :	\
-	0)
-
 // models an idealized CPU
 class CPUInfo
 {
-	CPUInfo();							// disable default-construction
-	CPUInfo(const CPUInfo& src);		// disable copy-construction
-	void operator=(const CPUInfo& src);
+	CPUInfo() = delete;
+	CPUInfo(const CPUInfo& src) = delete;
+	CPUInfo(CPUInfo&& src) = delete;
+	CPUInfo& operator=(const CPUInfo& src) = delete;
+	CPUInfo& operator=(CPUInfo&& src) = delete;
 
 	umaxint unsigned_maxima[std_int_enum_max];
 	umaxint signed_maxima[std_int_enum_max];
@@ -80,45 +64,38 @@ class CPUInfo
 	const unsigned short sizeof_long_long;
 	const unsigned short signed_int_representation;
 
-	void _init();
 public:
-	CPUInfo(unsigned short _char_bit, unsigned short _sizeof_short, unsigned short _sizeof_int, unsigned short _sizeof_long, unsigned short _sizeof_long_long, signed_int_rep _signed_int_representation, bool _char_is_signed_char,std_int_enum _ptrdiff_type)
-	:	char_bit(_char_bit),
-		sizeof_short(_sizeof_short),
-		sizeof_int(_sizeof_int),
-		sizeof_long(_sizeof_long),
-		sizeof_long_long(_sizeof_long_long),
-		signed_int_representation(_signed_int_representation+4*_char_is_signed_char+8*SELECT_TARGET_WCHAR_T(char_bit,sizeof_short,sizeof_int,sizeof_long,sizeof_long_long)+128*_ptrdiff_type)
-		{_init();};
+	CPUInfo(unsigned short _char_bit, unsigned short _sizeof_short, unsigned short _sizeof_int, unsigned short _sizeof_long, unsigned short _sizeof_long_long, signed_int_rep _signed_int_representation, bool _char_is_signed_char,std_int_enum _ptrdiff_type);
+	~CPUInfo() = default;
 
-	// assembly/disassembly support
-	virtual size_t encode_asm_length(const char* const src, size_t src_len, unsigned int target_bit) const {return 0;};
-	virtual size_t decode_asm_length(const unsigned char* const src_asm, size_t src_asm_len, unsigned int target_bit) const {return 0;};
-	virtual bool encode_asm(const char*& src,size_t& src_len,unsigned char*& dest_asm, size_t& dest_asm_len, unsigned int target_bit) const {return false;};
-	virtual bool decode_asm(const unsigned char*& src_asm, size_t& src_asm_len,char*& dest, size_t& dest_len, unsigned int target_bit) const {return false;};
+	// assembly/disassembly support -- historical intent to subclass would virtualize these five
+	size_t encode_asm_length(const char* const src, size_t src_len, unsigned int target_bit) const {return 0;}
+	size_t decode_asm_length(const unsigned char* const src_asm, size_t src_asm_len, unsigned int target_bit) const {return 0;}
+	bool encode_asm(const char*& src,size_t& src_len,unsigned char*& dest_asm, size_t& dest_asm_len, unsigned int target_bit) const {return false;}
+	bool decode_asm(const unsigned char*& src_asm, size_t& src_asm_len,char*& dest, size_t& dest_len, unsigned int target_bit) const {return false;}
 	// recognition is not the same thing as actually being able to encode the assembly source
-	virtual bool recognize_asm_src(const char* const src, size_t src_len) const {return false;};
+	bool recognize_asm_src(const char* const src, size_t src_len) const {return false;}
 
 	// C support
-	unsigned short C_char_bit() const {return char_bit;};
-	unsigned short C_sizeof_short() const {return sizeof_short;};
-	unsigned short C_sizeof_int() const {return sizeof_int;};
-	unsigned short C_sizeof_long() const {return sizeof_long;};
-	unsigned short C_sizeof_long_long() const {return sizeof_long_long;};
+	unsigned short C_char_bit() const {return char_bit;}
+	unsigned short C_sizeof_short() const {return sizeof_short;}
+	unsigned short C_sizeof_int() const {return sizeof_int;}
+	unsigned short C_sizeof_long() const {return sizeof_long;}
+	unsigned short C_sizeof_long_long() const {return sizeof_long_long;}
 	unsigned short C_sizeof(std_int_enum x) const {return	(std_int_char==x) ? 1 : 
 														(std_int_short==x) ? C_sizeof_short() : 
 														(std_int_int==x) ? C_sizeof_int() : 
-														(std_int_long==x) ? C_sizeof_long() : C_sizeof_long_long() ;};
+														(std_int_long==x) ? C_sizeof_long() : C_sizeof_long_long() ;}
 	unsigned short C_bit(std_int_enum x) const {return	(std_int_char==x) ? C_char_bit() : 
 														(std_int_short==x) ? C_char_bit()*C_sizeof_short() : 
 														(std_int_int==x) ? C_char_bit()*C_sizeof_int() : 
-														(std_int_long==x) ? C_char_bit()*C_sizeof_long() : C_char_bit()*C_sizeof_long_long() ;};
+														(std_int_long==x) ? C_char_bit()*C_sizeof_long() : C_char_bit()*C_sizeof_long_long() ;}
 	template<std_int_enum x> unsigned short C_bit() const {return	(std_int_char==x) ? C_char_bit() : 
 																	(std_int_short==x) ? C_char_bit()*C_sizeof_short() : 
 																	(std_int_int==x) ? C_char_bit()*C_sizeof_int() : 
 																	(std_int_long==x) ? C_char_bit()*C_sizeof_long() : C_char_bit()*C_sizeof_long_long() ;}
 
-	signed_int_rep C_signed_int_representation() const {return (signed_int_rep)(signed_int_representation & 3U);};
+	signed_int_rep C_signed_int_representation() const {return (signed_int_rep)(signed_int_representation & 3U);}
 	bool trap_int(const umaxint& src_int,std_int_enum machine_type) const;
 	void signed_additive_inverse(umaxint& src_int,std_int_enum machine_type) const;
 	void unsigned_additive_inverse(umaxint& src_int,std_int_enum machine_type) const;
@@ -127,7 +104,7 @@ public:
 		{
 		signed_additive_inverse(src_int,machine_type_from);
 		signed_additive_inverse(src_int,machine_type_to);
-		};
+		}
 	void C_cast_signed_to_unsigned(umaxint& src_int,std_int_enum machine_type) const
 		{	// C99 6.3.1.3p2 dictates modulo conversion to unsigned
 		if (twos_complement!=C_signed_int_representation() && src_int.test(C_bit(machine_type)-1))
@@ -135,29 +112,27 @@ public:
 			signed_additive_inverse(src_int,machine_type);
 			unsigned_additive_inverse(src_int,machine_type);
 			}
-		};
+		}
 
-	bool char_is_signed_char() const {return (signed_int_representation & 4U);};
-	std_int_enum UNICODE_wchar_t() const {return (std_int_enum)((signed_int_representation>>3) & 7U);};
-	bool UNICODE_crippled() const {return (signed_int_representation & 64U);};
+	bool char_is_signed_char() const {return (signed_int_representation & 4U);}
+	std_int_enum UNICODE_wchar_t() const {return (std_int_enum)((signed_int_representation>>3) & 7U);}
+	bool UNICODE_crippled() const {return (signed_int_representation & 64U);}
 	// use different functions for ptrdiff_t and size_t to future-proof (e.g., DOS has ptrdiff 2 bytes but can go larger than that in object size in some memory models)
-	std_int_enum ptrdiff_t_type() const {return (std_int_enum)((signed_int_representation>>7) & 7U);};
-	std_int_enum size_t_type() const {return (std_int_enum)((signed_int_representation>>7) & 7U);};
-	const umaxint& unsigned_max(std_int_enum x) const {return unsigned_maxima[x-1];};
+	std_int_enum ptrdiff_t_type() const {return (std_int_enum)((signed_int_representation>>7) & 7U);}
+	std_int_enum size_t_type() const {return (std_int_enum)((signed_int_representation>>7) & 7U);}
+	const umaxint& unsigned_max(std_int_enum x) const {return unsigned_maxima[x-1];}
 	template<std_int_enum x> const umaxint& unsigned_max() const {return unsigned_maxima[x-1];}
-	const umaxint& signed_max(std_int_enum x) const {return signed_maxima[x-1];};
+	const umaxint& signed_max(std_int_enum x) const {return signed_maxima[x-1];}
 	template<std_int_enum x> const umaxint& signed_max() const {return signed_maxima[x-1];}
 
 	// we'll eventually want to make this independently specified, also
 	// until then, we're targeting a really flat memory space
-	unsigned short C_sizeof_data_ptr() const {return C_sizeof(ptrdiff_t_type());};
-	unsigned short C_sizeof_function_ptr() const {return C_sizeof(ptrdiff_t_type());};
+	unsigned short C_sizeof_data_ptr() const {return C_sizeof(ptrdiff_t_type());}
+	unsigned short C_sizeof_function_ptr() const {return C_sizeof(ptrdiff_t_type());}
 	
 	// return value is weird...it's true iff the promoted x is a negative numeral
 	bool C_promote_integer(umaxint& x,const promotion_info& src_type, const promotion_info& dest_type) const;
 };
-
-#undef SELECT_TARGET_WCHAR_T
 
 }
 

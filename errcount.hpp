@@ -16,18 +16,21 @@ private:
 	const char* const _fatalmsg;
 	
 	// yes, not copyable
-	error_counter(const error_counter& src);
-	void operator=(const error_counter& src);
+	error_counter(const error_counter& src) = delete;
+	error_counter(error_counter&& src) = delete;
+	error_counter& operator=(const error_counter& src) = delete;
+	error_counter& operator=(error_counter&& src) = delete;
 public:
 	error_counter(T ub,const char* fatalmsg)
 	: _ub((assert(0<ub),ub)),errors(0),
-	  _fatalmsg((assert(fatalmsg && *fatalmsg),fatalmsg)) {};
+	  _fatalmsg((assert(fatalmsg && *fatalmsg),fatalmsg)) {}
+	~error_counter() = default;
 
 	void inc_error();
 	bool inc_error(T err_count);
-	void set_error_ub(T src) {if (0<src && errors<src) _ub=src;};
-	T err_count() const {return errors;};
-	T excessive_errors() const {assert(_ub>errors);return _ub-errors;};
+	void set_error_ub(T src) {if (0<src && errors<src) _ub=src;}
+	T err_count() const {return errors;}
+	T excessive_errors() const {assert(_ub>errors);return _ub-errors;}
 };
 
 template<class T>
