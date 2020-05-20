@@ -10044,22 +10044,23 @@ static bool terse_locate_C99_logical_OR(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-	if (token_is_string<2>(tmp_c_array[1].index_tokens[0].token,"||"))
+	parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+	if (token_is_string<2>(tmp_c_array[1]->index_tokens[0].token,"||"))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(tmp_c_array[0]);
-		inspect_potential_paren_primary_expression(tmp_c_array[2]);
-		if (	(PARSE_LOGICOR_EXPRESSION & tmp_c_array[0].flags)
-			&&	(PARSE_LOGICAND_EXPRESSION & tmp_c_array[2].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_LOGICOR_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_LOGICAND_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_LOGICOR_EXPRESSION);	// tmp_c_array becomes invalid here
-			assert(is_C99_logical_OR_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::BOOL);	// technically wrong, but range is correct
-			assert(is_C99_logical_OR_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_C99_logical_OR_expression(bin_op));
+			bin_op.type_code.set_type(C_TYPE::BOOL);	// technically wrong, but range is correct
+			assert(is_C99_logical_OR_expression(bin_op));
 			return true;
 			}
 		}
@@ -10070,21 +10071,23 @@ static bool terse_locate_CPP_logical_OR(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	assert(!(PARSE_OBVIOUS & src.data<0>()[i]->flags));
+	assert(src.data<0>()[i]->is_atomic());
 
-	if (token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"||") || token_is_string<2>(src.data<0>()[i].index_tokens[0].token,"or"))
+	parse_tree** const tmp_c_array = src.c_array<0>() + (i - 1);
+	if (token_is_string<2>(tmp_c_array[1]->index_tokens[0].token,"||") || token_is_string<2>(tmp_c_array[1]->index_tokens[0].token,"or"))
 		{
 		if (1>i || 2>src.size<0>()-i) return false;
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i-1]);
-		inspect_potential_paren_primary_expression(src.c_array<0>()[i+1]);
-		if (	(PARSE_LOGICOR_EXPRESSION & src.data<0>()[i-1].flags)
-			&&	(PARSE_LOGICAND_EXPRESSION & src.data<0>()[i+1].flags))
+		inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+		inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+		if (	(PARSE_LOGICOR_EXPRESSION & tmp_c_array[0]->flags)
+			&&	(PARSE_LOGICAND_EXPRESSION & tmp_c_array[2]->flags))
 			{
 			assemble_binary_infix_arguments(src,i,PARSE_STRICT_LOGICOR_EXPRESSION);
-			assert(is_CPP_logical_OR_expression(src.data<0>()[i]));
-			src.c_array<0>()[i].type_code.set_type(C_TYPE::BOOL);
-			assert(is_CPP_logical_OR_expression(src.data<0>()[i]));
+			parse_tree& bin_op = *src.c_array<0>()[i];
+			assert(is_CPP_logical_OR_expression(bin_op));
+			bin_op.type_code.set_type(C_TYPE::BOOL);
+			assert(is_CPP_logical_OR_expression(bin_op));
 			return true;
 			}
 		}
@@ -10183,47 +10186,47 @@ static bool terse_locate_conditional_op(parse_tree& src, size_t& i)
 {
 	assert(!src.empty<0>());
 	assert(i<src.size<0>());
-	assert(!(PARSE_OBVIOUS & src.data<0>()[i].flags));
-	assert(src.data<0>()[i].is_atomic());
+	const parse_tree& anchor = *src.data<0>()[i];
+	assert(!(PARSE_OBVIOUS & anchor.flags));
+	assert(anchor.is_atomic());
 
-	if (token_is_char<'?'>(src.data<0>()[i].index_tokens[0].token))
+	if (token_is_char<'?'>(anchor.index_tokens[0].token))
 		{
 		// ? as first might be space deficiency (check uniqueness of construction)
 		if (1>i || 3>src.size<0>()-i) return false;
-		parse_tree* const tmp_c_array = src.c_array<0>()+(i-1);
-		if (	tmp_c_array[3].is_atomic()
-			&&	token_is_char<':'>(tmp_c_array[3].index_tokens[0].token))
+		parse_tree** const tmp_c_array = src.c_array<0>()+(i-1);
+		if (tmp_c_array[3]->is_atomic() && token_is_char<':'>(tmp_c_array[3]->index_tokens[0].token))
 			{
-			inspect_potential_paren_primary_expression(tmp_c_array[0]);
-			inspect_potential_paren_primary_expression(tmp_c_array[2]);
-			inspect_potential_paren_primary_expression(tmp_c_array[4]);
-			if (	(PARSE_LOGICOR_EXPRESSION & src.data<0>()[i-1].flags)
-				&&	(PARSE_EXPRESSION & src.data<0>()[i+1].flags)
-				&&	(PARSE_CONDITIONAL_EXPRESSION & src.data<0>()[i+3].flags))
+			inspect_potential_paren_primary_expression(*tmp_c_array[0]);
+			inspect_potential_paren_primary_expression(*tmp_c_array[2]);
+			inspect_potential_paren_primary_expression(*tmp_c_array[4]);
+			if (	(PARSE_LOGICOR_EXPRESSION & tmp_c_array[0]->flags)
+				&&	(PARSE_EXPRESSION & tmp_c_array[2]->flags)
+				&&	(PARSE_CONDITIONAL_EXPRESSION & tmp_c_array[4]->flags))
 				{
 				zaimoni::autoval_ptr<parse_tree> tmp;
 				zaimoni::autoval_ptr<parse_tree> tmp2;
-				tmp = repurpose_inner_parentheses(tmp_c_array[0]);	// RAM conservation
-				tmp2 = repurpose_inner_parentheses(tmp_c_array[2]);	// RAM conservation
-				parse_tree* const tmp3 = repurpose_inner_parentheses(tmp_c_array[4]);	// RAM conservation
-				tmp_c_array[0].OverwriteInto(*tmp);
-				tmp_c_array[2].OverwriteInto(*tmp2);
-				tmp_c_array[4].OverwriteInto(*tmp3);
-				tmp_c_array[1].grab_index_token_from<1,0>(tmp_c_array[3]);
-				tmp_c_array[1].grab_index_token_location_from<1,0>(tmp_c_array[3]);
+				tmp = repurpose_inner_parentheses(*tmp_c_array[0]);	// RAM conservation
+				tmp2 = repurpose_inner_parentheses(*tmp_c_array[2]);	// RAM conservation
+				parse_tree* const tmp3 = repurpose_inner_parentheses(*tmp_c_array[4]);	// RAM conservation
+				tmp_c_array[0]->OverwriteInto(*tmp);
+				tmp_c_array[2]->OverwriteInto(*tmp2);
+				tmp_c_array[4]->OverwriteInto(*tmp3);
+				tmp_c_array[1]->grab_index_token_from<1,0>(*tmp_c_array[3]);
+				tmp_c_array[1]->grab_index_token_location_from<1,0>(*tmp_c_array[3]);
 				tmp_c_array[1].fast_set_arg<0>(tmp2.release());
 				tmp_c_array[1].fast_set_arg<1>(tmp.release());
 				tmp_c_array[1].fast_set_arg<2>(tmp3);
-				tmp_c_array[1].core_flag_update();
-				tmp_c_array[1].flags |= PARSE_STRICT_CONDITIONAL_EXPRESSION;
+				tmp_c_array[1]->core_flag_update();
+				tmp_c_array[1]->flags |= PARSE_STRICT_CONDITIONAL_EXPRESSION;
 				src.DeleteNSlotsAt<0>(3,i+1);	// tmp_c_array becomes invalid here
 				src.DeleteIdx<0>(--i);
-				assert(is_C99_conditional_operator_expression_strict(src.data<0>()[i]));
-				parse_tree& tmp4 = src.c_array<0>()[i];
-				cancel_outermost_parentheses(tmp4.front<0>());
-				cancel_outermost_parentheses(tmp4.front<1>());
-				cancel_outermost_parentheses(tmp4.front<2>());
-				assert(is_C99_conditional_operator_expression(src.data<0>()[i]));
+				parse_tree& bin_op = *src.c_array<0>()[i];
+				assert(is_C99_conditional_operator_expression_strict(bin_op));
+				cancel_outermost_parentheses(bin_op.front<0>());
+				cancel_outermost_parentheses(bin_op.front<1>());
+				cancel_outermost_parentheses(bin_op.front<2>());
+				assert(is_C99_conditional_operator_expression(bin_op));
 				return true;
 				}
 			}
@@ -10498,7 +10501,7 @@ full_restart:
 	memmove(initial_i,i,3*sizeof(size_t));
 	size_t stalled[3] = {SIZE_MAX,SIZE_MAX,SIZE_MAX};
 	try {
-		while(0<i[0]) C99_locate_expressions(src.c_array<0>()[--i[0]],identifier_count,types);
+		while(0<i[0]) C99_locate_expressions(*src.c_array<0>()[--i[0]],identifier_count,types);
 		}
 	catch(std::bad_alloc&)
 		{
@@ -10507,7 +10510,7 @@ full_restart:
 		}
 restart_1:
 	try {
-		while(0<i[1]) C99_locate_expressions(src.c_array<1>()[--i[1]],identifier_count,types);
+		while(0<i[1]) C99_locate_expressions(*src.c_array<1>()[--i[1]],identifier_count,types);
 		}
 	catch(std::bad_alloc&)
 		{
@@ -10516,7 +10519,7 @@ restart_1:
 		}
 restart_2:
 	try {
-		while(0<i[2]) C99_locate_expressions(src.c_array<2>()[--i[2]],identifier_count,types);
+		while(0<i[2]) C99_locate_expressions(*src.c_array<2>()[--i[2]],identifier_count,types);
 		}
 	catch(std::bad_alloc&)
 		{
@@ -10548,12 +10551,11 @@ restart_3:
 
 	// top-level [ ] and { } die regardless of contents
 	// note that top-level [ ] should be asphyxiating now
-	if (top_level && suppress_naked_brackets_and_braces(src,"top-level",sizeof("top-level")-1))
-		return;
+	if (top_level && suppress_naked_brackets_and_braces(src,"top-level",sizeof("top-level")-1)) return;
 
 	if (!src.empty<0>())
 		{
-		suppress_naked_brackets_and_braces(*src.c_array<0>(),"top-level",sizeof("top-level")-1);
+		suppress_naked_brackets_and_braces(src.front<0>(),"top-level",sizeof("top-level")-1);
 		parse_forward(src,types,locate_C99_postfix_expression);
 		parse_backward(src,types,locate_C99_unary_expression);
 		parse_forward(src,types,locate_C99_mult_expression);
@@ -10602,7 +10604,7 @@ full_restart:
 	memmove(initial_i,i,3*sizeof(size_t));
 	size_t stalled[3] = {SIZE_MAX,SIZE_MAX,SIZE_MAX};
 	try {
-		while(0<i[0]) CPP_locate_expressions(src.c_array<0>()[--i[0]],identifier_count,types);
+		while(0<i[0]) CPP_locate_expressions(*src.c_array<0>()[--i[0]],identifier_count,types);
 		}
 	catch(std::bad_alloc&)
 		{
@@ -10611,7 +10613,7 @@ full_restart:
 		}
 restart_1:
 	try {
-		while(0<i[1]) CPP_locate_expressions(src.c_array<1>()[--i[1]],identifier_count,types);
+		while(0<i[1]) CPP_locate_expressions(*src.c_array<1>()[--i[1]],identifier_count,types);
 		}
 	catch(std::bad_alloc&)
 		{
@@ -10620,7 +10622,7 @@ restart_1:
 		}
 restart_2:
 	try {
-		while(0<i[2]) CPP_locate_expressions(src.c_array<2>()[--i[2]],identifier_count,types);
+		while(0<i[2]) CPP_locate_expressions(*src.c_array<2>()[--i[2]],identifier_count,types);
 		}
 	catch(std::bad_alloc&)
 		{
@@ -10652,12 +10654,11 @@ restart_3:
 			}
 
 	// top-level [ ] and { } die regardless of contents
-	if (top_level && suppress_naked_brackets_and_braces(src,"top-level",sizeof("top-level")-1))
-		return;
+	if (top_level && suppress_naked_brackets_and_braces(src,"top-level",sizeof("top-level")-1)) return;
 
 	if (!src.empty<0>())
 		{
-		suppress_naked_brackets_and_braces(*src.c_array<0>(),"top-level",sizeof("top-level")-1);
+		suppress_naked_brackets_and_braces(src.front<0>(),"top-level",sizeof("top-level")-1);
 		parse_forward(src,types,locate_CPP_postfix_expression);
 		parse_backward(src,types,locate_CPP_unary_expression);
 #if 0
@@ -11461,7 +11462,7 @@ eval_array_deref(parse_tree& src,const type_system& types,
 			if (!intlike_literal_to_VM(tmp, src.front(1-str_index) ARG_TYPES)) return false;
 			const size_t promoted_type = default_promote_type(src.type_code.base_type_index ARG_TYPES);
 			const virtual_machine::std_int_enum machine_type = (virtual_machine::std_int_enum)((promoted_type-C_TYPE::INT)/2+virtual_machine::std_int_int);
-			eval_string_literal_deref(src,types,src.data(str_index)->index_tokens[0].token,tmp,tmp.test(target_machine->C_bit(machine_type)-1),C_TESTFLAG_CHAR_LITERAL==src.data(1-str_index)->index_tokens[0].flags);
+			eval_string_literal_deref(src,types,src.front(str_index).index_tokens[0].token,tmp,tmp.test(target_machine->C_bit(machine_type)-1),C_TESTFLAG_CHAR_LITERAL==src.front(1-str_index).index_tokens[0].flags);
 			return true;
 			}
 		}
