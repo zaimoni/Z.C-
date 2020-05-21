@@ -135,8 +135,7 @@ void _copy_expendable_buffer(T* dest, T* src, size_t Idx)
 }
 
 template<typename T>
-void
-_copy_expendable_buffer(T** dest, const T** src, size_t Idx)
+void _copy_expendable_buffer(T** dest, const T** src, size_t Idx)
 {	_copy_buffer(dest,src,Idx);	}
 
 // _vector_assign competes with std::fill_n
@@ -203,7 +202,7 @@ _vector_equal(const T& lhs, const U& rhs, size_t Idx)
 
 // objects
 template<typename T>
-void _single_flush(T* _ptr)
+void _single_flush(T* _ptr) noexcept
 {
 	if constexpr (std::is_trivially_destructible_v<T>) {
 		free(_ptr);
@@ -214,14 +213,14 @@ void _single_flush(T* _ptr)
 
 // pointer arrays
 template<typename T>
-void _single_flush(T** _ptr)
+void _single_flush(T** _ptr) noexcept
 {
 	single_flush(*_ptr);
 	free(_ptr);
 }
 
 template<typename T>
-void _weak_flush(T** _ptr)
+void _weak_flush(T** _ptr) noexcept
 {
 	free(_ptr);
 }
@@ -235,7 +234,7 @@ T* _new_buffer(size_t Idx)
 }
 
 template<typename T>
-std::enable_if_t<std::is_trivially_default_constructible_v<T>&& std::is_trivially_destructible_v<T>, T*>
+std::enable_if_t<std::is_trivially_default_constructible_v<T> && std::is_trivially_destructible_v<T>, T*>
 _new_buffer_nonNULL_throws(size_t Idx)
 {
 	if constexpr (std::is_trivially_constructible_v<T> && std::is_trivially_destructible_v<T>) {
