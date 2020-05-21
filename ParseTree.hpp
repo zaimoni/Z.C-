@@ -300,7 +300,8 @@ struct parse_tree
 		static_assert(STATIC_SIZE(_args)>dest_idx);
 		assert(src);
 		assert(empty<dest_idx>());
-		_args[dest_idx].Overwrite(src ZAIMONI_ISO_PARAM(1));
+		_args[dest_idx].resize(1);
+		_args[dest_idx][0] = src;
 		}
 
 #undef ZCC_PARSETREE_CARRAY
