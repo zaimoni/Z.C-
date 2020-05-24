@@ -229,7 +229,8 @@ void type_spec::OverwriteInto(type_spec& dest)
 	clear();
 }
 
-#ifndef ZAIMONI_FORCE_ISO
+#if 0
+//#ifndef ZAIMONI_FORCE_ISO
 bool type_spec::syntax_ok() const
 {
 	if (0==q_vector.size() && 0==pointer_power && !extent_vector) return true;

@@ -11,7 +11,7 @@
 #include <limits.h>
 #include "type_algebra.hpp"
 #include "lex_core.h"
-#include "Zaimoni.STL/pure.C/auto_int.h"
+#include "Zaimoni.STL/Pure.C/auto_int.h"
 #include "Zaimoni.STL/LexParse/std.h"
 
 struct weak_token;

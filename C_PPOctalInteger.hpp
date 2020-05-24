@@ -5,7 +5,7 @@
 #define C_PPOCTALINTEGER_HPP 1
 
 #include "Zaimoni.STL/Logging.h"
-#include "Zaimoni.STL/pure.C/format_util.h"
+#include "Zaimoni.STL/Pure.C/format_util.h"
 #include "C_PPNumCore.hpp"
 
 struct C_PPOctalInteger : public C_PPIntCore

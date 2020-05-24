@@ -4506,7 +4506,7 @@ static void make_target_postfix_arg(parse_tree& src,size_t& offset,const size_t 
 		tmp = _new_buffer_nonNULL_throws<parse_tree>(1);
 		}
 	src.c_array<0>()[j]->OverwriteInto(*tmp);
-	src.c_array<0>()[i]->template fast_set_arg<2>(tmp);
+	src.c_array<0>()[i]->fast_set_arg<2>(tmp);
 }
 
 //! \throw std::bad_alloc()
@@ -5603,7 +5603,7 @@ static bool terse_locate_CPP0X_typeid(parse_tree& src, size_t& i, const type_sys
 				{
 				parse_tree* const tmp = repurpose_inner_parentheses(pivot);	// RAM conservation
 				pivot.OverwriteInto(*tmp);
-				anchor.template fast_set_arg<2>(tmp);
+				anchor.fast_set_arg<2>(tmp);
 				anchor.core_flag_update();
 				anchor.flags |= PARSE_STRICT_POSTFIX_EXPRESSION;
 				src.DeleteIdx<0>(i + 1);
@@ -6508,8 +6508,8 @@ static void construct_twos_complement_int_min(parse_tree& dest, const type_syste
 	parse_tree_class tmp4;
 	tmp4.grab_index_token_from_str_literal<0>("-",C_TESTFLAG_NONATOMIC_PP_OP_PUNC);
 	tmp4.grab_index_token_location_from<0,0>(src_loc);
-	tmp4.fast_set_arg<1>(tmp3.release());
-	tmp4.fast_set_arg<2>(tmp2.release());
+	tmp4.fast_set_arg<1>(tmp3);
+	tmp4.fast_set_arg<2>(tmp2);
 
 	tmp4.core_flag_update();
 	tmp4.flags |= PARSE_STRICT_ADD_EXPRESSION;
@@ -7335,7 +7335,7 @@ static void assemble_binary_infix_arguments(parse_tree& src, size_t& i, const le
 	parse_tree* const tmp2 = repurpose_inner_parentheses(*tmp_c_array[2]);	// RAM conservation
 	tmp_c_array[0]->OverwriteInto(*tmp);
 	tmp_c_array[2]->OverwriteInto(*tmp2);
-	tmp_c_array[1]->fast_set_arg<1>(tmp.release());
+	tmp_c_array[1]->fast_set_arg<1>(tmp);
 	tmp_c_array[1]->fast_set_arg<2>(tmp2);
 	tmp_c_array[1]->core_flag_update();
 	tmp_c_array[1]->flags |= _flags;
@@ -10218,9 +10218,9 @@ static bool terse_locate_conditional_op(parse_tree& src, size_t& i)
 				tmp_c_array[4]->OverwriteInto(*tmp3);
 				tmp_c_array[1]->grab_index_token_from<1,0>(*tmp_c_array[3]);
 				tmp_c_array[1]->grab_index_token_location_from<1,0>(*tmp_c_array[3]);
-				tmp_c_array[1].fast_set_arg<0>(tmp2.release());
-				tmp_c_array[1].fast_set_arg<1>(tmp.release());
-				tmp_c_array[1].fast_set_arg<2>(tmp3);
+				tmp_c_array[1]->fast_set_arg<0>(tmp2);
+				tmp_c_array[1]->fast_set_arg<1>(tmp);
+				tmp_c_array[1]->fast_set_arg<2>(tmp3);
 				tmp_c_array[1]->core_flag_update();
 				tmp_c_array[1]->flags |= PARSE_STRICT_CONDITIONAL_EXPRESSION;
 				src.DeleteNSlotsAt<0>(3,i+1);	// tmp_c_array becomes invalid here
@@ -10979,7 +10979,7 @@ static void _condense_const_volatile_onto_type(parse_tree& src,size_t& i,kleene_
 	bool have_warned_about_volatile = false;
 
 	assert(PARSE_TYPE & src.data<0>()[i].flags);
-	while(0<i-offset && invariant_decl_scanner(src.data<0>()[i- ++offset]))
+	while(0<i-offset && invariant_decl_scanner(*src.data<0>()[i- ++offset]))
 		switch(invariant_decl_scanner[offset-1])
 		{
 		case C99_CPP_CONST_IDX:
@@ -11019,7 +11019,7 @@ static void _condense_const_volatile_onto_type(parse_tree& src,size_t& i,kleene_
 
 	invariant_decl_scanner.clear();
 	offset = 0;
-	while(src.size<0>()-i>offset+1 && invariant_decl_scanner(src.data<0>()[i+ ++offset]))
+	while(src.size<0>()-i>offset+1 && invariant_decl_scanner(*src.data<0>()[i+ ++offset]))
 		switch(invariant_decl_scanner[offset-1])
 		{
 		case C99_CPP_CONST_IDX:
@@ -12732,7 +12732,11 @@ static void C99_CPP_handle_static_assertion(parse_tree& src,PP_auxfunc& langinfo
 		INC_INFORM(ERR_STR);
 		_fatal("insufficient RAM to parse static assertion");
 		};
-	zaimoni::autotransform_n<void (*)(parse_tree&,const parse_tree&)>(parsetree.c_array<0>(),anchor.front<0>(),k,value_copy);
+	{
+	size_t i = 0;
+	do value_copy(*parsetree.c_array<0>()[i], *anchor.data<0>()[i]);
+	while(++i < k);
+	}
 	// type all enumerators now to make life reasonable later on for the expression-parser
 	size_t enum_scan = k;
 	do	notice_enumerator_CPP(*parsetree.c_array<0>()[--enum_scan],*parse_tree::types,active_namespace);
@@ -13563,7 +13567,7 @@ restart_master_loop:
 		{	// wouldn't work for unnamed function parameters
 		const size_t strict_ub = src.size<0>()-i;
 		const parse_tree* const* const origin = src.data<0>()+i;
-		while(pre_invariant_decl_scanner(origin[pre_invariant_decl_scanner.size()]))
+		while(pre_invariant_decl_scanner(*origin[pre_invariant_decl_scanner.size()]))
 			// if we ran out of tokens, bad
 			if (strict_ub <= pre_invariant_decl_scanner.size())
 				{	// unterminated declaration, top-level
@@ -14791,7 +14795,7 @@ restart_master_loop:
 		const size_t strict_ub = src.size<0>()-i;
 		const parse_tree* const* const origin = src.data<0>()+i;
 rescan:
-		while(pre_invariant_decl_scanner(origin[pre_invariant_decl_scanner.size()]))
+		while(pre_invariant_decl_scanner(*origin[pre_invariant_decl_scanner.size()]))
 			// if we ran out of tokens, bad
 			if (strict_ub <= pre_invariant_decl_scanner.size())
 				{	// unterminated declaration, top-level
@@ -15128,7 +15132,7 @@ rescan:
 				// parse the union and upgrade it to a full definition
 				const union_struct_decl* tmp3 = parse_tree::types->get_structdecl(tmp);
 				assert(tmp3);
-				parse_tree& tmp2 = src.c_array<0>()[i+k];
+				parse_tree& tmp2 = *src.c_array<0>()[i+k];
 				C_union_struct_def* tmp4 = new C_union_struct_def(*tmp3,tmp2.index_tokens[0].logical_line,tmp2.index_tokens[0].src_filename);
 				//! \todo record field structure, etc.
 				parse_tree::types->upgrade_decl_to_def(tmp,tmp4);
@@ -15753,7 +15757,6 @@ reparse:
 		// C++0X has inline namespaces; ignore these for now (well, maybe not: consuming the inline will prevent problems)
 		// C++0X has more complicated using namespace directives: ignore these for now
 		// basic namespace; C++98 and C++0X agree on what this is
-		const parse_tree& anchor = *src.data<0>()[i];
 		if (robust_token_is_string<9>(anchor,"namespace"))
 			{	// fail if: end of token stream
 				// fail if: next token is a type
@@ -15769,20 +15772,21 @@ reparse:
 				src.DeleteIdx<0>(i);
 				break;
 				};
-			if (	robust_token_is_char<'{'>(src.data<0>()[i+1].index_tokens[0].token)
-				&&	robust_token_is_char<'}'>(src.data<0>()[i+1].index_tokens[1].token))
+			parse_tree& pivot = *src.c_array<0>()[i + 1];
+			if (	robust_token_is_char<'{'>(pivot.index_tokens[0].token)
+				&&	robust_token_is_char<'}'>(pivot.index_tokens[1].token))
 				{	//! handle unnamed namespace
 					//! \test zcc/namespace.CPP/Warn_emptybody2.hpp
 					// regardless of official linkage, entities in anonymous namespaces aren't very accessible outside of the current translation unit;
 					// any reasonable linker thinks they have static linkage
 				anchor.resize<2>(1);
-				src.c_array<0>()[i+1].OverwriteInto(anchor.front<2>());
+				pivot.OverwriteInto(anchor.front<2>());
 				src.DeleteIdx<0>(i+1);
 
 				// anonymous namespace names are technically illegal
 				// GCC uses <unknown> and handles uniqueness at link time
 				anchor.grab_index_token_from_str_literal<1>("<unknown>",C_TESTFLAG_IDENTIFIER);	// pretend it's an identifier
-				anchor.grab_index_token_location_from<1,0>(src.data<0>()[i].data<2>()[0]);	// inject it at where the namespace body starts
+				anchor.grab_index_token_location_from<1,0>(anchor.front<2>());	// inject it at where the namespace body starts
 				anchor.flags |= parse_tree::GOOD_LINE_BREAK;
 				assert(is_CPP_namespace(anchor));
 
@@ -15797,20 +15801,20 @@ reparse:
 				continue;
 				}
 			{
-			parse_tree* const origin = src.c_array<0>()+i;
+			parse_tree* const* const origin = src.c_array<0>()+i;
 			const bool namespace_has_body = (	3<=src.size<0>()-i
-											&&	robust_token_is_char<'{'>(origin[2].index_tokens[0].token)
-											&&	robust_token_is_char<'}'>(origin[2].index_tokens[1].token));
+											&&	robust_token_is_char<'{'>(origin[2]->index_tokens[0].token)
+											&&	robust_token_is_char<'}'>(origin[2]->index_tokens[1].token));
 			// next token must be an atomic identifier
 			// already-parsed primary types are no good, neither are reserved keywords
-			if (	!origin[1].is_atomic()
-				|| 	!(C_TESTFLAG_IDENTIFIER & origin[1].index_tokens[0].flags)
-				||	(PARSE_TYPE & origin[1].flags)
-				||	CPP_echo_reserved_keyword(origin[1].index_tokens[0].token.first,origin[1].index_tokens[0].token.second))
+			if (	!origin[1]->is_atomic()
+				|| 	!(C_TESTFLAG_IDENTIFIER & origin[1]->index_tokens[0].flags)
+				||	(PARSE_TYPE & origin[1]->flags)
+				||	CPP_echo_reserved_keyword(origin[1]->index_tokens[0].token.first,origin[1]->index_tokens[0].token.second))
 				{	//! \test zcc/namespace.CPP/Error_badname1.hpp
 					//! \test zcc/namespace.CPP/Error_badname2.hpp
 					//! \test zcc/namespace.CPP/Error_badname3.hpp
-				message_header(origin->index_tokens[0]);
+				message_header((*origin)->index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INFORM("named namespace declaration must use non-reserved identifier (C++98 7.3.1p1, 7.3.2p1)");
 				zcc_errors.inc_error();
@@ -15819,10 +15823,10 @@ reparse:
 				};
 			if (!namespace_has_body)
 				{	//! \test zcc/namespace.CPP/Error_premature2.hpp
-				message_header(origin->index_tokens[0]);
+				message_header((*origin)->index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INC_INFORM("'namespace ");
-				INC_INFORM(origin[1]);
+				INC_INFORM(*origin[1]);
 				INFORM("' definition needs a body (C++98 7.3.1p1)");
 				zcc_errors.inc_error();
 				src.DeleteNSlotsAt<0>(2,i);
@@ -15833,25 +15837,25 @@ reparse:
 			// namespace name: postfix arg 1
 			// namespace definition body: postfix arg 2
 			// the namespace name is likely to be reused: atomic string target
-			register_token<0>(origin[1]);
-			origin->resize<2>(1);
-			origin->grab_index_token_from<1,0>(origin[1]);
-			origin->grab_index_token_location_from<1,0>(origin[1]);	// inject it at where the namespace body starts
-			origin[2].OverwriteInto(origin->c_array<2>()[0]);
+			register_token<0>(*origin[1]);
+			(*origin)->resize<2>(1);
+			(*origin)->grab_index_token_from<1,0>(*origin[1]);
+			(*origin)->grab_index_token_location_from<1,0>(*origin[1]);	// inject it at where the namespace body starts
+			origin[2]->OverwriteInto((*origin)->front<2>());
 			}
 			src.DeleteNSlotsAt<0>(2,i+1);
-			src.c_array<0>()[i].flags |= parse_tree::GOOD_LINE_BREAK;
-			assert(is_CPP_namespace(src.data<0>()[i]));
+			anchor.flags |= parse_tree::GOOD_LINE_BREAK;
+			assert(is_CPP_namespace(anchor));
 			// handle named namespace
 			if (NULL==active_namespace)
 				{	// global
 					//! \todo expand namespace aliases
-				CPP_ParseNamespace(src.c_array<0>()[i].c_array<2>()[0],src.c_array<0>()[i].index_tokens[1].token.first);
+				CPP_ParseNamespace(anchor.front<2>(), anchor.index_tokens[1].token.first);
 				}
 			else{	// nested
 					//! \todo expand namespace aliases
-				char* const new_active_namespace = type_system::namespace_concatenate(src.c_array<0>()[i].index_tokens[1].token.first,active_namespace,"::");
-				CPP_ParseNamespace(src.c_array<0>()[i].c_array<2>()[0],new_active_namespace);
+				char* const new_active_namespace = type_system::namespace_concatenate(anchor.index_tokens[1].token.first,active_namespace,"::");
+				CPP_ParseNamespace(anchor.front<2>(),new_active_namespace);
 				free(new_active_namespace);
 				}
 			++i;
@@ -15882,7 +15886,7 @@ reparse:
 			{
 			const bool coherent_storage_specifiers = declFind.analyze_flags_global(src,i,decl_count);
 			assert(src.size<0>()-i>decl_count);	/* unterminated declarations already handled */
-			if (robust_token_is_char<';'>(src.data<0>()[i+decl_count]))
+			if (robust_token_is_char<';'>(*src.data<0>()[i+decl_count]))
 				{	// must declare something
 				if (   declFind.is_enumeration()	// but a raw enumeration is fine
 					|| (1==decl_count && declFind.is_type()))	// as is a forward-declare
@@ -15898,7 +15902,7 @@ reparse:
 				//! \test zcc/decl.C99/Error_virtual_semicolon.hpp
 				//! \test zcc/decl.C99/Error_friend_semicolon.hpp
 				//! \test zcc/decl.C99/Error_explicit_semicolon.hpp
-				message_header(src.data<0>()[i].index_tokens[0]);
+				message_header(anchor.index_tokens[0]);
 				INC_INFORM(ERR_STR);
 				INFORM("declaration must declare something (C++98 7p4)");
 				zcc_errors.inc_error();
@@ -15912,7 +15916,7 @@ reparse:
 			// this will have already errored, so stop
 			if (!coherent_storage_specifiers)
 				{
-				message_header(src.data<0>()[i].index_tokens[0]);
+				message_header(anchor.index_tokens[0]);
 				INFORM("cannot resolve linkage for incoherent storage specifiers: stopping to prevent spurious errors");
 				return;
 				}
@@ -15929,7 +15933,7 @@ reparse:
 				if (0==initdecl_span)
 					{	// no declarator where expected
 					//! \todo test suite/Jan. 22 2011 does not exercise.  Is this dead code?
-					message_header(src.data<0>()[i+decl_count+decl_offset].index_tokens[0]);
+					message_header(src.data<0>()[i+decl_count+decl_offset]->index_tokens[0]);
 					INC_INFORM(ERR_STR);
 					INFORM("declarator missing (C++98 7p1)");
 					zcc_errors.inc_error();
@@ -15943,12 +15947,12 @@ reparse:
 					};
 				if (!initdecl_identifier)
 					{	// didn't find identifier when needed
-					message_header(src.data<0>()[i+decl_count+decl_offset].index_tokens[0]);
+					message_header(src.data<0>()[i+decl_count+decl_offset]->index_tokens[0]);
 					INC_INFORM(ERR_STR);
 					INFORM("declarator has no name to declare (C++98 7p1)");
 					zcc_errors.inc_error();
 					// find the next semicolon, unless we have () immediately in which case we have nothing to look for
-					const bool unwind_to_compound_statement = is_naked_parentheses_pair(src.data<0>()[i+decl_count+decl_offset]);
+					const bool unwind_to_compound_statement = is_naked_parentheses_pair(*src.data<0>()[i+decl_count+decl_offset]);
 					if (unwind_to_compound_statement)
 						{
 						assert(!have_we_parsed_yet);
@@ -16024,7 +16028,7 @@ reparse:
 							{	//! \test zcc/decl.C99/Error_typedef_enum.hpp
 								//! \test zcc/decl.C99/Error_typedef_enum2.hpp
 							free(namespace_name);
-							message_header(src.data<0>()[i].index_tokens[0]);
+							message_header(anchor.index_tokens[0]);
 							INC_INFORM(ERR_STR);
 							INFORM("enumerator is already defined, conflicts with typedef (C++98 3.2)");
 							INC_INFORM(tmp2->second.second.first);
@@ -16064,7 +16068,7 @@ reparse:
 					else if (const type_system::enumerator_info* const tmp2 = parse_tree::types->get_enumerator(fullname))
 						{	// enumerator: fail
 						free(namespace_name);
-						message_header(src.data<0>()[i].index_tokens[0]);
+						message_header(anchor.index_tokens[0]);
 						INC_INFORM(ERR_STR);
 						INFORM("enumerator is already defined, conflicts with object/function (C++98 3.2)");
 						INC_INFORM(tmp2->second.second.first);
@@ -16175,7 +16179,7 @@ explicit_extern:		if (tmp)
 				if (src.size<0>()-(i+decl_count)<=decl_offset)
 					{	// unterminated declaration: error
 						//! \test zcc/decl.C99/Error_scope.hpp
-					message_header(src.data<0>()[i].index_tokens[0]);
+					message_header(anchor.index_tokens[0]);
 					INC_INFORM(ERR_STR);
 					INFORM("declaration cut off by end of scope (C++98 7p1)");
 					zcc_errors.inc_error();
@@ -16183,23 +16187,24 @@ explicit_extern:		if (tmp)
 					};
 				//! \todo function declarations can be self-terminating
 				// ;: done
-				if (robust_token_is_char<';'>(src.data<0>()[i+decl_count+decl_offset]))
+				parse_tree& pivot = *src.c_array<0>()[i + decl_count + decl_offset];
+				if (robust_token_is_char<';'>(pivot))
 					{
-					src.c_array<0>()[i+decl_count+decl_offset].flags |= parse_tree::GOOD_LINE_BREAK;
+					pivot.flags |= parse_tree::GOOD_LINE_BREAK;
 					++decl_offset;
 					break;
 					};
 				// ,: iterate
 				// anything else: error
-				if (!robust_token_is_char<','>(src.data<0>()[i+decl_count+decl_offset]))
+				if (!robust_token_is_char<','>(pivot))
 					{	//! \test decl.C99/Error_enum_runon_def.hpp
-					message_header(src.data<0>()[i+decl_count+decl_offset].index_tokens[0]);
+					message_header(pivot.index_tokens[0]);
 					INC_INFORM(ERR_STR);
 					INFORM("declaration disoriented by missing , (C++98 7p1)");
 					zcc_errors.inc_error();
 					// remove everything starting here through next semicolon
 					src.DeleteNSlotsAt<0>(span_to_semicolon(src.data<0>()+i+decl_count+decl_offset,src.end<0>()),i+decl_count+decl_offset);
-					src.c_array<0>()[i+decl_count+decl_offset].flags |= parse_tree::GOOD_LINE_BREAK;
+					src.c_array<0>()[i+decl_count+decl_offset]->flags |= parse_tree::GOOD_LINE_BREAK;
 					++decl_offset;
 					break;
 					}

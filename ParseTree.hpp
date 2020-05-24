@@ -6,7 +6,7 @@
 
 #include "type_spec.hpp"
 
-#include "Zaimoni.STL/POD_autoarray.hpp"
+#include "Zaimoni.STL/AutoPtr.hpp"
 #include "weak_token.hpp"
 #include <functional>
 
@@ -52,8 +52,8 @@ struct parse_tree
 	~parse_tree() = default;
 	parse_tree(const parse_tree& src) = default;
 	parse_tree(parse_tree&& src) = delete;
-	parse_tree& parse_tree::operator=(const parse_tree & src) = default;
-	parse_tree& parse_tree::operator=(parse_tree&& src) = delete;
+	parse_tree& operator=(const parse_tree & src) = default;
+	parse_tree& operator=(parse_tree&& src) = delete;
 
 	void MoveInto(parse_tree& dest);
 	void OverwriteInto(parse_tree& dest);
@@ -88,48 +88,48 @@ struct parse_tree
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].size();
 		}
-#if 0
-	parse_tree* begin(size_t arg_idx)
+
+	auto begin(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].begin();
 		};
-	template<size_t arg_idx> parse_tree* begin()
+	template<size_t arg_idx> auto begin()
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].begin();
 		}
-	const parse_tree* begin(size_t arg_idx) const
+	const parse_tree* const* begin(size_t arg_idx) const
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].begin();
 		}
-	template<size_t arg_idx> const parse_tree* begin() const
+	template<size_t arg_idx> const parse_tree* const* begin() const
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].begin();
 		}
-	parse_tree* end(size_t arg_idx)
+	auto end(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].end();
 		};
-	template<size_t arg_idx> parse_tree* end()
+	template<size_t arg_idx> auto end()
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].end();
 		}
-	const parse_tree* end(size_t arg_idx) const
+	const parse_tree* const* end(size_t arg_idx) const
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].end();
 		}
-	template<size_t arg_idx> const parse_tree* end() const
+	template<size_t arg_idx> const parse_tree* const* end() const
 		{
 		static_assert(STATIC_SIZE(_args)>arg_idx);
 		return _args[arg_idx].end();
 		}
-#endif
+
 	parse_tree& front(size_t arg_idx)
 		{
 		assert(STATIC_SIZE(_args)>arg_idx);
@@ -253,13 +253,16 @@ struct parse_tree
 		assert(actual_size>i);
 		assert(actual_size-i>=n);
 		size_t j = n;
-		do	c_array<dest_idx>()[i + --j].destroy();
-		while(0<j);
+		do {
+			c_array<dest_idx>()[i + --j]->destroy();
+			_single_flush(c_array<dest_idx>()[i + j]);
+			c_array<dest_idx>()[i + j] = 0;
+		} while(0<j);
 		if (actual_size>i+n)
 			{
 			memmove(c_array<dest_idx>()+i,c_array<dest_idx>()+i+n,sizeof(parse_tree)*(actual_size-(i+n)));
 			j = n;
-			do	c_array<dest_idx>()[actual_size-n+ --j].clear();
+			do	c_array<dest_idx>()[actual_size-n+ --j] = 0;
 			while(0<j);
 			}
 		}
@@ -302,6 +305,14 @@ struct parse_tree
 		assert(empty<dest_idx>());
 		_args[dest_idx].resize(1);
 		_args[dest_idx][0] = src;
+		}
+	template<size_t dest_idx> void fast_set_arg(zaimoni::autoval_ptr<parse_tree>& src)
+		{
+		static_assert(STATIC_SIZE(_args)>dest_idx);
+		assert(src);
+		assert(empty<dest_idx>());
+		_args[dest_idx].resize(1);
+		_args[dest_idx][0] = src.release();
 		}
 
 #undef ZCC_PARSETREE_CARRAY
@@ -374,7 +385,7 @@ struct parse_tree
 		static_assert(STATIC_SIZE(_args)>src_idx);
 		assert(size<src_idx>()>i);
 		size_t found = 0;
-		while(x(data<src_idx>()[i]) && (++found,size<src_idx>()> ++i));
+		while(x(*data<src_idx>()[i]) && (++found,size<src_idx>()> ++i));
 		return found;
 		}
 	template<size_t src_idx,class scanner> size_t destructive_get_span(size_t i,scanner& x)
