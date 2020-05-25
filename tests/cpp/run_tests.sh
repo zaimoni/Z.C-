@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # runs regression tests for z_cpp.exe
-# (C)2009,2011 Kenneth Boyd, license: MIT.txt
+# (C)2009,2011,2020 Kenneth Boyd; Boost license @ LICENSE.md
 
 ASSERT_FAILED=0
 ASSERT_FAIL_NAME=
@@ -16,14 +16,14 @@ function run_tests {
 	local FAILED=0
 	local BAD_FAIL_NAME=
 	local ACCEPT_TEST=0
-	local CPP=../../bin/z_cpp
-	local CPP_ISO="../../bin/z_cpp --pedantic"
-	local CPP_SIGNMAG_NOTRAP="../../bin/z_cpp --int-sign-magnitude"
-	local CPP_SIGNMAG_TRAP="../../bin/z_cpp --int-sign-magnitude --int-traps"
-	local CPP_ONESCOMP_NOTRAP="../../bin/z_cpp --int-ones-complement"
-	local CPP_ONESCOMP_TRAP="../../bin/z_cpp --int-ones-complement --int-traps"
-	local CPP_TWOSCOMP_NOTRAP="../../bin/z_cpp --int-twos-complement"
-	local CPP_TWOSCOMP_TRAP="../../bin/z_cpp --int-twos-complement --int-traps"
+	local CPP=../../z_cpp.exe
+	local CPP_ISO="${CPP} --pedantic"
+	local CPP_SIGNMAG_NOTRAP="${CPP} --int-sign-magnitude"
+	local CPP_SIGNMAG_TRAP="${CPP} --int-sign-magnitude --int-traps"
+	local CPP_ONESCOMP_NOTRAP="${CPP} --int-ones-complement"
+	local CPP_ONESCOMP_TRAP="${CPP} --int-ones-complement --int-traps"
+	local CPP_TWOSCOMP_NOTRAP="${CPP} --int-twos-complement"
+	local CPP_TWOSCOMP_TRAP="${CPP} --int-twos-complement --int-traps"
 
 	echo Checking ISO error requirements
 	echo ====
@@ -101,10 +101,10 @@ function run_tests {
 
 	echo Checking ZCC content transforms
 	echo ====
-	for F in default/Preprocess*.h; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp - $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
-	for F in default/Preprocess*.hpp; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp - $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
-	for F in line.C99/Preprocess*.h; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp - $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
-	for F in line.C99/Preprocess*.hpp; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp - $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
+	for F in default/Preprocess*.h; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
+	for F in default/Preprocess*.hpp; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
+	for F in line.C99/Preprocess*.h; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
+	for F in line.C99/Preprocess*.hpp; do let ++ACCEPT_TEST; echo $CPP $F; if $CPP $F | cmp $F.txt; then :; else code_screen $? $F; let ++FAILED; BAD_FAIL_NAME="$BAD_FAIL_NAME $F"; fi; done;
 
 	echo -E $BAD_PASS of $REJECT_TEST rejection tests accepted
 	if test -n "$BAD_PASS_NAME"; then echo -E $BAD_PASS_NAME; fi
