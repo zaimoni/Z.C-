@@ -57,6 +57,12 @@ using namespace zaimoni;
 
 // define this to hard-code an install path
 //#define INSTALL_TO "\\CPP_App\\Z.C++"
+// for Z.C++ 0.0.9 and earlier
+// #define RELATIVE_PATH_TO_LIB ".." ZAIMONI_PATH_SEP
+// current value
+#ifndef RELATIVE_PATH_TO_LIB
+#define RELATIVE_PATH_TO_ABOVE_LIB "." ZAIMONI_PATH_SEP
+#endif
 
 //! \todo this should be language-sensitive; LangConf not a good location
 static const char* const fixed_system_include_search[] = {
@@ -66,8 +72,8 @@ static const char* const fixed_system_include_search[] = {
 	INSTALL_TO ZAIMONI_PATH_SEP "lib" ZAIMONI_PATH_SEP "zc++" ZAIMONI_PATH_SEP "include",
 #endif	
 	// C++-only relative paths
-	".." ZAIMONI_PATH_SEP "lib" ZAIMONI_PATH_SEP "zc++-" ZCC_VERSION ZAIMONI_PATH_SEP "include",
-	".." ZAIMONI_PATH_SEP "lib" ZAIMONI_PATH_SEP "zc++" ZAIMONI_PATH_SEP "include",
+	RELATIVE_PATH_TO_ABOVE_LIB "lib" ZAIMONI_PATH_SEP "zc++-" ZCC_VERSION ZAIMONI_PATH_SEP "include",
+	RELATIVE_PATH_TO_ABOVE_LIB "lib" ZAIMONI_PATH_SEP "zc++" ZAIMONI_PATH_SEP "include",
 #ifdef INSTALL_TO
 	// install path
 	INSTALL_TO ZAIMONI_PATH_SEP "lib" ZAIMONI_PATH_SEP "zcc-" ZCC_VERSION ZAIMONI_PATH_SEP "include",
@@ -75,9 +81,9 @@ static const char* const fixed_system_include_search[] = {
 	INSTALL_TO ZAIMONI_PATH_SEP "include",
 #endif	
 	// relative paths
-	".." ZAIMONI_PATH_SEP "lib" ZAIMONI_PATH_SEP "zcc-" ZCC_VERSION ZAIMONI_PATH_SEP "include",
-	".." ZAIMONI_PATH_SEP "lib" ZAIMONI_PATH_SEP "zcc" ZAIMONI_PATH_SEP "include",
-	".." ZAIMONI_PATH_SEP "include"
+	RELATIVE_PATH_TO_ABOVE_LIB "lib" ZAIMONI_PATH_SEP "zcc-" ZCC_VERSION ZAIMONI_PATH_SEP "include",
+	RELATIVE_PATH_TO_ABOVE_LIB "lib" ZAIMONI_PATH_SEP "zcc" ZAIMONI_PATH_SEP "include",
+	RELATIVE_PATH_TO_ABOVE_LIB "include"
 };
 
 static const char* actual_system_include_search[] =	{
