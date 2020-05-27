@@ -29,8 +29,7 @@ bool parse_tree::is_raw_list() const
 		&& !_args[0].empty() && _args[1].empty() && _args[2].empty();
 }
 
-#if 0
-// #ifndef ZAIMONI_FORCE_ISO
+#ifndef ZAIMONI_FORCE_ISO
 bool parse_tree::syntax_ok() const
 {
 	if (data<0>() && !_memory_block_start_valid(data<0>())) return false;
@@ -51,11 +50,11 @@ bool parse_tree::syntax_ok() const
 		};
 
 	size_t i = 0;
-	while(size<0>()>i) if (!data<0>()[i++].syntax_ok()) return false;
+	while(size<0>()>i) if (!data<0>()[i++]->syntax_ok()) return false;
 	i = 0;
-	while(size<1>()>i) if (!data<1>()[i++].syntax_ok()) return false;
+	while(size<1>()>i) if (!data<1>()[i++]->syntax_ok()) return false;
 	i = 0;
-	while(size<2>()>i) if (!data<2>()[i++].syntax_ok()) return false;
+	while(size<2>()>i) if (!data<2>()[i++]->syntax_ok()) return false;
 	if (!type_code.syntax_ok()) return false;
 	return true;
 }
@@ -63,7 +62,7 @@ bool parse_tree::syntax_ok() const
 template<class iter,class src>
 bool entangled_with(src& x,iter begin,iter end)
 {
-	while(begin!=end) if ((begin++)->entangled_with(x)) return true;
+	while(begin!=end) if ((*(begin++))->entangled_with(x)) return true;
 	return false;
 }
 
@@ -125,24 +124,24 @@ bool parse_tree::self_entangled() const
 	size_t i = 0;
 	while(size<0>()>i)
 		{
-		if (data<0>()[i].self_entangled()) return true;
-		if (data<0>()[i].entangled_with(type_code)) return true;
+		if (data<0>()[i]->self_entangled()) return true;
+		if (data<0>()[i]->entangled_with(type_code)) return true;
 		if (0<i && ::entangled_with(data<0>()[i],begin<0>(),begin<0>()+i)) return true;
 		++i;
 		}
 	i = 0;
 	while(size<1>()>i)
 		{
-		if (data<1>()[i].self_entangled()) return true;
-		if (data<1>()[i].entangled_with(type_code)) return true;
+		if (data<1>()[i]->self_entangled()) return true;
+		if (data<1>()[i]->entangled_with(type_code)) return true;
 		if (0<i && ::entangled_with(data<1>()[i],begin<1>(),begin<1>()+i)) return true;
 		++i;
 		}
 	i = 0;
 	while(size<2>()>i)
 		{
-		if (data<2>()[i].self_entangled()) return true;
-		if (data<2>()[i].entangled_with(type_code)) return true;
+		if (data<2>()[i]->self_entangled()) return true;
+		if (data<2>()[i]->entangled_with(type_code)) return true;
 		if (0<i && ::entangled_with(data<2>()[i],begin<2>(),begin<2>()+i)) return true;
 		++i;
 		}

@@ -617,6 +617,9 @@ static void __DetectOverwrites(void)
 
 // same as above, but suitable for assert()
 // use int to avoid C/C++ issues (what is bool?)
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -871,6 +874,9 @@ void* _expand(void* memblock, size_t size)
 	}
 }
 
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
 #ifdef __cplusplus
 extern "C"
 #endif

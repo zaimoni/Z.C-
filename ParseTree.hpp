@@ -290,11 +290,11 @@ struct parse_tree
 	void clear();	// XXX should be constructor; good way to leak memory in other contexts
 	void destroy();	// XXX should be destructor; note that this does *not* touch line/col information or src_filename in its own index_tokens
 	void core_flag_update();
-#if 0
-// #ifndef ZAIMONI_FORCE_ISO
+#ifndef ZAIMONI_FORCE_ISO
 	bool syntax_ok() const;
 	bool entangled_with(const type_spec& x) const;
 	bool entangled_with(const parse_tree& x) const;
+	bool entangled_with(const parse_tree* x) const { assert(x); return entangled_with(*x); }
 	bool self_entangled() const;
 #endif
 

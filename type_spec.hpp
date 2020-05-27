@@ -64,8 +64,7 @@ struct type_spec
 	bool typeid_equal(const type_spec& rhs) const;
 	void MoveInto(type_spec& dest);
 	void OverwriteInto(type_spec& dest);
-#if 0
-//#ifndef ZAIMONI_FORCE_ISO
+#ifndef ZAIMONI_FORCE_ISO
 	bool syntax_ok() const;
 	bool entangled_with(const type_spec& x) const;
 #endif
