@@ -33,6 +33,14 @@ __declspec(dllexport)
 #ifdef __cplusplus
 extern "C"
 #endif
+int zaimoni_is_debugging;	// debug tracer; possibly useful in general
+
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+#ifdef __cplusplus
+extern "C"
+#endif
 inline size_t __cdecl _msize(void* memblock)
 {	/* FORMALLY CORRECT: Kenneth Boyd, 9/15/1999 */
 #ifdef __cplusplus
