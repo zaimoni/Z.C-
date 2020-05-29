@@ -98,7 +98,9 @@ extern "C"
 #endif
 int _no_obvious_overwrites(void);
 
-#ifdef __cplusplus
+// if we do not want to piggyback off of the Microsoft implementation, we either should reuse STL new handler or override setting that as well.
+#if 0
+// #ifdef __cplusplus
 
 #ifndef ZAIMONI_STL_IN_MEMORY_CPP
 /*

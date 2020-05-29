@@ -910,7 +910,9 @@ _DynamicRAMIsNotObviouslyCorrupted(void)
 }
 #endif
 
-#ifdef __cplusplus
+// if we do not want to piggyback off of the Microsoft implementation, we either should reuse STL new handler or override setting that as well.
+#if 0
+//#ifdef __cplusplus
 
 std::new_handler ZaimoniNewHandler = NULL;
 
