@@ -28,7 +28,7 @@
 #define ZAIMONI_REALLOC_TO_ZERO_IS_NULL 1
 
 #ifdef _WIN32
-__declspec(dllexport)
+__declspec(dllimport)
 #endif
 #ifdef __cplusplus
 extern "C"
@@ -36,7 +36,7 @@ extern "C"
 int zaimoni_is_debugging;	// debug tracer; possibly useful in general
 
 #ifdef _WIN32
-__declspec(dllexport)
+__declspec(dllimport)
 #endif
 #ifdef __cplusplus
 extern "C"
@@ -84,7 +84,7 @@ SafeArraySize(const T* memblock)
  * checks that memory block in question is not only dynamically allocated, but is safe to free/realloc
  */
 #ifdef _WIN32
-__declspec(dllexport)
+__declspec(dllimport)
 #endif
 #ifdef __cplusplus
 extern "C"
@@ -99,7 +99,7 @@ int _memory_block_start_valid(const void* x);
  * \return int 1 if ok, 0 if memory overwrites detected
  */
 #ifdef _WIN32
-__declspec(dllexport)
+__declspec(dllimport)
 #endif
 #ifdef __cplusplus
 extern "C"
