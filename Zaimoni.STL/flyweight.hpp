@@ -43,16 +43,18 @@ class refcount : public refcount_POD
 {
 private:
 	// break copy-construction and assignment
-	refcount(const refcount& src);
-	void operator=(const refcount& src);
+	refcount(const refcount& src) = delete;
+	refcount(refcount&& src) = delete;
+	void operator=(const refcount& src) = delete;
+	void operator=(refcount&& src) = delete;
 public:
-	refcount(void* src)
+	refcount(void* src) noexcept
 	{
 		count = 1;
 		x = src;
 	};
 
-	~refcount() {};
+	~refcount() {}
 };
 
 template<>

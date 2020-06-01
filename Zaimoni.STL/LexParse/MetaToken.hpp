@@ -6,8 +6,9 @@
 
 #include "../AutoPtr.hpp"
 #include "../flyweight.hpp"
-
+#include "../Pure.CPP/canonical_cache.hpp"
 #include <utility>
+#include <filesystem>
 
 namespace zaimoni {
 
@@ -29,17 +30,16 @@ public:
 	std::pair<size_t,size_t> original_line;		// where the token originally was from (C macro substitution, etc.)
 	zaimoni::flyweight<const char> src_filename;
 	zaimoni::flyweight<const char> parent_dir;
+	std::shared_ptr<std::filesystem::path> src;
 
-	MetaToken() : logical_line(0,0),original_line(0,0) {};
-	virtual ~MetaToken() {};
+	MetaToken() : logical_line(0,0),original_line(0,0) {}
+	virtual ~MetaToken() = default;
 	// do not want this copy-constructable from outside, should use CopyInto paradigm if needed
 protected:
-	MetaToken(const MetaToken& src)
-		: 	_token(src._token),
-			logical_line(src.logical_line),
-			original_line(src.original_line),
-			src_filename(src.src_filename),
-			parent_dir(src.parent_dir) {};
+	MetaToken(const MetaToken& src) = default;
+	MetaToken(MetaToken&& src) = default;
+	MetaToken& operator=(const MetaToken & src) = default;
+	MetaToken& operator=(MetaToken&& src) = default;
 #ifndef ZAIMONI_FORCE_ISO
 	MetaToken(T*& src, const char* _src_filename)
 		: 	_token(src),
@@ -53,14 +53,6 @@ protected:
 	MetaToken(const MetaToken& src,size_t prefix);
 	MetaToken(const MetaToken& src,size_t offset,size_t token_len);
 	MetaToken(const T* const src,size_t offset,size_t token_len);
-	void operator=(const MetaToken& src)
-		{
-		_token = src._token;
-		logical_line = src.logical_line;
-		original_line = src.original_line;
-		src_filename = src.src_filename;
-		parent_dir = src.parent_dir;
-		};
 public:
 	void trim(size_t prefix,size_t postfix);	// remove characters from both sides
 	void ltrim(size_t prefix);	// remove characters from left

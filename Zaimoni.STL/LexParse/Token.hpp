@@ -24,8 +24,11 @@ public:
 	Token(MetaToken<T>& src,size_t token_len,unsigned long new_flags);				// prefix-chop constructor
 	Token(const MetaToken<T>& src,size_t offset,size_t token_len,unsigned long new_flags);	// substring constructor
 	Token(const T* const src,size_t offset,size_t token_len,unsigned long new_flags);	// substring constructor
-	virtual ~Token() {};
-	// use default copy-constructor, assignment operator
+	Token(const Token& src) = default;
+	Token(Token&& src) = default;
+	Token& operator=(const Token& src) = default;
+	Token& operator=(Token&& src) = default;
+	virtual ~Token() = default;
 
 	void MoveInto(Token& target);	
 
