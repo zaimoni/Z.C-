@@ -41,15 +41,29 @@ protected:
 	MetaToken& operator=(const MetaToken & src) = default;
 	MetaToken& operator=(MetaToken&& src) = default;
 #ifndef ZAIMONI_FORCE_ISO
-	MetaToken(T*& src, const char* _src_filename)
-		: 	_token(src),
+	MetaToken(T*& src, const char* _src_filename) : _token(src),
 #else
-	MetaToken(T*& src, size_t src_len, const char* _src_filename)
-		: 	_token(src,src_len),
+	MetaToken(T*& src, size_t src_len, const char* _src_filename) : _token(src,src_len),
 #endif
 			logical_line(1,0),
 			original_line(1,0),
-			src_filename(_src_filename) {};
+			src_filename(_src_filename) {}
+#ifndef ZAIMONI_FORCE_ISO
+	MetaToken(T*& _src, const std::filesystem::path& _src_path) : _token(_src),
+#else
+	MetaToken(T*& _src, size_t src_len, const std::filesystem::path& _src_path) : _token(_src,src_len),
+#endif
+		logical_line(1, 0),
+		original_line(1, 0),
+		src(canonical_cache<std::filesystem::path>::get().track(_src_path)) {}
+#ifndef ZAIMONI_FORCE_ISO
+	MetaToken(T*& _src, std::filesystem::path&& _src_path) : _token(_src),
+#else
+	MetaToken(T*& _src, size_t src_len, std::filesystem::path&& _src_path) : _token(_src, src_len),
+#endif
+		logical_line(1, 0),
+		original_line(1, 0),
+		src(canonical_cache<std::filesystem::path>::get().track(std::move(_src_path))) {}
 	MetaToken(const MetaToken& src,size_t prefix);
 	MetaToken(const MetaToken& src,size_t offset,size_t token_len);
 	MetaToken(const T* const src,size_t offset,size_t token_len);
@@ -58,7 +72,7 @@ public:
 	void ltrim(size_t prefix);	// remove characters from left
 	void rtrim(size_t postfix);	// remove characters from right
 	void lslice(size_t new_len);// leave behind this many characters on left
-	void reset() {_token.reset();};	// no content afterwards
+	void reset() { _token.reset(); }	// no content afterwards
 
 	bool append(const std::nothrow_t& tracer, T src) {return _token.InsertSlotAt(_token.size(),src);};
 	bool append(const std::nothrow_t& tracer, size_t postfix, const MetaToken<T>& src);

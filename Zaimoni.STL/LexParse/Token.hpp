@@ -21,6 +21,16 @@ public:
 #else
 	Token(T*& src, size_t src_len, const char* _SourceFileName) : MetaToken<T>(src,src_len,_SourceFileName),flags(0) {}
 #endif
+#ifndef ZAIMONI_FORCE_ISO
+	Token(T*& src, const std::filesystem::path& src_path) : MetaToken<T>(src, src_path), flags(0) {}
+#else
+	Token(T*& src, size_t src_len, const std::filesystem::path& src_path) : MetaToken<T>(src, src_len, src_path), flags(0) {}
+#endif
+#ifndef ZAIMONI_FORCE_ISO
+	Token(T*& src, std::filesystem::path&& src_path) : MetaToken<T>(src, std::move(src_path)), flags(0) {}
+#else
+	Token(T*& src, size_t src_len, std::filesystem::path&& src_path) : MetaToken<T>(src, src_len, std::move(src_path)), flags(0) {}
+#endif
 	Token(MetaToken<T>& src,size_t token_len,unsigned long new_flags) : MetaToken<T>(src, token_len), flags(new_flags) { src.prefix_chop(token_len); } // prefix-chop constructor
 	Token(const MetaToken<T>& src,size_t offset,size_t token_len,unsigned long new_flags) : MetaToken<T>(src, offset, token_len), flags(new_flags) {} // substring constructor
 	Token(const T* const src,size_t offset,size_t token_len,unsigned long new_flags) : MetaToken<T>(src, offset, token_len), flags(new_flags) {} // substring constructor
