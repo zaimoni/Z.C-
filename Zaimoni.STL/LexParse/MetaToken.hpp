@@ -32,7 +32,7 @@ public:
 	zaimoni::flyweight<const char> parent_dir;
 	std::shared_ptr<std::filesystem::path> src;
 
-	MetaToken() : logical_line(0,0),original_line(0,0) {}
+	MetaToken() noexcept : logical_line(0,0),original_line(0,0) {}
 	virtual ~MetaToken() = default;
 	// do not want this copy-constructable from outside, should use CopyInto paradigm if needed
 protected:
@@ -100,7 +100,6 @@ public:
 	const T& back() const {return *(_token.end()-1);};
 	T& back() {return *(_token.end()-1);};
 protected:
-	void MoveInto(MetaToken& target);
 	void ltrim_clean(size_t prefix);
 };
 
@@ -369,17 +368,6 @@ MetaToken<T>::replace_once(const std::nothrow_t& tracer, size_t offset, size_t l
 		}
 #undef srcsize
 	return true;
-}
-
-template<class T>
-void
-MetaToken<T>::MoveInto(MetaToken& target)
-{
-	_token.MoveInto(target._token);
-	target.logical_line = logical_line;
-	target.original_line = original_line;
-	target.src_filename = src_filename;
-	target.parent_dir = parent_dir;
 }
 
 }	// namespace zaimoni

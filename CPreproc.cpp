@@ -1238,7 +1238,7 @@ ObjectLikeMacroEmptyString:
 							
 							macros_object_expansion_pre_eval[object_macro_insertion_index] = new Token<char>(expansion);
 							macros_object_expansion[object_macro_insertion_index] = new Token<char>;
-							expansion.MoveInto(*macros_object_expansion[object_macro_insertion_index]);
+							*macros_object_expansion[object_macro_insertion_index] = std::move(expansion);
 							object_macro_concatenate(*macros_object_expansion_pre_eval[object_macro_insertion_index]);
 							if (C99_VA_ARGS_flinch(*macros_object_expansion_pre_eval[object_macro_insertion_index],0))
 								{	//! \test define.C99/Error_concatenate5.hpp, define.C99/Error_concatenate5.h
@@ -1312,7 +1312,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 								macros_function[function_macro_insertion_index] = C_make_string(TokenList[i]->data()+critical_offset,first_token_len);
 								
 								macros_function_arglist[function_macro_insertion_index] = new Token<char>;
-								arglist.MoveInto(*macros_function_arglist[function_macro_insertion_index]);
+								*macros_function_arglist[function_macro_insertion_index] = std::move(arglist);
 
 								TokenList.DeleteIdx(i);
 								if (0==i) goto Restart;
@@ -1357,8 +1357,8 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 							macros_function_arglist[function_macro_insertion_index] = new Token<char>;
 							macros_function_expansion[function_macro_insertion_index] = new Token<char>;
 							macros_function_expansion_pre_eval[function_macro_insertion_index] = new Token<char>(expansion);
-							arglist.MoveInto(*macros_function_arglist[function_macro_insertion_index]);
-							expansion.MoveInto(*macros_function_expansion[function_macro_insertion_index]);
+							*macros_function_arglist[function_macro_insertion_index] = std::move(arglist);
+							*macros_function_expansion[function_macro_insertion_index] = std::move(expansion);
 							if (flush_bad_stringize(*macros_function_expansion_pre_eval[function_macro_insertion_index],*macros_function_arglist[function_macro_insertion_index]))
 								{
 								delete macros_function_expansion_pre_eval[function_macro_insertion_index];
