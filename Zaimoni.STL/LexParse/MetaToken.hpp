@@ -10,14 +10,18 @@
 #include <utility>
 #include <filesystem>
 
+// #define NO_LEGACY_FIELDS 1
+
 namespace zaimoni {
 
+#ifndef NO_LEGACY_FIELDS
 inline flyweight<const char> C_string_to_flyweight(const char* const x,size_t x_len)
 {
 	autovalarray_ptr_throws<char> tmp(x_len);
 	memmove(tmp.c_array(),x,x_len);
 	return zaimoni::flyweight<const char>(tmp.release());
 }
+#endif
 
 template<class T>
 class MetaToken
@@ -28,8 +32,10 @@ public:
 	// pairs are: line number, origin (column number)
 	std::pair<size_t,size_t> logical_line;		// where the token actually is
 	std::pair<size_t,size_t> original_line;		// where the token originally was from (C macro substitution, etc.)
+#ifndef NO_LEGACY_FIELDS
 	zaimoni::flyweight<const char> src_filename;
 	zaimoni::flyweight<const char> parent_dir;
+#endif
 	std::shared_ptr<std::filesystem::path> src;
 
 	MetaToken() noexcept : logical_line(0,0),original_line(0,0) {}
@@ -40,6 +46,7 @@ protected:
 	MetaToken(MetaToken&& src) = default;
 	MetaToken& operator=(const MetaToken & src) = default;
 	MetaToken& operator=(MetaToken&& src) = default;
+#ifndef NO_LEGACY_FIELDS
 #ifndef ZAIMONI_FORCE_ISO
 	MetaToken(T*& src, const char* _src_filename) : _token(src),
 #else
@@ -48,6 +55,7 @@ protected:
 			logical_line(1,0),
 			original_line(1,0),
 			src_filename(_src_filename) {}
+#endif
 #ifndef ZAIMONI_FORCE_ISO
 	MetaToken(T*& _src, const std::filesystem::path& _src_path) : _token(_src),
 #else
@@ -64,8 +72,8 @@ protected:
 		logical_line(1, 0),
 		original_line(1, 0),
 		src(canonical_cache<std::filesystem::path>::get().track(std::move(_src_path))) {}
-	MetaToken(const MetaToken& src,size_t prefix);
-	MetaToken(const MetaToken& src,size_t offset,size_t token_len);
+	MetaToken(const MetaToken& _src,size_t prefix);
+	MetaToken(const MetaToken& _src,size_t offset,size_t token_len);
 	MetaToken(const T* const src,size_t offset,size_t token_len);
 public:
 	void trim(size_t prefix,size_t postfix);	// remove characters from both sides
@@ -118,29 +126,37 @@ protected:
 };
 
 template<class T>
-MetaToken<T>::MetaToken(const MetaToken& src,size_t prefix)
+MetaToken<T>::MetaToken(const MetaToken& _src,size_t prefix)
 :	_token((prefix ? ZAIMONI_LEN_WITH_NULL(prefix) : 0)),
-	logical_line(src.logical_line),
-	original_line(src.original_line),
-	src_filename(src.src_filename),
-	parent_dir(src.parent_dir)
+	logical_line(_src.logical_line),
+	original_line(_src.original_line),
+#ifdef NO_LEGACY_FIELDS
+	src(_src.src)
+#else
+	src_filename(_src.src_filename),
+	parent_dir(_src.parent_dir)
+#endif
 {
 	DEBUG_FAIL_OR_LEAVE(0==prefix,return);
-	_value_copy_buffer(_token.c_array(),src._token.data(),prefix);
+	_value_copy_buffer(_token.c_array(),_src._token.data(),prefix);
 }
 
 template<class T>
-MetaToken<T>::MetaToken(const MetaToken& src,size_t offset,size_t token_len)
+MetaToken<T>::MetaToken(const MetaToken& _src,size_t offset,size_t token_len)
 :	_token((token_len ? ZAIMONI_LEN_WITH_NULL(token_len) : 0)),
-	logical_line(src.logical_line.first,src.logical_line.second+offset),
-	original_line(src.original_line.first,src.original_line.second+offset),
-	src_filename(src.src_filename),
-	parent_dir(src.parent_dir)
+	logical_line(_src.logical_line.first, _src.logical_line.second+offset),
+	original_line(_src.original_line.first, _src.original_line.second+offset),
+#ifdef NO_LEGACY_FIELDS
+	src(_src.src)
+#else
+	src_filename(_src.src_filename),
+	parent_dir(_src.parent_dir)
+#endif
 {
-	assert(offset<src._token.size());
-	assert(token_len<=src._token.size()-offset);
+	assert(offset< _src._token.size());
+	assert(token_len<= _src._token.size()-offset);
 	DEBUG_FAIL_OR_LEAVE(0==token_len,return);
-	_value_copy_buffer(_token.c_array(),src._token.data()+offset,token_len);
+	_value_copy_buffer(_token.c_array(), _src._token.data()+offset,token_len);
 }
 
 template<class T>

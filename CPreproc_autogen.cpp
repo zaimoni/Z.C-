@@ -1,5 +1,5 @@
 // CPreproc_autogen.cpp
-// (C)2009,2010 Kenneth Boyd, license: MIT.txt
+// (C)2009,2010,2020; Boost license @ LICENSE.md
 // class CPreprocessor support for autogenerating headers for arbitrary machine targets.
 
 #include "CPreproc.hpp"
@@ -370,6 +370,7 @@ lockdown_reserved_identifiers(zaimoni::autovalarray_ptr<zaimoni::Token<char>* >&
 		};
 }
 
+#ifndef NO_LEGACY_FIELDS
 static void final_init_tokenlist(zaimoni::Token<char>* const * x, size_t x_len, const zaimoni::flyweight<const char>& header_name)
 {
 	assert(x);
@@ -385,6 +386,23 @@ static void final_init_tokenlist(zaimoni::Token<char>* const * x, size_t x_len, 
 		x[x_len]->src_filename = header_name;
 		};
 }
+#else
+static void final_init_tokenlist(zaimoni::Token<char>* const* x, size_t x_len, const std::filesystem::path& header_name)
+{
+	assert(x);
+	assert(0 < x_len);
+	assert(!header_name.empty() && *header_name);
+	decltype(x[0]->src) _header = zaimoni::canonical_cache<std::filesystem::path>::get().track(header_name);
+	while (0 < x_len) {
+		decltype(auto) token = x[--x_len];
+		assert(token);
+		token->logical_line.first = x_len + 1;
+		token->logical_line.second = 0;
+		token->original_line = x[x_len]->logical_line;
+		token->src = _header;
+	};
+}
+#endif
 
 /*! 
  * Improvises the C99 limits.h header from target information.  Can throw std::bad_alloc.
@@ -491,7 +509,11 @@ CPreprocessor::create_limits_header(zaimoni::autovalarray_ptr<zaimoni::Token<cha
 	disallow_prior_definitions(TmpTokenList,LIMITS_INJECT_REALITY,limits_h_reserved,STATIC_SIZE(limits_h_reserved));
 	zaimoni::swap(TokenList,TmpTokenList);
 	
+#ifdef NO_LEGACY_FIELDS
+	final_init_tokenlist(TokenList.c_array(), TokenList.size(), header_name);
+#else
 	final_init_tokenlist(TokenList.c_array(),TokenList.size(),zaimoni::C_string_to_flyweight(header_name,strlen(header_name)));
+#endif
 }
 
 //! \bug balancing feature envy vs minimal interface
@@ -618,7 +640,11 @@ CPreprocessor::create_stddef_header(zaimoni::autovalarray_ptr<zaimoni::Token<cha
 	disallow_prior_definitions(TmpTokenList,STDDEF_INJECT_REALITY,stddef_h_reserved+1,4);
 	zaimoni::swap(TokenList,TmpTokenList);
 
+#ifdef NO_LEGACY_FIELDS
+	final_init_tokenlist(TokenList.c_array(), TokenList.size(), header_name);
+#else
 	final_init_tokenlist(TokenList.c_array(),TokenList.size(),zaimoni::C_string_to_flyweight(header_name,strlen(header_name)));
+#endif
 }
 
 static void new_token_at(zaimoni::autovalarray_ptr<zaimoni::Token<char>* >& dest,size_t i,const char* const src)
@@ -1331,6 +1357,10 @@ CPreprocessor::create_stdint_header(zaimoni::autovalarray_ptr<zaimoni::Token<cha
 	while(0<i);
 	zaimoni::swap(TokenList,TmpTokenList);
 
+#ifdef NO_LEGACY_FIELDS
+	final_init_tokenlist(TokenList.c_array(), TokenList.size(), header_name);
+#else
 	final_init_tokenlist(TokenList.c_array(),TokenList.size(),zaimoni::C_string_to_flyweight(header_name,strlen(header_name)));
+#endif
 }
 
