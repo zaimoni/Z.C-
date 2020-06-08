@@ -1,5 +1,5 @@
 // CPreproc.cpp
-// (C)2009-2012 Kenneth Boyd, license: MIT.txt
+// (C)2009-2012,2020; Boost license @ LICENSE.md
 
 #include "CPreproc.hpp"
 
@@ -553,13 +553,21 @@ static errr find_directive(const char* const Text, const LangConf& lang)
 static void message_header(const Token<char>& src)
 {
 	assert(!src.src_filename.empty() && *src.src_filename);
+#ifdef NO_LEGACY_FIELDS
+	message_header(src.src->filename().generic_string().c_str(), src.logical_line.first);
+#else
 	message_header(src.src_filename.data(),src.logical_line.first);
+#endif
 }
 
 static void message_header2(const Token<char>& src,size_t where)
 {
 	assert(!src.src_filename.empty());
+#ifdef NO_LEGACY_FIELDS
+	INC_INFORM(src.src->filename().generic_string().c_str());
+#else
 	INC_INFORM(src.src_filename.data());
+#endif
 	INC_INFORM(':');
 	INC_INFORM(src.logical_line.first);
 	INC_INFORM('.');
@@ -3308,7 +3316,7 @@ oneTokenExit:
 	i = pretokenized.size();
 	do	{
 		--i;
-		lang.pp_support->AddPostLexFlags(x.data()+pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename.data(), x.original_line.first);
+		lang.pp_support->AddPostLexFlags(x.data() + pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename.data(), x.original_line.first);
 		}
 	while(0<i);
 	str_concat_wants_RAM = false;
@@ -3358,19 +3366,31 @@ CPreprocessor::predefined_macro_replace_once(Token<char>& x, size_t& critical_of
 		{
 		const char* macro_value = NULL;
 		char buf[10];
+#ifdef NO_LEGACY_FIELDS
+		std::string tmpfile;
+#else
 		char file_buf[MAX_PATH+2];
+#endif
 		if (macro_identifier_default[macro_index].second)
 			// value known, substitute in
 			macro_value = macro_identifier_default[macro_index].second;
 		// special
 		else if (!strcmp(macro_identifier_default[macro_index].first,"__FILE__"))
 			{
+#ifdef NO_LEGACY_FIELDS
+			assert(!x.src.empty() && !x.src->empty());
+			tmpfile = "\"";
+			tmpfile += x.src->generic_string();
+			tmpfile += "\"";
+			macro_value = tmpfile.c_str();
+#else
 			assert(!x.src_filename.empty());
 			file_buf[0] = '"';
 			strcpy(file_buf+1,x.src_filename.data());
 			file_buf[1+strlen(x.src_filename.data())] = '"';
 			file_buf[2+strlen(x.src_filename.data())] = '\0';
 			macro_value = file_buf;
+#endif
 			}
 		else if (!strcmp(macro_identifier_default[macro_index].first,"__LINE__"))
 			macro_value = z_umaxtoa(x.logical_line.first,buf,10);
@@ -3957,10 +3977,18 @@ CPreprocessor::debug_to_stderr(const autovalarray_ptr<Token<char>* >& TokenList,
 	size_t i = 0;
 	while(i<list_size)
 		{
-		if (0<i && TokenList[i-1]->logical_line.first==TokenList[i]->logical_line.first && !strcmp(TokenList[i-1]->src_filename.data(),TokenList[i]->src_filename.data()) && lang.require_padding(TokenList[i-1]->back(),TokenList[i]->front()))
+#ifdef NO_LEGACY_FIELDS
+		if (0<i && TokenList[i-1]->logical_line.first==TokenList[i]->logical_line.first && TokenList[i-1]->src == TokenList[i]->src && lang.require_padding(TokenList[i-1]->back(),TokenList[i]->front()))
+#else
+		if (0 < i && TokenList[i - 1]->logical_line.first == TokenList[i]->logical_line.first && !strcmp(TokenList[i - 1]->src_filename.data(), TokenList[i]->src_filename.data()) && lang.require_padding(TokenList[i - 1]->back(), TokenList[i]->front()))
+#endif
 			INC_INFORM(' ');
 
+#ifdef NO_LEGACY_FIELDS
+		if (list_size <= i + 1 || TokenList[i]->logical_line.first != TokenList[i + 1]->logical_line.first || TokenList[i]->src != TokenList[i + 1]->src)
+#else
 		if (list_size<=i+1 || TokenList[i]->logical_line.first!=TokenList[i+1]->logical_line.first || strcmp(TokenList[i]->src_filename.data(),TokenList[i+1]->src_filename.data()))
+#endif
 			INFORM(TokenList[i]->data());
 		else
 			INC_INFORM(TokenList[i]->data());
@@ -4180,6 +4208,22 @@ CPreprocessor::use_line_directive_and_discard(autovalarray_ptr<Token<char>* >& T
 		{	//! \test cpp/line.C99/Preprocess_42.h, cpp/line.C99/Preprocess_42.hpp
 		//! \todo loops should stop at first (valid) #line directive with a filename
 		// unescape the string, if needed
+#ifdef NO_LEGACY_FIELDS
+		decltype(TokenList[0]->src) new_FILE;
+		const size_t escape_length = lang.UnescapeStringLength(TokenList[i]->data() + critical_offset + 1, second_token_len - 2);
+		if (escape_length >= second_token_len - 2)
+			new_FILE = canonical_cache<std::filesystem::path>::get().track(std::string(TokenList[i]->data() + critical_offset + 1, second_token_len - 2));
+		else if (0 < escape_length) {
+			autovalarray_ptr_throws<char> tmp(escape_length);
+			lang.UnescapeString(tmp.c_array(), TokenList[i]->data() + critical_offset + 1, second_token_len - 2);
+			new_FILE = canonical_cache<std::filesystem::path>::get().track(std::string(tmp.data(), tmp.size()));
+		}
+
+		size_t j = i + 1;
+		if (new_FILE != TokenList[j]->src)
+			while (j < TokenList.size())
+				TokenList[j++]->src = new_FILE;
+#else
 		zaimoni::flyweight<const char> new_FILE;
 		const size_t escape_length = lang.UnescapeStringLength(TokenList[i]->data()+critical_offset+1,second_token_len-2);
 		if (escape_length>=second_token_len-2)
@@ -4195,6 +4239,7 @@ CPreprocessor::use_line_directive_and_discard(autovalarray_ptr<Token<char>* >& T
 		if (strcmp(new_FILE.data(),TokenList[j]->src_filename.data()))
 			while(j<TokenList.size())
 				TokenList[j++]->src_filename = new_FILE;
+#endif
 		}
 
 	TokenList.DeleteIdx(i);

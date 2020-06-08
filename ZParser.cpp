@@ -1,5 +1,5 @@
 // ZParser.cpp
-// (C)2009-2011 Kenneth Boyd, license: MIT.txt
+// (C)2009-2011,2020; Boost license @ LICENSE.md
 
 #include "ZParser.hpp"
 
@@ -111,11 +111,15 @@ bool ZParser::parse(autovalarray_ptr<Token<char>*>& TokenList,autovalarray_ptr<p
 			while(iter_begin!=iter)
 				{
 				--iter;
-				lang.pp_support->AddPostLexFlags(tmp_front.data()+iter->first, iter->second, iter->third, tmp_front.src_filename.data(), tmp_front.original_line.first);
+				lang.pp_support->AddPostLexFlags(tmp_front.data() + iter->first, iter->second, iter->third, tmp_front.src_filename.data(), tmp_front.original_line.first);
 				if (	(C_TESTFLAG_PP_OP_PUNC & iter->third)
 					&& 	(C_DISALLOW_POSTPROCESSED_SOURCE & lang.pp_support->GetPPOpPuncFlags(C_PP_DECODE(iter->third))))
 					{
+#ifdef NO_LEGACY_FIELDS
+					INC_INFORM(tmp_front.src->generic_string().c_str());
+#else
 					INC_INFORM(tmp_front.src_filename.data());
+#endif
 					INC_INFORM(':');
 					INC_INFORM(tmp_front.original_line.first);
 					INC_INFORM(": ");

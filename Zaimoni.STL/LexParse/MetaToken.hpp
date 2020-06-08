@@ -1,5 +1,5 @@
 // MetaToken.hpp
-// (C)2009,2012 Kenneth Boyd, license: MIT.txt
+// (C)2009,2012,2020; Boost license @ LICENSE.md
 
 #ifndef ZAIMONI_STL_LEXPARSE_METATOKEN_HPP
 #define ZAIMONI_STL_LEXPARSE_METATOKEN_HPP 1
