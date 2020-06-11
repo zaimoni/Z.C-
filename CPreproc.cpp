@@ -388,7 +388,11 @@ static void _init_weak_token(weak_token& dest, const Token<char>& x,const POD_tr
 	dest.flags = pretoken.third;
 	dest.logical_line.first = x.original_line.first;
 	dest.logical_line.second = x.original_line.second+pretoken.first;
+#ifdef NO_LEGACY_FIELDS
+	dest.src_filename = register_string(x.src->generic_string().c_str());
+#else
 	dest.src_filename = x.src_filename.data();
+#endif
 }
 
 static void _weak_tokenize_aux(const Token<char>& x,const autovalarray_ptr<POD_triple<size_t,size_t,lex_flags> >& pretokenized, autovalarray_ptr<weak_token>& weaktoken_list)
@@ -3099,10 +3103,16 @@ CPreprocessor::if_elif_syntax_ok(Token<char>& x, const autovalarray_ptr<char*>& 
 
 	{	// error the illegal preprocessing tokens here
 	const size_t old_err_count = zcc_errors.err_count();
+#ifdef NO_LEGACY_FIELDS
+	const auto f_src = x.src->generic_string();
+	const char* const f_name = f_src.c_str();
+#else
+	const char* const f_name = x.src_filename.data();
+#endif
 	i = pretokenized.size();
 	do	{
 		--i;
-		lang.pp_support->AddPostLexFlags(x.data()+pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename.data(), x.original_line.first);
+		lang.pp_support->AddPostLexFlags(x.data()+pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, f_name, x.original_line.first);
 		if (	(C_TESTFLAG_PP_OP_PUNC & pretokenized[i].third)
 			&& 	((C_DISALLOW_POSTPROCESSED_SOURCE | C_DISALLOW_CONSTANT_EXPR | C_DISALLOW_IF_ELIF_CONTROL) & lang.pp_support->GetPPOpPuncFlags(C_PP_DECODE(pretokenized[i].third))))
 			{
@@ -3218,7 +3228,13 @@ oneTokenExit:
 			return false;
 			}
 		//! \todo --do-what-i-mean doesn't call this to evoke an error
-		C99_literal_is_legal(x.data()+pretokenized.front().first,pretokenized.front().second,pretokenized.front().third,x.src_filename.data(),x.logical_line.first,min_types);
+#ifdef NO_LEGACY_FIELDS
+		const auto f_src = x.src->generic_string();
+		const char* const f_name = f_src.c_str();
+#else
+		const char* const f_name = x.src_filename.data();
+#endif
+		C99_literal_is_legal(x.data()+pretokenized.front().first,pretokenized.front().second,pretokenized.front().third, f_name,x.logical_line.first,min_types);
 		x.replace_once(std::nothrow,critical_offset,x.size()-critical_offset,(is_zero) ? '0' : '1');
 		return true;
 		}
@@ -3313,10 +3329,16 @@ oneTokenExit:
 	x.replace_once(std::nothrow,critical_offset,x.size()-critical_offset,parsetree.index_tokens[0].token.first,parsetree.index_tokens[0].token.second);
 	lang.line_lex(x.data()+critical_offset,x.size()-critical_offset,pretokenized);
 	STL_translate_first(critical_offset,pretokenized);	// coordinate fixup
+#ifdef NO_LEGACY_FIELDS
+	const auto f_src = x.src->generic_string();
+	const char* const f_name = f_src.c_str();
+#else
+	const char* const f_name = x.src_filename.data();
+#endif
 	i = pretokenized.size();
 	do	{
 		--i;
-		lang.pp_support->AddPostLexFlags(x.data() + pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, x.src_filename.data(), x.original_line.first);
+		lang.pp_support->AddPostLexFlags(x.data() + pretokenized[i].first, pretokenized[i].second, pretokenized[i].third, f_name, x.original_line.first);
 		}
 	while(0<i);
 	str_concat_wants_RAM = false;

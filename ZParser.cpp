@@ -12,6 +12,7 @@
 #include "ParseTree.hpp"
 #include "str_aux.h"
 #include "type_system.hpp"
+#include "AtomicString.h"
 
 #include "Zaimoni.STL/AutoPtr.hpp"
 #include "Zaimoni.STL/Perl_localize.hpp"
@@ -47,7 +48,11 @@ static bool init_parse_tree_from_token(parse_tree& dest, const Token<char>& tmp_
 	dest.index_tokens[0].logical_line.first = tmp_front.original_line.first;
 	dest.index_tokens[0].logical_line.second = tmp_front.original_line.second;
 	dest.index_tokens[0].flags = src2.third;
+#ifdef NO_LEGACY_FIELDS
+	dest.index_tokens[0].src_filename = register_string(tmp_front.src->generic_string().c_str());
+#else
 	dest.index_tokens[0].src_filename = tmp_front.src_filename.data();
+#endif
 	const char* const tmp = C_TESTFLAG_IDENTIFIER==src2.third ? lang.pp_support->EchoReservedKeyword(tmp_front.data(),src2.second) 
 						: C_TESTFLAG_PP_OP_PUNC & src2.third ? lang.pp_support->EchoReservedSymbol(tmp_front.data(),src2.second) : NULL;
 	if (tmp)
@@ -108,10 +113,16 @@ bool ZParser::parse(autovalarray_ptr<Token<char>*>& TokenList,autovalarray_ptr<p
 			// error the illegal preprocessing tokens here, not in CPreprocessor
 			const autovalarray_ptr<POD_triple<size_t,size_t,lex_flags> >::iterator iter_begin = pretokenized.begin();
 			autovalarray_ptr<POD_triple<size_t,size_t,lex_flags> >::iterator iter = pretokenized.end();
+#ifdef NO_LEGACY_FIELDS
+			const auto f_str = tmp_front.src->generic_string();
+			const char* const f_name = f_str.c_str();
+#else
+			const char* const f_name = tmp_front.src_filename.data();
+#endif
 			while(iter_begin!=iter)
 				{
 				--iter;
-				lang.pp_support->AddPostLexFlags(tmp_front.data() + iter->first, iter->second, iter->third, tmp_front.src_filename.data(), tmp_front.original_line.first);
+				lang.pp_support->AddPostLexFlags(tmp_front.data() + iter->first, iter->second, iter->third, f_name, tmp_front.original_line.first);
 				if (	(C_TESTFLAG_PP_OP_PUNC & iter->third)
 					&& 	(C_DISALLOW_POSTPROCESSED_SOURCE & lang.pp_support->GetPPOpPuncFlags(C_PP_DECODE(iter->third))))
 					{
