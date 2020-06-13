@@ -61,7 +61,7 @@ private:
 	void _preprocess(zaimoni::autovalarray_ptr<zaimoni::Token<char>* >& TokenList, zaimoni::autovalarray_ptr<char*>& locked_macros, zaimoni::autovalarray_ptr<char*>& macros_object, zaimoni::autovalarray_ptr<zaimoni::Token<char>*>& macros_object_expansion, zaimoni::autovalarray_ptr<zaimoni::Token<char>*>& macros_object_expansion_pre_eval, zaimoni::autovalarray_ptr<char*>& macros_function, zaimoni::autovalarray_ptr<zaimoni::Token<char>*>& macros_function_arglist, zaimoni::autovalarray_ptr<zaimoni::Token<char>*>& macros_function_expansion, zaimoni::autovalarray_ptr<zaimoni::Token<char>*>& macros_function_expansion_pre_eval, zaimoni::autovalarray_ptr<zaimoni::POD_triple<const char*, const char*,uintptr_t> >& include_file_index, zaimoni::autovalarray_ptr<zaimoni::POD_pair<const char*,zaimoni::autovalarray_ptr<zaimoni::Token<char>*>* > >& include_file_cache,const type_system& min_types);
 
 	// #include path handling
-	bool find_local_include(const char* const src, char* const filepath_buf, const char* const local_root) const;
+	bool find_local_include(const char* const src, char* const filepath_buf) const;
 	bool find_system_include(const char* const src, char* const filepath_buf) const;
 
 	// alter token list

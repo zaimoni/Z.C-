@@ -1963,7 +1963,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 			char buf[FILENAME_MAX];
 			const char* main_index_name = NULL;
 			// note: local_include needs to know where to start...
-			bool found_file = local_include && find_local_include(look_for.data(), buf, (TokenList[include_where]->parent_dir.empty() ? "." : TokenList[include_where]->parent_dir.data()));
+			bool found_file = local_include && find_local_include(look_for.data(), buf);
 			bool hardcoded_header = false;
 			if (found_file)
 				{	// filepath known; local includes use the calculated path for information
@@ -2368,14 +2368,12 @@ CPreprocessor::tokenize_line(autovalarray_ptr<Token<char>* >& TokenList, size_t 
  * 
  * \return true if and only if a filepath was found.
  */
-bool
-CPreprocessor::find_local_include(const char* const src, char* const filepath_buf, const char* const local_root) const
+bool CPreprocessor::find_local_include(const char* const src, char* const filepath_buf) const
 {
 	char image_filepath[FILENAME_MAX];
 	char test_filepath[FILENAME_MAX];
 
 	assert(src && *src);
-	assert(local_root && *local_root);
 	assert(filepath_buf);
 	const size_t src_len = strlen(src);
 
@@ -3028,7 +3026,7 @@ CPreprocessor::if_elif_syntax_ok(Token<char>& x, const autovalarray_ptr<char*>& 
 					i += 2;
 					continue;
 					};
-				const char subst_dest = (detect_hardcoded_system_header(look_for,lang_code) || find_local_include(look_for, buf, (x.parent_dir.empty() ? "." : x.parent_dir.data())) || find_system_include(look_for, buf)) ? '1' : '0';
+				const char subst_dest = (detect_hardcoded_system_header(look_for,lang_code) || find_local_include(look_for, buf) || find_system_include(look_for, buf)) ? '1' : '0';
 				free(look_for);
 				if (replace_char_into_directive(x,pretokenized,subst_dest,i,3)) return true;
 				lang.line_lex(x.data()+critical_offset,x.size()-critical_offset,pretokenized);
