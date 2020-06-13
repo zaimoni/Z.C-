@@ -2049,10 +2049,10 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 					// backfit SourceFile... to look_for; parent_dir to parent directory of file in buf
 					if (!IncludeTokenList.empty())
 						{
-						char parent_path[FILENAME_MAX];
-						z_dirname(parent_path,buf);
-						const char* tmp2 = strcmp(parent_path,origin_dir) ? parent_path : origin_dir;
-						zaimoni::flyweight<const char> parent_dir(C_string_to_flyweight(tmp2,strlen(tmp2)));
+						auto target = std::filesystem::path(buf);
+						auto par = target.parent_path();
+						auto tmp2 = ((par == origin_dir) ? par : origin_dir).generic_string();
+						zaimoni::flyweight<const char> parent_dir(C_string_to_flyweight(tmp2.c_str(), tmp2.size()));
 						size_t j = IncludeTokenList.size();
 						do	{
 							IncludeTokenList[--j]->src_filename = look_for;
@@ -2370,49 +2370,24 @@ CPreprocessor::tokenize_line(autovalarray_ptr<Token<char>* >& TokenList, size_t 
  */
 bool CPreprocessor::find_local_include(const char* const src, char* const filepath_buf) const
 {
-	char image_filepath[FILENAME_MAX];
-	char test_filepath[FILENAME_MAX];
-
 	assert(src && *src);
 	assert(filepath_buf);
-	const size_t src_len = strlen(src);
 
-	// automatically fail anything that won't fit in FILENAME_MAX
-	//! \test Error_huge_path.hpp
-	if (FILENAME_MAX<=src_len) return false;
-
-	if (origin_dir)
-		{
-		size_t target_length = strlen(origin_dir);
-		assert(FILENAME_MAX>target_length);
-		strcpy(test_filepath,origin_dir);
-		if (FILENAME_MAX<=target_length+(sizeof(ZAIMONI_PATH_SEP)-1)+src_len) return false;	// safe only because FILENAME_MAX is small
-		strcpy(test_filepath+target_length,ZAIMONI_PATH_SEP);
-		target_length += (sizeof(ZAIMONI_PATH_SEP)-1);
-		strcpy(test_filepath+target_length,src);
-#if ZAIMONI_PATH_SEP_CHAR!='/'
-		// path separator not POSIX, Z.C++ requires POSIX path separator for #include
-		//! \todo: actively reject non-POSIX file separators?
-		std::replace(test_filepath+target_length,test_filepath+target_length+src_len,'/',ZAIMONI_PATH_SEP_CHAR);
-#endif
-		}
-	else{	// ahem...hope that we haven't relocated yet...
-		strncpy(test_filepath,src,src_len);
-#if ZAIMONI_PATH_SEP_CHAR!='/'
-		// path separator not POSIX, Z.C++ requires POSIX path separator for #include
-		//! \todo: actively reject non-POSIX file separators?
-		std::replace(test_filepath,test_filepath+src_len,'/',ZAIMONI_PATH_SEP_CHAR);
-#endif
-		}
-	const char* const canonical_path = z_realpath(image_filepath,test_filepath);
-	if (canonical_path && !access(canonical_path,F_OK))
-		{
-		strcpy(filepath_buf,canonical_path);
+	std::filesystem::path test(origin_dir.empty() ? src // ahem...hope that we haven't relocated yet...
+												  : std::filesystem::path(origin_dir) /= src);
+	try {
+		auto canon = std::filesystem::canonical(test);
+		auto str = canon.generic_string();
+		// automatically fail anything that won't fit in FILENAME_MAX
+		//! \test Error_huge_path.hpp
+		if (FILENAME_MAX <= str.size()) return false;
+		strcpy(filepath_buf, str.c_str());
 		return true;
-		}
-	//! \todo react to local search path options as well
-	//! \test Error_include_nonexistent2.hpp
-	return false;
+	} catch(std::filesystem::filesystem_error& e) {
+		//! \todo react to local search path options as well
+		//! \test Error_include_nonexistent2.hpp
+		return false;
+	}
 }
 
 /*! 

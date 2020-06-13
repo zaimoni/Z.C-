@@ -3,14 +3,16 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H 1
 
+// 2020-06-13: C API made sense back in 2010...not so much now
+#include <filesystem>
+
+inline static const std::filesystem::path origin_dir(std::filesystem::current_path());
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-extern const char* origin_dir;
-extern const char* origin_drive;
-extern const char* origin_root_relative_dir;
 extern const char* self_path;
 void bootstrap_filesystem(const char* const self_arg);
 
