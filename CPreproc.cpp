@@ -115,25 +115,25 @@ static_assert(STATIC_SIZE(fixed_system_include_search)==STATIC_SIZE(actual_syste
 #define START_CPP_ONLY_PATHS 2
 #endif
 
-static bool fixed_system_include_exists_init = false;
-
 static void init_fixed_system_include_search(void)
 {
+	static bool fixed_system_include_exists_init = false;
+
 	if (fixed_system_include_exists_init) return;
 	char filepath[FILENAME_MAX];
-	char workpath[FILENAME_MAX];
 	size_t i = STATIC_SIZE(fixed_system_include_search);
 	do	{
 		--i;
 		assert(!is_empty_string(fixed_system_include_search[i]));
-		if ('.'==fixed_system_include_search[i][0] && FILENAME_MAX>strlen(self_path)+strlen(fixed_system_include_search[i])+1)
+		if ('.'==fixed_system_include_search[i][0])
 			{	// obviously relative path
-			z_dirname(workpath,self_path);
-			strcat(workpath,ZAIMONI_PATH_SEP);
-			strcat(workpath,fixed_system_include_search[i]);
-			char* exists = z_realpath(filepath,workpath);
-			if (exists && !access(exists,F_OK))
-				actual_system_include_search[i] = register_string(filepath);
+			auto test(std::filesystem::path(self_path().parent_path()) /= fixed_system_include_search[i]);
+			try {
+				auto canon = std::filesystem::canonical(test);
+				actual_system_include_search[i] = register_string(canon.generic_string().c_str());
+			} catch (std::filesystem::filesystem_error& e) {
+				// doesn't really exist; omit
+			}
 			}
 		else if (ZAIMONI_PATH_SEP[0]==fixed_system_include_search[i][0])
 			{	// absolute path, current drive
@@ -143,6 +143,7 @@ static void init_fixed_system_include_search(void)
 			};
 		}
 	while(0<i);
+	fixed_system_include_exists_init = true;
 }
 
 #define LEXER_STRICT_UB (Lexer::CPlusPlus+1)

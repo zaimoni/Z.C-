@@ -7,14 +7,12 @@
 #include <filesystem>
 
 inline static const std::filesystem::path origin_dir(std::filesystem::current_path());
+const std::filesystem::path& self_path(const char* const _arg = 0);
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-extern const char* self_path;
-void bootstrap_filesystem(const char* const self_arg);
 
 /*! 
  * loosely inspired by POSIX dirname.

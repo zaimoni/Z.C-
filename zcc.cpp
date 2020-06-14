@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
 {
 	if (2>argc) help();
 
-	bootstrap_filesystem(argv[0]);
+	self_path(argv[0]);
 	const bool last_arg_used_in_option = process_options(argc,argv);
 	if (!last_arg_used_in_option) guess_lang_from_filename(argv[argc-1]);
 	enforce_mutually_exclusive_exhaustive_options();
