@@ -1915,7 +1915,11 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 #define CPP_INCLUDE_NOT_FOUND 1U
 
 		autovalarray_ptr<Token<char>* > IncludeTokenList;
+#ifdef NO_LEGACY_FIELDS
+		std::string look_for(TokenList[include_where]->data() + sizeof("#include <") - 1, filename_len);
+#else
 		zaimoni::flyweight<const char> look_for(C_string_to_flyweight(TokenList[include_where]->data()+sizeof("#include <")-1,filename_len));
+#endif
 		assert(filename_len==strlen(look_for.data()));
 		if (local_include)
 			{	// #include "..." prohibits interior "
@@ -1982,6 +1986,12 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 					// backfit SourceFile... to look_for; parent_dir to parent directory of file in buf
 					if (!IncludeTokenList.empty())
 						{
+#ifdef NO_LEGACY_FIELDS
+						auto staging = canonical_cache<std::filesystem::path>::get().track(std::filesystem::path(buf));
+						size_t j = IncludeTokenList.size();
+						do IncludeTokenList[--j]->src = staging;
+						while (0 < j);
+#else
 						char parent_path[FILENAME_MAX];
 						z_dirname(parent_path,buf);
 						zaimoni::flyweight<const char> parent_dir(C_string_to_flyweight(parent_path,strlen(parent_path)));
@@ -1991,6 +2001,7 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 							IncludeTokenList[j]->parent_dir = parent_dir;
 							}
 						while(0<j);
+#endif
 						};
 					// set up include_file_index, include_file_cache
 					const size_t include_file_index_target = BINARY_SEARCH_DECODE_INSERTION_POINT(have_file_index);
@@ -2050,16 +2061,22 @@ FunctionLikeMacroEmptyString:	if (0<=function_macro_index)
 					// backfit SourceFile... to look_for; parent_dir to parent directory of file in buf
 					if (!IncludeTokenList.empty())
 						{
+#ifdef NO_LEGACY_FIELDS
+						auto staging = canonical_cache<std::filesystem::path>::get().track(std::filesystem::path(buf));
+						size_t j = IncludeTokenList.size();
+						do IncludeTokenList[--j]->src = staging;
+						while (0 < j);
+#else
 						auto target = std::filesystem::path(buf);
 						auto par = target.parent_path();
 						auto tmp2 = ((par == origin_dir) ? par : origin_dir).generic_string();
 						zaimoni::flyweight<const char> parent_dir(C_string_to_flyweight(tmp2.c_str(), tmp2.size()));
 						size_t j = IncludeTokenList.size();
-						do	{
+						do {
 							IncludeTokenList[--j]->src_filename = look_for;
 							IncludeTokenList[j]->parent_dir = parent_dir;
-							}
-						while(0<j);
+						} while (0 < j);
+#endif
 						};
 					main_index_name = register_string(buf);
 					// set up include_file_index, include_file_cache
