@@ -66,9 +66,13 @@ load_sourcefile(autovalarray_ptr<Token<char>* >& TokenList, const char* const fi
 	lang.FlattenComments(Buffer ZAIMONI_ISO_PARAM(Buffer_size));
 
 	try {
+#ifdef NO_LEGACY_FIELDS
+		tmpTokenList[0] = new Token<char>(Buffer ZAIMONI_ISO_PARAM(Buffer_size), filename);
+#else
 		zaimoni::autovalarray_ptr_throws<char> tmp(strlen(filename));
 		memmove(tmp.c_array(),filename,strlen(filename));
 		tmpTokenList[0] = new Token<char>(Buffer ZAIMONI_ISO_PARAM(Buffer_size), tmp.release());
+#endif
 #ifdef ZAIMONI_FORCE_ISO
 //		Buffer_size = 0;	// dead code; 
 #endif
