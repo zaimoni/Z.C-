@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
 			}
 		else{
 			if (last_arg_used_in_option) FATAL("file not last argument provided");
-			if (!load_sourcefile(TokenList,argv[argc-1],lexer_from_string(string_options[stringopt::lang]))) FATAL("target file not loaded");
+			if (!load_sourcefile(TokenList,argv[argc-1],lexer_from_string(string_options[stringopt::lang]))) FATAL((std::string(argv[argc - 1])+" not loaded").c_str());
 			cpp.preprocess(TokenList);
 			}
 
