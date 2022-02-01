@@ -52,7 +52,12 @@
 #undef ZAIMONI_STL_IN_MEMORY_CPP
 
 #ifdef __cplusplus
+// #define USE_CPP_EXCEPTIONS 1
+
 #include "../OS/AIMutex.hpp"	// pulls in Windows.h
+#ifdef USE_CPP_EXCEPTIONS
+#include <stdexcept>
+#endif
 #elif defined(_WIN32)
 #include <WINDOWS.H>
 #else
@@ -596,8 +601,12 @@ static void __DetectOverwrites(void)
 #ifndef NDEBUG
 			size_t audit = _msize(CurrentOffset->_address);
 #endif
-			if (_msize(CurrentOffset->_address)!=CurrentOffset->_size)	// #1
+			if (_msize(CurrentOffset->_address) != CurrentOffset->_size)	// #1
+#ifdef USE_CPP_EXCEPTIONS
+				throw std::logic_error(PointerSizeInfoCorrupted);
+#else
 				__ReportErrorAndCrash(PointerSizeInfoCorrupted);
+#endif
 			}
 		while(0<j);
 		do	{
@@ -609,7 +618,10 @@ static void __DetectOverwrites(void)
 #else
 #define VOID_CAST (void**)
 #endif
-			if (NULL!=(VOID_CAST(Target+TargetSize))[0])
+			if (NULL != (VOID_CAST(Target + TargetSize))[0])
+#ifdef USE_CPP_EXCEPTIONS
+				throw std::logic_error(InvalidWriteDetected);
+#else
 				{	// FATAL ERROR CODE
 				char Buffer[20];
 				ReportError(InvalidWriteDetected);
@@ -620,6 +632,7 @@ static void __DetectOverwrites(void)
 				sprintf(Buffer, "%llu", (unsigned long long)(TargetSize));
 				__ReportErrorAndCrash(Buffer);
 				};
+#endif
 			}
 		while(0<i);
 		};
@@ -775,7 +788,11 @@ static void* __SlideUp(char* memblock, size_t CurrIdx, size_t size)
 	size_t HoleSize = (1==CurrIdx)	? HOLESIZE_AT_IDX1()
 									: HOLESIZE(CurrIdx-1);
 	if ((size_t)(HighBoundPtrSpace-LowBoundPtrSpace)<HoleSize+sizeof(_track_pointer))
+#ifdef USE_CPP_EXCEPTIONS
+		throw std::logic_error(PointerSizeInfoCorrupted);
+#else
 		__ReportErrorAndCrash(PointerSizeInfoCorrupted);
+#endif
 	if (0<HoleSize)
 		{
 		memmove(memblock+HoleSize-sizeof(size_t),
@@ -920,17 +937,17 @@ _DynamicRAMIsNotObviouslyCorrupted(void)
 }
 #endif
 
-// if we do not want to piggyback off of the Microsoft implementation, we either should reuse STL new handler or override setting that as well.
-#if 0
-//#ifdef __cplusplus
+#ifdef __cplusplus
+// The Microsoft implementation doesn't need this, but standard compliance does
+//#define REPLACE_NEW_DELETE 1
 
-std::new_handler ZaimoniNewHandler = NULL;
-
+#ifdef REPLACE_NEW_DELETE
 void* operator new(size_t NewSize)
 {
 	void* Tmp = calloc(1,NewSize);
-	if (ZaimoniNewHandler)
-		while(!Tmp) Tmp = (ZaimoniNewHandler(),calloc(1,NewSize));
+	if (auto nh = std::get_new_handler()) {
+		while (!Tmp) Tmp = (nh(), calloc(1, NewSize));
+	}
 
 	if (!Tmp) throw std::bad_alloc();
 	return Tmp;
@@ -939,8 +956,9 @@ void* operator new(size_t NewSize)
 void* operator new[](std::size_t NewSize)
 {
 	void* Tmp = calloc(1,NewSize);
-	if (ZaimoniNewHandler)
-		while(!Tmp) Tmp = (ZaimoniNewHandler(),calloc(1,NewSize));
+	if (auto nh = std::get_new_handler()) {
+		while (!Tmp) Tmp = (nh(), calloc(1, NewSize));
+	}
 
 	if (!Tmp) throw std::bad_alloc();
 	return Tmp;
@@ -949,29 +967,26 @@ void* operator new[](std::size_t NewSize)
 void* operator new(size_t NewSize, const std::nothrow_t&) noexcept
 {
 	void* Tmp = calloc(1,NewSize);
-	if (ZaimoniNewHandler)
-		try	{
-			while(!Tmp) Tmp = (ZaimoniNewHandler(),calloc(1,NewSize));
-			}
-		catch(const std::bad_alloc&)
-			{
-			return NULL;
-			}
-
+	if (auto nh = std::get_new_handler()) {
+		try {
+			while (!Tmp) Tmp = (nh(), calloc(1, NewSize));
+		} catch (const std::bad_alloc&) {
+			return nullptr;
+		}
+	}
 	return Tmp;
 }
 
 void* operator new[](std::size_t NewSize, const std::nothrow_t&) noexcept
 {
 	void* Tmp = calloc(1,NewSize);
-	if (ZaimoniNewHandler)
-		try	{
-			while(!Tmp) Tmp = (ZaimoniNewHandler(),calloc(1,NewSize));
-			}
-		catch(const std::bad_alloc&)
-			{
-			return NULL;
-			}
+	if (auto nh = std::get_new_handler()) {
+		try {
+			while (!Tmp) Tmp = (nh(), calloc(1, NewSize));
+		} catch (const std::bad_alloc&) {
+			return nullptr;
+		}
+	}
 
 	return Tmp;
 }
@@ -987,5 +1002,6 @@ void operator delete[](void* Target) noexcept
 
 void operator delete[](void* Target, const std::nothrow_t&) noexcept
 {/* FORMALLY CORRECT: 9/27/2005, Kenneth Boyd */ free(Target);}
+#endif
 
 #endif
