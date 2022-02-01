@@ -27,19 +27,23 @@
 #undef ZAIMONI_REALLOC_TO_ZERO_IS_NULL
 #define ZAIMONI_REALLOC_TO_ZERO_IS_NULL 1
 
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
 #ifdef __cplusplus
 extern "C"
+#else
+extern
 #endif
-int zaimoni_is_debugging;	// debug tracer; possibly useful in general
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+int zaimoni_is_debugging;   // debug tracer; possibly useful in general
 
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
 #ifdef __cplusplus
 extern "C"
+#else
+extern
+#endif
+#ifdef _WIN32
+__declspec(dllexport)
 #endif
 inline size_t __cdecl _msize(void* memblock)
 {	/* FORMALLY CORRECT: Kenneth Boyd, 9/15/1999 */
@@ -83,11 +87,13 @@ SafeArraySize(const T* memblock)
 /*!
  * checks that memory block in question is not only dynamically allocated, but is safe to free/realloc
  */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
 #ifdef __cplusplus
 extern "C"
+#else
+extern
+#endif
+#ifdef _WIN32
+__declspec(dllimport)
 #endif
 int _memory_block_start_valid(const void* x);
 
@@ -98,18 +104,20 @@ int _memory_block_start_valid(const void* x);
  * 
  * \return int 1 if ok, 0 if memory overwrites detected
  */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
 #ifdef __cplusplus
 extern "C"
+#else
+extern
+#endif
+#ifdef _WIN32
+__declspec(dllimport)
 #endif
 int _no_obvious_overwrites(void);
 
 // if we do not want to piggyback off of the Microsoft implementation, we either should reuse STL new handler or override setting that as well.
 #if 0
-// #ifdef __cplusplus
 
+// #ifdef __cplusplus
 #ifndef ZAIMONI_STL_IN_MEMORY_CPP
 /*
  * Sufficiently archaic compilers do not enforce the recent prohibition of not
