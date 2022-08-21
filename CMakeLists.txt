@@ -26,22 +26,23 @@ endif()
 # might actually need this?
 include_directories(${CMAKE_BINARY_DIR})
 
-add_executable(z_cpp z_cpp.cpp to_stdout.cpp errors.cpp langroute.cpp AtomicString.cpp str_aux.cpp lex_core.cpp filesystem.cpp uchar_blob.cpp unsigned_var_int.cpp CPUInfo.cpp type_system.cpp ParseTree.cpp type_spec.cpp CSupport.cpp C_PPNumCore.cpp C_PPDecimalInteger.cpp C_PPOctalInteger.cpp C_PPHexInteger.cpp C_PPDecimalFloat.cpp C_PPHexFloat.cpp unsigned_aux.cpp Trigraph.cpp Flat_UNI.cpp end_lc.cpp end_nl.cpp load_src.cpp CPreproc.cpp CPreproc_autogen.cpp)
-target_link_libraries(z_cpp z_langconf z_log_adapter z_stdio_log z_mutex z_format_util z_stdio_c z_memory)
-target_link_options(z_cpp PRIVATE /FORCE:MULTIPLE)	# for z_memory
-target_compile_definitions(z_cpp PUBLIC BUILD_Z_CPP)
-add_dependencies(z_cpp AutoDetect)
+# 2022-08-21: legacy executables renamed 
+add_executable(z_cpp2012 z_cpp2012.cpp to_stdout.cpp errors.cpp langroute.cpp AtomicString.cpp str_aux.cpp lex_core.cpp filesystem.cpp uchar_blob.cpp unsigned_var_int.cpp CPUInfo.cpp type_system.cpp ParseTree.cpp type_spec.cpp CSupport.cpp C_PPNumCore.cpp C_PPDecimalInteger.cpp C_PPOctalInteger.cpp C_PPHexInteger.cpp C_PPDecimalFloat.cpp C_PPHexFloat.cpp unsigned_aux.cpp Trigraph.cpp Flat_UNI.cpp end_lc.cpp end_nl.cpp load_src.cpp CPreproc.cpp CPreproc_autogen.cpp)
+target_link_libraries(z_cpp2012 z_langconf z_log_adapter z_stdio_log z_mutex z_format_util z_stdio_c z_memory)
+target_link_options(z_cpp2012 PRIVATE /FORCE:MULTIPLE)	# for z_memory
+target_compile_definitions(z_cpp2012 PUBLIC BUILD_Z_CPP)
+add_dependencies(z_cpp2012 AutoDetect)
 
-add_executable(zcc zcc.cpp to_stdout.cpp errors.cpp langroute.cpp AtomicString.cpp str_aux.cpp lex_core.cpp filesystem.cpp uchar_blob.cpp unsigned_var_int.cpp CPUInfo.cpp struct_type.cpp type_system.cpp ParseTree.cpp type_spec.cpp CSupport.cpp C_PPNumCore.cpp C_PPDecimalInteger.cpp C_PPOctalInteger.cpp C_PPHexInteger.cpp C_PPDecimalFloat.cpp C_PPHexFloat.cpp unsigned_aux.cpp Trigraph.cpp Flat_UNI.cpp end_lc.cpp end_nl.cpp load_src.cpp CPreproc.cpp CPreproc_autogen.cpp ZParser.cpp)
-target_link_libraries(zcc z_langconf z_log_adapter z_stdio_log z_mutex z_format_util z_stdio_c z_memory)
-target_link_options(zcc PRIVATE /FORCE:MULTIPLE)	# for z_memory
-target_compile_definitions(zcc PUBLIC BUILD_ZCC)
-add_dependencies(zcc AutoDetect)
+add_executable(zcc2012 zcc2012.cpp to_stdout.cpp errors.cpp langroute.cpp AtomicString.cpp str_aux.cpp lex_core.cpp filesystem.cpp uchar_blob.cpp unsigned_var_int.cpp CPUInfo.cpp struct_type.cpp type_system.cpp ParseTree.cpp type_spec.cpp CSupport.cpp C_PPNumCore.cpp C_PPDecimalInteger.cpp C_PPOctalInteger.cpp C_PPHexInteger.cpp C_PPDecimalFloat.cpp C_PPHexFloat.cpp unsigned_aux.cpp Trigraph.cpp Flat_UNI.cpp end_lc.cpp end_nl.cpp load_src.cpp CPreproc.cpp CPreproc_autogen.cpp ZParser.cpp)
+target_link_libraries(zcc2012 z_langconf z_log_adapter z_stdio_log z_mutex z_format_util z_stdio_c z_memory)
+target_link_options(zcc2012 PRIVATE /FORCE:MULTIPLE)	# for z_memory
+target_compile_definitions(zcc2012 PUBLIC BUILD_ZCC)
+add_dependencies(zcc2012 AutoDetect)
 
-add_custom_command(TARGET z_cpp POST_BUILD
+add_custom_command(TARGET z_cpp2012 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:z_memory>
-        $<TARGET_FILE_DIR:z_cpp>)
+        $<TARGET_FILE_DIR:z_cpp2012>)
 add_custom_command(TARGET zcc POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:z_memory>
