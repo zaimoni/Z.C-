@@ -39,13 +39,24 @@ target_link_options(zcc2012 PRIVATE /FORCE:MULTIPLE)	# for z_memory
 target_compile_definitions(zcc2012 PUBLIC BUILD_ZCC)
 add_dependencies(zcc2012 AutoDetect)
 
+add_executable(z_cpp z_cpp.cpp)
+target_link_libraries(z_cpp z_kuroda z_log_adapter z_stdio_log z_mutex z_format_util z_stdio_c z_memory)
+target_link_options(z_cpp PRIVATE /FORCE:MULTIPLE)	# for z_memory
+target_compile_definitions(z_cpp PUBLIC BUILD_Z_CPP)
+add_dependencies(z_cpp AutoDetect)
+
+add_custom_command(TARGET z_cpp POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:z_memory>
+        $<TARGET_FILE_DIR:z_cpp>)
+
 add_custom_command(TARGET z_cpp2012 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:z_memory>
         $<TARGET_FILE_DIR:z_cpp2012>)
-add_custom_command(TARGET zcc POST_BUILD
+add_custom_command(TARGET zcc2012 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:z_memory>
-        $<TARGET_FILE_DIR:zcc>)
+        $<TARGET_FILE_DIR:zcc2012>)
 
 # EXCLUDE_FROM_ALL means "can't test"
