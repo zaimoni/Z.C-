@@ -222,6 +222,8 @@ static auto to_lines(std::istream& in, formal::src_location& origin)
 	return ret;
 }
 
+// \todo migrate https://github.com/zaimoni/Franci/commit/f4ea9214532aa3fa72563d71fba5d00cbbf7751c
+// after we have some C++-specific parsing (i.e., TG_HTML_entity gone)
 enum TG_modes {
 	TG_HTML_entity = 60,
 	TG_tokenized,
@@ -380,7 +382,8 @@ std::vector<size_t> tokenize(kuroda::parser<formal::lex_node>::sequence& src, si
 // stub for more sophisticated error reporting
 static void error_report(formal::lex_node& fail, const std::string& err) {
 	auto loc = fail.origin();
-	std::wcerr << loc.path->native();
+	if (loc.path) std::wcerr << loc.path->native();
+	else std::cerr << "<unknown>";
 	std::cerr << loc.to_s() << ": error : " << err << '\n';
 	fail.learn(formal::Error);
 }
