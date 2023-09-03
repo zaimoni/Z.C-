@@ -1,11 +1,12 @@
 // unsigned_var_int.hpp
-// (C)2010 Kenneth Boyd, license: MIT.txt
+// (C)2010,2023 Kenneth Boyd, license: MIT.txt
 
 #ifndef UNSIGNED_VAR_INT_HPP
 #define UNSIGNED_VAR_INT_HPP 1
 
 #include "unsigned_aux.hpp"
 #include "uchar_blob.hpp"
+#include <limits.h>
 
 // the main class
 // this does implement C/C++ modulo wraparound; change the size beforehand if this is an issue.

@@ -1,6 +1,6 @@
 // LangConf.cpp
 // configuration class for lexing programming languages
-// (C)2009,2010 Kenneth Boyd, license: MIT.txt
+// (C)2009,2010,2023 Kenneth Boyd, license: MIT.txt
 
 #include <memory.h>
 #include "LangConf.hpp"

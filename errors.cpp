@@ -1,5 +1,5 @@
 // errors.cpp
-// (C)2009,2010 Kenneth Boyd, license: MIT.txt
+// (C)2009,2010,2023 Kenneth Boyd, license: MIT.txt
 
 #include "errors.hpp"
 #include "langroute.hpp"
@@ -7,6 +7,8 @@
 #include "Zaimoni.STL/POD.hpp"
 #include "Zaimoni.STL/Logging.h"
 #include "Zaimoni.STL/Pure.C/format_util.h"
+#include <stdint.h>
+#include <limits.h>
 
 const bool bool_options_default[MAX_OPT_BOOL]
 	= 	{	default_option(boolean_option(0)),
